@@ -19,7 +19,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { getSupabaseClient } from "@/lib/supabaseClient"; // Import Supabase client
 
-// ... (rest of the file)
+const formSchema = z.object({
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  password: z
+    .string()
+    .min(6, {
+      message: "Password must be at least 6 characters.",
+    })
+    .max(128, {
+      message: "Password must be less than 128 characters.",
+    }),
+});
 
 export function LoginForm({ mode = 'signup' }: { mode?: 'signup' | 'signin' }) {
   const { toast } = useToast();

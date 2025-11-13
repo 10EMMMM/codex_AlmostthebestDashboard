@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { getSupabaseClient } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import {
   Table,
@@ -14,15 +13,16 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Papa from 'papaparse';
 
 import { DashboardLayout } from '@/components/dashboard-layout';
+import { useAuth } from '@/hooks/useAuth';
+import { SplashScreen } from '@/components/ui/splash-screen';
 
 function RestaurantOnboardCsvUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
-  const supabase = getSupabaseClient();
+  const { supabase } = useAuth();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -38,47 +38,39 @@ function RestaurantOnboardCsvUpload() {
     }
 
     setIsUploading(true);
-    setStatusMessage('Parsing CSV file...');
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       setStatusMessage('Error: You must be logged in to perform this action.');
       setIsUploading(false);
       return;
     }
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        setStatusMessage('CSV parsed. Inserting data into the database...');
-        const parsedData = results.data as Array<Record<string, any>>;
+    const formData = new FormData();
+    formData.append('file', file);
 
-        const recordsToInsert = parsedData.map(row => ({
-          name: row.name,
-          city_id: row.city_id || null,
-          primary_cuisine_id: row.primary_cuisine_id || null,
-          onboarded_by: user.id,
-          onboarded_at: new Date().toISOString(),
-        }));
+    try {
+      const response = await fetch('/api/admin/restaurants/import', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
 
-        const { error } = await supabase
-          .from('restaurants')
-          .insert(recordsToInsert);
+      const payload = await response.json().catch(() => null);
 
-        if (error) {
-          setStatusMessage(`Error inserting data: ${error.message}`);
-        } else {
-          setStatusMessage(`Successfully uploaded and inserted ${recordsToInsert.length} records.`);
-        }
-        setIsUploading(false);
-        setFile(null); 
-      },
-      error: (error) => {
-        setStatusMessage(`Error parsing CSV: ${error.message}`);
-        setIsUploading(false);
-      },
-    });
+      if (response.ok) {
+        setStatusMessage(`Successfully uploaded ${payload?.inserted ?? 0} records.`);
+        setFile(null);
+      } else {
+        setStatusMessage(payload?.error ?? 'Failed to upload CSV.');
+      }
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Unexpected error uploading CSV.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -101,41 +93,42 @@ function RestaurantOnboardCsvUpload() {
 export default function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = getSupabaseClient();
+  const { supabase, hasAdminAccess, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     const fetchAdminData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        if (!user.app_metadata.is_super_admin) {
-          router.push('/dashboard');
-          return;
-        }
-        
-        // If the user is a super admin, fetch the list of all super admins from auth.users.
-        const { data, error: usersError } = await supabase.from('users').select('id, email, is_super_admin').eq('is_super_admin', true);
-        
-        if (data) {
-          setUsers(data);
-        }
-        setIsLoading(false);
+      const { data: { session } } = await supabase.auth.getSession();
 
-      } else {
-        // This case should not be reached due to middleware, but as a fallback.
+      if (!session) {
         setIsLoading(false);
+        return;
       }
+
+      const response = await fetch('/api/admin/get-users', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (response.ok && payload?.users) {
+        const superAdmins = payload.users.filter((user: any) => user.app_metadata?.is_super_admin === true);
+        setUsers(superAdmins);
+      }
+
+      setIsLoading(false);
     };
 
-    fetchAdminData();
-  }, [router, supabase]);
+    if (hasAdminAccess) {
+      fetchAdminData();
+    } else if (!loading) {
+      router.push('/dashboard');
+    }
+  }, [router, supabase, hasAdminAccess, loading]);
 
-  if (isLoading) {
+  if (loading || isLoading) {
     return (
-      <DashboardLayout title="Admin">
-        <div>Loading...</div>
-      </DashboardLayout>
+      <SplashScreen loading />
     );
   }
 

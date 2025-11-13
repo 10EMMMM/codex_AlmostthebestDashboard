@@ -64,7 +64,28 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
-const initialRequests = [
+type Note = {
+  text: string;
+  author: string;
+  date: string;
+};
+
+type RequestStatus = 'new' | 'on progress' | 'done' | 'on hold';
+
+type Request = {
+  id: number;
+  title: string;
+  requester: string;
+  avatar: string;
+  city: string;
+  date: string;
+  deadline: string;
+  status: RequestStatus;
+  description: string;
+  notes: Note[];
+};
+
+const initialRequests: Request[] = [
   {
     id: 1,
     title: 'New Marketing Campaign',
@@ -138,14 +159,6 @@ const initialRequests = [
     notes: [],
   },
 ];
-
-type Note = {
-  text: string;
-  author: string;
-  date: string;
-};
-
-type Request = (typeof initialRequests)[0] & { notes: Note[] };
 
 const statusConfig = {
   new: {

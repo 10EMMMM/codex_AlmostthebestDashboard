@@ -426,7 +426,7 @@ export default function DashboardPage() {
             <div className="dashboard-grid mx-auto max-w-5xl">
               <FocusWidget />
               <TimeWidget />
-              <GreetingWidget />
+              <GreetingWidget user={null} />
               <LineChartWidget />
               <SalesReportWidget />
             </div>

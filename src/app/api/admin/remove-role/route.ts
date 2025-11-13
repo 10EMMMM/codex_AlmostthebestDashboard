@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { ASSIGNABLE_ROLES } from '@/lib/roles';
 
 export async function POST(request: Request) {
   console.log('Remove role API route hit.');
@@ -21,6 +22,10 @@ export async function POST(request: Request) {
 
     if (!user_id || !role) {
       return NextResponse.json({ error: 'user_id and role are required' }, { status: 400 });
+    }
+
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      return NextResponse.json({ error: 'Invalid role specified' }, { status: 400 });
     }
 
     // 2) Authorization check (ensure creator is a super admin)

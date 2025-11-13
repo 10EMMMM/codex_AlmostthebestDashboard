@@ -16,11 +16,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { SplashScreen } from '@/components/ui/splash-screen';
 import { ErrorSplashScreen } from '@/components/ui/error-splash-screen';
 import { useToast } from '@/hooks/use-toast';
+import { ROLE_ADMIN, ROLE_ACCOUNT_MANAGER, ROLE_BDR, ROLE_TEAM_LEAD } from '@/lib/roles';
 
 const allRoles = [
-  { value: 'BDR', label: 'BDR' },
-  { value: 'ACCOUNT_MANAGER', label: 'Account Manager' },
-  { value: 'TEAM_LEAD', label: 'Team Lead' },
+  { value: ROLE_BDR, label: 'BDR' },
+  { value: ROLE_ACCOUNT_MANAGER, label: 'Account Manager' },
+  { value: ROLE_TEAM_LEAD, label: 'Team Lead' },
+  { value: ROLE_ADMIN, label: 'Admin' },
 ];
 
 const UserCardComponent = ({ user, onRoleAssigned, onRoleRemoved }: { user: any, onRoleAssigned: (userId: string, newRole: string) => void, onRoleRemoved: (userId: string, roleToRemove: string) => void }) => {
@@ -38,27 +40,31 @@ const UserCardComponent = ({ user, onRoleAssigned, onRoleRemoved }: { user: any,
       return;
     }
 
-    const endpoint = isAssigned ? '/api/admin/remove-role' : '/api/admin/assign-role';
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-      body: JSON.stringify({ user_id: user.id, role: roleValue }),
-    });
+    try {
+      const endpoint = isAssigned ? '/api/admin/remove-role' : '/api/admin/assign-role';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ user_id: user.id, role: roleValue }),
+      });
 
-    setIsSubmitting(false);
-
-    if (response.ok) {
-      const roleLabel = allRoles.find(r => r.value === roleValue)?.label || roleValue;
-      const action = isAssigned ? 'removed' : 'assigned';
-      toast({ title: "Success", description: `Role '${roleLabel}' ${action}.` });
-      if (isAssigned) {
-        onRoleRemoved(user.id, roleValue);
+      if (response.ok) {
+        const roleLabel = allRoles.find(r => r.value === roleValue)?.label || roleValue;
+        const action = isAssigned ? 'removed' : 'assigned';
+        toast({ title: "Success", description: `Role '${roleLabel}' ${action}.` });
+        if (isAssigned) {
+          onRoleRemoved(user.id, roleValue);
+        } else {
+          onRoleAssigned(user.id, roleValue);
+        }
       } else {
-        onRoleAssigned(user.id, roleValue);
+        const responseData = await response.json().catch(() => ({}));
+        toast({ title: "Error", description: responseData.error || "Failed to update role.", variant: "destructive" });
       }
-    } else {
-      const responseData = await response.json();
-      toast({ title: "Error", description: responseData.error || "Failed to update role.", variant: "destructive" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Network error. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -118,7 +124,7 @@ const UserCard = dynamic(() => Promise.resolve(UserCardComponent), { ssr: false 
 
 export default function AdminUsersPage() {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
-  const { user, isSuperAdmin, loading, supabase } = useAuth();
+  const { user, hasAdminAccess, loading, supabase } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -168,7 +174,7 @@ export default function AdminUsersPage() {
     setUsers(prevUsers =>
       prevUsers.map(u =>
         u.id === userId
-          ? { ...u, roles: u.roles.filter((r: string) => r !== roleToRemove) }
+          ? { ...u, roles: (u.roles || []).filter((r: string) => r !== roleToRemove) }
           : u
       )
     );
@@ -182,7 +188,7 @@ export default function AdminUsersPage() {
     return <SplashScreen loading={true} />;
   }
 
-  if (!isSuperAdmin) {
+  if (!hasAdminAccess) {
     return (
       <ErrorSplashScreen 
         message="You do not have permission to access this page."

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { ASSIGNABLE_ROLES } from '@/lib/roles';
 
 export async function POST(request: Request) {
   console.log('Assign role API route hit.');
@@ -23,8 +24,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'user_id and role are required' }, { status: 400 });
     }
     
-    const validRoles = ['BDR', 'ACCOUNT_MANAGER', 'TEAM_LEAD'];
-    if (!validRoles.includes(role)) {
+    if (!ASSIGNABLE_ROLES.includes(role)) {
         return NextResponse.json({ error: 'Invalid role specified' }, { status: 400 });
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         user_id: user_id, 
         role: role,
         created_at: new Date().toISOString()
-      })
+      }, { onConflict: 'user_id,role' })
       .select();
 
     if (upsertError) {

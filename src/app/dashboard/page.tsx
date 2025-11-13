@@ -325,7 +325,7 @@ const SalesReportWidget = dynamic(() => Promise.resolve(() => {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, isSuperAdmin, loading } = useAuth();
+  const { user, hasAdminAccess, loading } = useAuth();
 
   if (loading) {
     return <SplashScreen loading={loading} />;
@@ -339,7 +339,7 @@ export default function DashboardPage() {
           <FocusWidget />
           <TimeWidget />
           <GreetingWidget user={user} />
-          {isSuperAdmin && (
+          {hasAdminAccess && (
             <Widget className="items-center justify-center">
               <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
                 <User className="w-5 h-5" />

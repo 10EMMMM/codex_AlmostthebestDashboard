@@ -3,11 +3,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSupabaseClient } from '@/lib/supabaseClient';
 import { User, SupabaseClient } from '@supabase/supabase-js';
+import { ROLE_ADMIN } from '@/lib/roles';
 
 interface AuthContextType {
   user: User | null;
   role: string | null;
+  roles: string[];
   isSuperAdmin: boolean;
+  hasAdminAccess: boolean;
   loading: boolean;
   supabase: SupabaseClient;
 }
@@ -17,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [roles, setRoles] = useState<string[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const supabase = getSupabaseClient();
@@ -33,13 +37,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', user.id)
-          .single();
-        
-        setRole(roleData?.role || 'User');
+          .eq('user_id', user.id);
+
+        const extractedRoles = roleData?.map((entry) => entry.role) ?? [];
+
+        setRoles(extractedRoles);
+        setRole(extractedRoles[0] ?? null);
       } else {
         setUser(null);
         setRole(null);
+        setRoles([]);
         setIsSuperAdmin(false);
       }
       setLoading(false);
@@ -54,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setRole(null);
+        setRoles([]);
         setIsSuperAdmin(false);
       }
     });
@@ -63,8 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase]);
 
+  const hasAdminAccess = isSuperAdmin || roles.includes(ROLE_ADMIN);
+
   return (
-    <AuthContext.Provider value={{ user, role, isSuperAdmin, loading, supabase }}>
+    <AuthContext.Provider value={{ user, role, roles, isSuperAdmin, hasAdminAccess, loading, supabase }}>
       {children}
     </AuthContext.Provider>
   );

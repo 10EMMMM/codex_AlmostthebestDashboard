@@ -39,7 +39,7 @@ export function DashboardLayout({ children, title, actionButton }: { children: R
   );
   const router = useRouter();
   const pathname = usePathname();
-  const { isSuperAdmin, supabase } = useAuth();
+  const { isSuperAdmin, hasAdminAccess, supabase } = useAuth();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -162,7 +162,7 @@ export function DashboardLayout({ children, title, actionButton }: { children: R
                     <p>Settings</p>
                   </TooltipContent>
                 </Tooltip>
-                {isSuperAdmin && (
+                {hasAdminAccess && (
                   <>
                     <Tooltip>
                       <TooltipTrigger asChild>

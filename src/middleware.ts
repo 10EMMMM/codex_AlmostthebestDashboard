@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { ROLE_ADMIN } from '@/lib/roles';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -77,11 +78,12 @@ export async function middleware(request: NextRequest) {
     const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    if (roleData?.role !== 'admin' && user.app_metadata?.is_super_admin !== true) {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
+    const roles = roleData?.map((entry) => entry.role) ?? [];
+
+    if (!roles.includes(ROLE_ADMIN) && user.app_metadata?.is_super_admin !== true) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 

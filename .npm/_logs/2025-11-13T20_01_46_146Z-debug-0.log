@@ -1,0 +1,19 @@
+0 verbose cli /usr/bin/node /usr/bin/npm
+1 info using npm@10.8.2
+2 info using node@v20.19.5
+3 silly config load:file:/usr/lib/node_modules/npm/npmrc
+4 silly config load:file:/mnt/g/00_Dashboard/00_codex_almostthebestdashboard/codex_AlmostthebestDashboard/.npmrc
+5 silly config load:file:/usr/etc/npmrc
+6 verbose title npm run dev
+7 verbose argv "run" "dev"
+8 verbose logfile logs-max:10 dir:/mnt/g/00_Dashboard/00_codex_almostthebestdashboard/codex_AlmostthebestDashboard/.npm/_logs/2025-11-13T20_01_46_146Z-
+9 verbose logfile /mnt/g/00_Dashboard/00_codex_almostthebestdashboard/codex_AlmostthebestDashboard/.npm/_logs/2025-11-13T20_01_46_146Z-debug-0.log
+10 silly logfile done cleaning log files
+11 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with EAI_AGAIN
+12 http fetch GET https://registry.npmjs.org/npm attempt 2 failed with EAI_AGAIN
+13 verbose cwd /mnt/g/00_Dashboard/00_codex_almostthebestdashboard/codex_AlmostthebestDashboard
+14 verbose os Linux 6.6.87.2-microsoft-standard-WSL2
+15 verbose node v20.19.5
+16 verbose npm  v10.8.2
+17 verbose exit 1
+18 verbose code 1

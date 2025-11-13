@@ -1,3 +1,4 @@
+import "@/lib/polyfills";
 import { AuthProvider } from "@/hooks/useAuth";
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/toaster";

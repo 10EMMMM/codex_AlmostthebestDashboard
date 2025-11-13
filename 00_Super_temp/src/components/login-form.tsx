@@ -1,0 +1,119 @@
+
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { getSupabaseClient } from "@/lib/supabaseClient"; // Import Supabase client
+
+// ... (rest of the file)
+
+export function LoginForm({ mode = 'signup' }: { mode?: 'signup' | 'signin' }) {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = getSupabaseClient();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true);
+    let error = null;
+
+    if (mode === 'signup') {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+      });
+      error = signUpError;
+    } else {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
+      error = signInError;
+    }
+
+    if (error) {
+      toast({
+        title: "Authentication Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: mode === 'signup' ? "Account Created" : "Logged In",
+        description: mode === 'signup' ? "We've created your account. You will be redirected shortly." : "You are now logged in. Redirecting...",
+      });
+      router.push('/dashboard');
+    }
+    setIsLoading(false);
+  }
+
+  const isSignUp = mode === 'signup';
+
+  return (
+    <div className="flex flex-col h-full justify-center">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">{isSignUp ? 'Sign up' : 'Sign in'}</h1>
+        <p className="text-muted-foreground">
+          {isSignUp ? 'Create an account to get started.' : 'Enter your credentials to log in.'}
+        </p>
+      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input placeholder="Enter Email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="password" placeholder={isSignUp ? "Create Password" : "Enter Password"} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full !mt-6" variant="secondary" disabled={isLoading}>
+            {isLoading ? "Loading..." : (isSignUp ? 'Create Account' : 'Login')}
+          </Button>
+        </form>
+      </Form>
+       <div className="mt-8 text-center text-sm">
+        {isSignUp ? 'Already Have An Account?' : "Don't have an account?"} <a href="#" className="font-semibold text-primary hover:underline">{isSignUp ? 'Login' : 'Sign Up'}</a>
+      </div>
+    </div>
+  );
+}

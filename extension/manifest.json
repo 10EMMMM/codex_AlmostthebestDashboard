@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "ALMOST THE BEST dashboard Launcher",
+  "version": "1.0",
+  "description": "Launches the ALMOST THE BEST dashboard.",
+  "action": {
+    "default_icon": "src/app/favicon.ico",
+    "default_title": "Launch Dashboard"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "tabs"
+  ]
+}

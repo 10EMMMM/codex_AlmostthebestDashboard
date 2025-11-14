@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { DashboardLayout } from '@/components/dashboard-layout';
+import { DaisyRequestCard } from '@/components/admin/daisy-request-card';
 import { useAuth } from '@/hooks/useAuth';
 import { SplashScreen } from '@/components/ui/splash-screen';
 
@@ -135,6 +136,14 @@ export default function AdminPage() {
   return (
     <DashboardLayout title="Admin">
       <RestaurantOnboardCsvUpload />
+      <section className="mb-8">
+        <h2 className="text-xl font-bold mb-4">Latest Requests (DaisyUI demo)</h2>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {['1', '2', '3'].map((id) => (
+            <DaisyRequestCard key={id} requestId={id} />
+          ))}
+        </div>
+      </section>
       <h1 className="text-2xl font-bold mb-4">Admin - Super Admins</h1>
       <Table>
         <TableHeader>

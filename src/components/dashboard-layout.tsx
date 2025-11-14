@@ -21,6 +21,7 @@ import {
   UserCog,
   UserCheck,
   UserPlus,
+  Sparkles,
 } from 'lucide-react';
 import {
   Card,
@@ -164,6 +165,28 @@ export function DashboardLayout({ children, title, actionButton }: { children: R
                 </Tooltip>
                 {hasAdminAccess && (
                   <>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "hover:border-primary rounded-xl",
+                            pathname === '/admin/daisyui'
+                              ? "border-primary bg-primary/10"
+                              : "border-transparent"
+                          )}
+                          asChild
+                        >
+                          <Link href="/admin/daisyui">
+                            <Sparkles className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>daisyUI Gallery</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button

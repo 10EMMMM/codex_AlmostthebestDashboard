@@ -152,5 +152,9 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [require('tailwindcss-animate'), require('daisyui')],
+  daisyui: {
+    logs: false,
+    themes: ['forest', 'light', 'dark'],
+  },
 } satisfies Config;

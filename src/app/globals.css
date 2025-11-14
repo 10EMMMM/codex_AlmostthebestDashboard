@@ -1,4 +1,6 @@
 
+@import url('https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,42 +11,44 @@ body {
 
 @layer base {
   :root {
-    --background: 220 13% 11%; /* #1C1C1E */
-    --foreground: 0 0% 90%; /* #E5E5E5 */
-    --card: 220 13% 18%; /* #2C2C2E */
-    --card-foreground: 0 0% 90%;
-    --popover: 220 13% 11%;
-    --popover-foreground: 0 0% 90%;
-    --primary: 79 28% 64%; /* #ACBD87 */
-    --primary-foreground: 220 13% 11%;
-    --secondary: 220 13% 25%;
-    --secondary-foreground: 0 0% 90%;
-    --muted: 220 13% 25%;
-    --muted-foreground: 220 5% 63%; /* #A1A1AA */
-    --accent: 79 28% 64%;
-    --accent-foreground: 220 13% 11%;
-    --destructive: 346 69% 56%;
-    --destructive-foreground: 0 0% 97%;
-    --border: 220 13% 25%;
-    --input: 220 13% 25%;
-    --ring: 79 28% 64%;
-    --chart-1: 79 28% 64%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    color-scheme: light;
+    --background: 0 0% 100%; /* base-100 */
+    --foreground: 222 47% 11%; /* neutral content */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 259 94% 51%; /* #570DF8 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 318 86% 57%; /* #F000B8 */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 16% 93%; /* #E5E7EB */
+    --muted-foreground: 215 19% 35%; /* #374151 */
+    --accent: 174 59% 50%; /* #1CD4B0 */
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 91% 71%; /* #F87171 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%; /* #E2E8F0 */
+    --input: 214 32% 91%;
+    --ring: 259 94% 51%;
+    --chart-1: 259 94% 51%;
+    --chart-2: 318 86% 57%;
+    --chart-3: 174 59% 50%;
+    --chart-4: 43 96% 56%; /* #FACC15 */
+    --chart-5: 199 89% 48%; /* #0EA5E9 */
     --radius: 0.75rem;
-    --sidebar-background: 220 13% 11%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 79 28% 64%;
-    --sidebar-primary-foreground: 220 13% 11%;
-    --sidebar-accent: 220 13% 25%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 220 13% 25%;
-    --sidebar-ring: 79 28% 64%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 259 94% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 16% 93%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 259 94% 51%;
   }
 
   .dark {
+    color-scheme: dark;
     --background: 220 13% 11%; /* #1C1C1E */
     --foreground: 0 0% 90%; /* #E5E5E5 */
     --card: 220 13% 18%; /* #2C2C2E */

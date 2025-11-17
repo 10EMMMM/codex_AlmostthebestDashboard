@@ -49,6 +49,7 @@ type UserProfile = {
   city_name?: string;
   city_ids?: string[];
   city_names?: string[];
+  primary_city_id?: string | null;
   roles?: string[];
 };
 
@@ -237,6 +238,7 @@ export default function CreateUserPage() {
     display_name: "",
     timezone: "America/New_York",
     city_ids: [] as string[],
+    primary_city_id: null as string | null,
     roles: [] as string[],
   });
   const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
@@ -300,6 +302,7 @@ export default function CreateUserPage() {
       display_name: user.display_name ?? "",
       timezone: user.timezone ?? "America/New_York",
       city_ids: user.city_ids ?? [],
+      primary_city_id: user.city_id ?? null,
       roles: user.roles ?? [],
     });
     setCityQuery("");
@@ -348,6 +351,9 @@ export default function CreateUserPage() {
       setProfileSaving(false);
       return;
     }
+    const primaryCityId = profileForm.roles.includes("ACCOUNT_MANAGER")
+      ? profileForm.city_ids[0] ?? profileForm.primary_city_id ?? null
+      : profileForm.primary_city_id ?? null;
     const response = await fetch("/api/admin/update-profile", {
       method: "POST",
       headers: {
@@ -359,6 +365,7 @@ export default function CreateUserPage() {
         display_name: profileForm.display_name,
         timezone: profileForm.timezone,
         city_ids: profileForm.city_ids,
+        primary_city_id: primaryCityId,
         roles: profileForm.roles,
       }),
     });
@@ -383,6 +390,8 @@ export default function CreateUserPage() {
               timezone: profileForm.timezone,
               city_ids: profileForm.city_ids,
               city_names: profileForm.city_ids.map((id) => cityLookup[id]).filter(Boolean),
+              city_id: primaryCityId ?? user.city_id ?? null,
+              primary_city_id: primaryCityId ?? user.city_id ?? null,
               roles: profileForm.roles,
             }
           : user
@@ -643,10 +652,17 @@ export default function CreateUserPage() {
                               key={city.id}
                               onSelect={() => {
                                 if (!profileForm.city_ids.includes(city.id)) {
-                                  setProfileForm((prev) => ({
-                                    ...prev,
-                                    city_ids: [...prev.city_ids, city.id],
-                                  }));
+                                  setProfileForm((prev) => {
+                                    const nextCityIds = [...prev.city_ids, city.id];
+                                    const nextPrimary = prev.roles.includes("ACCOUNT_MANAGER")
+                                      ? nextCityIds[0] ?? city.id
+                                      : prev.primary_city_id ?? city.id;
+                                    return {
+                                      ...prev,
+                                      city_ids: nextCityIds,
+                                      primary_city_id: nextPrimary,
+                                    };
+                                  });
                                 }
                                 setCityQuery("");
                               }}
@@ -674,10 +690,18 @@ export default function CreateUserPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            setProfileForm((prev) => ({
-                              ...prev,
-                              city_ids: prev.city_ids.filter((entry) => entry !== cityId),
-                            }))
+                            setProfileForm((prev) => {
+                              const remaining = prev.city_ids.filter((entry) => entry !== cityId);
+                              const nextPrimary =
+                                prev.primary_city_id === cityId
+                                  ? remaining[0] ?? null
+                                  : prev.primary_city_id;
+                              return {
+                                ...prev,
+                                city_ids: remaining,
+                                primary_city_id: nextPrimary,
+                              };
+                            })
                           }
                           className="text-muted-foreground hover:text-foreground"
                         >

@@ -1,26 +1,214 @@
-City|State Code|Country|Timezone
-New York|NY|US|America/New_York
-Los Angeles|CA|US|America/Los_Angeles
-Chicago|IL|US|America/Chicago
-Houston|TX|US|America/Chicago
-Phoenix|AZ|US|America/Phoenix
-Philadelphia|PA|US|America/New_York
-San Antonio|TX|US|America/Chicago
-San Diego|CA|US|America/Los_Angeles
-Dallas|TX|US|America/Chicago
-San Jose|CA|US|America/Los_Angeles
-Austin|TX|US|America/Chicago
-Jacksonville|FL|US|America/New_York
-Fort Worth|TX|US|America/Chicago
-Columbus|OH|US|America/New_York
-Charlotte|NC|US|America/New_York
-San Francisco|CA|US|America/Los_Angeles
-Indianapolis|IN|US|America/Indiana/Indianapolis
-Seattle|WA|US|America/Los_Angeles
-Denver|CO|US|America/Denver
-Washington|DC|US|America/New_York
-Boston|MA|US|America/New_York
-El Paso|TX|US|America/Denver
-Detroit|MI|US|America/Detroit
-Nashville|TN|US|America/Chicago
-Portland|OR|US|America/Los_Angeles
+Chicago	IL
+Austin	TX
+Boston	MA
+Houston	TX
+Cambridge	MA
+Chicago	IL
+Keller	TX
+2 Plano, 1 Richardson	TX
+Arcadia	CA
+Austin	TX
+Dallas	TX
+Boston	MA
+New York	NY
+Washington	DC
+Skokie	IL
+Norridge	IL
+Chicago	IL
+Hurst	TX
+Boston	MA
+Fort Worth	TX
+Austin	TX
+Plano	TX
+Grand Prairie	TX
+Chicago	IL
+Phoenix	AZ
+Phoenix	AZ
+Phoenix	AZ
+Pleasanton	CA
+Fremont	CA
+Fremont	CA
+Milpitas	CA
+SF	CA
+SF	CA
+SF	CA
+SF	CA
+SF	CA
+Dallas	TX
+Oakland/Berkeley	CA
+SF	CA
+Dallas	TX
+Phoenix	AZ
+Seattle	WA
+NY	NY
+NY	NY
+NY	NY
+Chicago	IL
+Seattle	WA
+Chicago	IL
+Fremont	CA
+NRH Fort Worth	TX
+Boston	MA
+Seattle	WA
+Seattle	WA
+Boston	MA
+Seattle	WA
+NY	NY
+Seattle	WA
+Dallas	TX
+Plano	TX
+NY	NY
+NY	NY
+Dallas	TX
+Dallas	TX
+Dallas	TX
+Phoenix	AZ
+SLC	UT
+Chicago	IL
+Chicago	IL
+Glendale Phoenix	AZ
+SF	CA
+SLC	UT
+Seattle	WA
+Alameda	CA
+San Pablo	CA
+South Jordan SLC	UT
+El Cerrito	CA
+Fremont	CA
+Cupertino	CA
+Dallas	TX
+Plano	TX
+Sommerville	MA
+Sommerville	MA
+SF	CA
+Walnut Creek	CA
+San Jose	CA
+Boston	MA
+SF	CA
+Alameda	CA
+Carollton	TX
+Lynnwood	TX
+SF	CA
+Philadelphia	PA
+Dallas	TX
+Boston	MA
+Seattle	WA
+Seattle	WA
+SF	CA
+SF	CA
+SF	CA
+Seattle	WA
+SF	CA
+SF	CA
+Irving	TX
+Austin	TX
+Burlingame	CA
+Pacifica	CA
+Seattle	WA
+Renton	WA
+Santa Clara	CA
+Chicago	IL
+Austin	TX
+Austin	TX
+Dallas	TX
+Dallas	TX
+Austin	TX
+Austin	TX
+Seattle	WA
+DC	DC
+SF	CA
+SF	CA
+SF	CA
+SF	CA
+Seattle	WA
+SEATTLE	WA
+Seattle	WA
+Seattle	WA
+Seattle	WA
+SLC	UT
+Seattle	WA
+SEATTLE	WA
+AUSTIN	TX
+AUSTIN	TX
+AUSTIN	TX
+AUSTIN	TX
+AUSTIN	TX
+AUSTIN	TX
+Seattle	WA
+SLC	UT
+Seattle	WA
+SF	CA
+AUSTIN	TX
+SF	CA
+San Jose	CA
+BOSTON	MA
+BOSTON	MA
+SF	CA
+Dallas	TX
+SF	CA
+SLC	UT
+SF	CA
+Dallas	TX
+Seattle	WA
+SF	CA
+Seattle	WA
+SF	CA
+NEW YORK	NY
+Phoenix	AZ
+CHICAGO	IL
+NEW YORK	NY
+CHICAGO	IL
+CHICAGO	IL
+CHICAGO	IL
+Dallas	TX
+SF	CA
+SF	CA
+PHILADELPHIA	PA
+CHICAGO	IL
+San Jose	CA
+SF	CA
+ARLINGTON	VA
+BOSTON	MA
+CHICAGO	IL
+CHICAGO	IL
+SAN JOSE	CA
+CHICAGO	IL
+CHICAGO	IL
+ARLINGTON	VA
+NEW YORK	NY
+NEW YORK	NY
+CHICAGO	IL
+DC	DC
+SF	CA
+SF	CA
+ARLINGTON	VA
+ALLEN	TX
+Dallas	TX
+Keller	TX
+Fort Worth	TX
+Dallas	TX
+Draper	UT
+Oakland	CA
+Oakland	CA
+San Francisco	CA
+Mansfield	TX
+Kent	WA
+Mansfield	TX
+Dallas	TX
+New York	NYC
+Dallas	TX
+SLC	UT
+SLC	UT
+Euless	TX
+Sugarland	TX
+Katy 	TX
+League City	TX
+Seattle 	WA
+Houston	Texas
+Houston	Texas
+Houston	Texas
+Houston	Texas
+Houston	Texas
+Atlanta 	Georgia
+Atlanta 	Georgia
+Houston	Texas

@@ -20,7 +20,11 @@ export async function POST(request: Request) {
     const cityIds: string[] | null = Array.isArray(body?.city_ids)
       ? Array.from(new Set(body.city_ids.filter((id: string) => typeof id === 'string')))
       : null;
-    const cityId = cityIds?.[0] ?? null;
+    const primaryCityId =
+      typeof body?.primary_city_id === 'string' && body.primary_city_id.length > 0
+        ? body.primary_city_id
+        : null;
+    const cityId = cityIds && cityIds.length > 0 ? cityIds[0] : primaryCityId;
     const requestedRoles: Role[] | null = Array.isArray(body?.roles)
       ? body.roles.filter((candidate: string): candidate is Role =>
           ASSIGNABLE_ROLES.includes(candidate as Role)
@@ -53,9 +57,9 @@ export async function POST(request: Request) {
       city_id: cityId,
     });
 
-    if (cityIds) {
+    if (requestedRoles?.includes('ACCOUNT_MANAGER')) {
       await supabaseAdmin.from('account_manager_cities').delete().eq('user_id', userId);
-      if (cityIds.length) {
+      if (cityIds && cityIds.length) {
         await supabaseAdmin.from('account_manager_cities').insert(
           cityIds.map((cid) => ({
             user_id: userId,
@@ -64,6 +68,8 @@ export async function POST(request: Request) {
           }))
         );
       }
+    } else {
+      await supabaseAdmin.from('account_manager_cities').delete().eq('user_id', userId);
     }
 
     if (requestedRoles) {

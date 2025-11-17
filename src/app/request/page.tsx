@@ -542,46 +542,38 @@ const CreateRequestForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex h-full flex-col">
-      <DialogHeader className="gap-2 border-b pb-4">
+    <form onSubmit={handleSubmit} className="flex h-full flex-col gap-4">
+      <DialogHeader className="space-y-2 px-4 pt-4">
         <DialogTitle>New Request</DialogTitle>
-        <DialogDescription className="text-sm text-muted-foreground">
-          Provide the key details so the team can triage and start working right
-          away. Fields marked with * are required.
-        </DialogDescription>
+        <p className="text-sm text-muted-foreground">
+          Share the essentials so we can route this request to the right team. Fields
+          marked with * are required.
+        </p>
       </DialogHeader>
-      <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
-        <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Tips for a strong request</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Use a short, action-oriented title.</li>
-            <li>Share context, links, and any constraints you already know.</li>
-            <li>Confirm the requester and city to route this correctly.</li>
-          </ul>
-        </div>
-
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Basics</p>
+      <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
+        <div className="space-y-4 rounded-lg border bg-muted/10 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">Request overview</p>
               <p className="text-xs text-muted-foreground">
-                Start with the what and the type of request you are making.
+                Give us a clear title and type so we can prioritize quickly.
               </p>
             </div>
-            <Badge variant="outline" className="text-[11px] uppercase tracking-wide">
-              Required
-            </Badge>
+            <Badge variant="outline" className="text-xs">Required *</Badge>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
-                placeholder="e.g., Add brunch recommendations for downtown"
+                placeholder="e.g., New Italian spot in Austin"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Keep it short and descriptive so it is easy to scan later.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="requestType">Request Type *</Label>
@@ -600,8 +592,11 @@ const CreateRequestForm = ({
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose the request type to unlock requester and city options.
+              </p>
               {canChooseRequester && !hasSelectedType && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-destructive">
                   Choose a request type to continue.
                 </p>
               )}
@@ -609,18 +604,16 @@ const CreateRequestForm = ({
           </div>
         </div>
 
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Ownership & timing</p>
-              <p className="text-xs text-muted-foreground">
-                Tell us who asked for this and when it needs to be done.
-              </p>
-            </div>
+        <div className="space-y-4 rounded-lg border bg-muted/10 p-4">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">Who is requesting?</p>
+            <p className="text-xs text-muted-foreground">
+              Tell us who asked for this and when you need it.
+            </p>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
-              <Label>Requested By {canChooseRequester && <span className="text-destructive">*</span>}</Label>
+              <Label>Requested By *</Label>
               {canChooseRequester ? (
                 showRequesterField ? (
                   <Popover
@@ -657,9 +650,9 @@ const CreateRequestForm = ({
                         <CommandList>
                           {accountManagersLoading ? (
                             <div className="px-3 py-2 text-sm text-muted-foreground">
-                              Loading...
+                              {accountManagersLoading ? "Loading Account Managers..." : null}
                             </div>
-                          ) : hasRequesterQuery ? (
+                          ) : requesterQuery ? (
                             filteredRequesters.length ? (
                               <CommandGroup>
                                 {filteredRequesters.map((option) => (
@@ -696,12 +689,14 @@ const CreateRequestForm = ({
                 )
               ) : (
                 <Input
-                  value={selectedRequester?.label || user?.email || "Your account"}
+                  value={
+                    selectedRequester?.label || user?.email || "Your account"
+                  }
                   readOnly
                 />
               )}
               <p className="text-xs text-muted-foreground">
-                We&apos;ll notify the requester once the request is updated.
+                We will notify this requester when their request moves forward.
               </p>
             </div>
             <div className="space-y-2">
@@ -713,20 +708,18 @@ const CreateRequestForm = ({
                 onChange={(event) => setDeadline(event.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                If you don&apos;t have a hard date, pick an estimate to set expectations.
+                Optional. Let us know the latest acceptable date.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Location & details</p>
-              <p className="text-xs text-muted-foreground">
-                Confirm the city and add context so the team can act quickly.
-              </p>
-            </div>
+        <div className="space-y-4 rounded-lg border bg-muted/10 p-4">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">Location & details</p>
+            <p className="text-xs text-muted-foreground">
+              Pick the city tied to the requester and add helpful context.
+            </p>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
@@ -737,9 +730,7 @@ const CreateRequestForm = ({
                     <Command>
                       <CommandInput
                         placeholder={
-                          loadingCities
-                            ? "Loading cities..."
-                            : "Start typing to search"
+                          loadingCities ? "Loading cities..." : "Start typing to search"
                         }
                         value={cityQuery}
                         onValueChange={(value) => setCityQuery(value)}
@@ -781,36 +772,30 @@ const CreateRequestForm = ({
               <Textarea
                 id="description"
                 placeholder="Share the context, requirements, or helpful links..."
-                className="min-h-[140px]"
+                className="min-h-[120px]"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                The more specifics you share (budget, vibes, must-haves), the faster
-                we can deliver.
+                Include priorities, restrictions, and any background that will help.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Additional preferences</p>
-              <p className="text-xs text-muted-foreground">
-                Optional details that help the team prioritize and group work.
-              </p>
-            </div>
-            <Badge variant="outline" className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Optional
-            </Badge>
+        <div className="space-y-4 rounded-lg border bg-muted/10 p-4">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-foreground">Additional info</p>
+            <p className="text-xs text-muted-foreground">
+              Optional fields that help us triage and track the request.
+            </p>
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="priority">Priority</Label>
               <Input
                 id="priority"
-                placeholder="e.g., High, ASAP, Backlog"
+                placeholder="e.g., High, Medium"
                 value={priority}
                 onChange={(event) => setPriority(event.target.value)}
               />
@@ -835,31 +820,34 @@ const CreateRequestForm = ({
                 value={budget}
                 onChange={(event) => setBudget(event.target.value)}
               />
+              <p className="text-xs text-muted-foreground">
+                Add an amount if the request has spending guidelines.
+              </p>
             </div>
           </div>
         </div>
       </div>
-      <div className="flex flex-col gap-2 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted-foreground">
-          You can edit or cancel requests later from the Requests dashboard.
-        </p>
-        <div className="flex justify-end gap-2 sm:justify-start">
-          <Button variant="outline" type="button" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={
-              submitting ||
-              !title ||
-              !cityId ||
-              !requestType ||
-              (canChooseRequester && !requesterId)
-            }
-          >
-            {submitting ? "Creating..." : "Create Request"}
-          </Button>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-2 border-t bg-background/70 px-4 py-3">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={onCancel}
+          aria-label="Cancel new request"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={
+            submitting ||
+            !title ||
+            !cityId ||
+            !requestType ||
+            (canChooseRequester && !requesterId)
+          }
+        >
+          {submitting ? "Creating..." : "Create Request"}
+        </Button>
       </div>
     </form>
   );
@@ -1060,7 +1048,7 @@ export default function RequestPage() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <DialogContent className="scale-80">
+          <DialogContent className="sm:max-w-4xl">
             <CreateRequestForm
               onCancel={() => setCreateDialogOpen(false)}
               onCreated={handleRequestCreated}
@@ -1165,7 +1153,7 @@ export default function RequestPage() {
         </div>
       </div>
       <Dialog open={isDetailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-3xl scale-80">
+        <DialogContent className="max-w-3xl">
           <DialogTitle className="sr-only">Request Details</DialogTitle>
           {selectedRequest && <RequestDetailView request={selectedRequest} />}
         </DialogContent>

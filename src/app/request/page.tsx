@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { SplashScreen } from "@/components/ui/splash-screen";
 
 
 type Status = "new" | "on progress" | "done" | "on hold";
@@ -167,7 +168,7 @@ const RequestCard = ({
         </CardHeader>
         <CardContent className="flex flex-1 flex-col p-4 pt-0">
           <p className="text-sm text-muted-foreground line-clamp-3">
-            {request.description ?? "No description"}
+            {request.description ?? "No description provided."}
           </p>
         </CardContent>
       </Card>
@@ -308,7 +309,7 @@ const CreateRequestForm = ({
   const { supabase, user, roles, isSuperAdmin } = useAuth();
   const { toast } = useToast();
   const [title, setTitle] = useState("");
-  const [requestType, setRequestType] = useState<RequestType>("RESTAURANT");
+  const [requestType, setRequestType] = useState<RequestType | "">("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("");
   const [category, setCategory] = useState("");
@@ -328,14 +329,41 @@ const CreateRequestForm = ({
 
   useEffect(() => {
     const loadCities = async () => {
-      if (!supabase || !user) return;
+      if (!supabase) return;
+      const targetUserId = canChooseRequester ? requesterId : user?.id;
+
+      if (!targetUserId) {
+        setCities([]);
+        setCityId("");
+        setLoadingCities(false);
+        return;
+      }
+
       setLoadingCities(true);
       try {
-        if (isAccountManager && !isSuperAdmin) {
+        if (canChooseRequester) {
           const { data, error } = await supabase
             .from("account_manager_cities")
             .select("city_id, cities!inner(id, name, state_code)")
-            .eq("user_id", user.id);
+            .eq("user_id", targetUserId);
+
+          if (error) throw error;
+
+          setCities(
+            data?.map((row) => ({
+              id: row.city_id,
+              label: `${row.cities.name}, ${row.cities.state_code}`,
+            })) ?? []
+          );
+
+          if (!data?.length) {
+            setCityId("");
+          }
+        } else if (isAccountManager) {
+          const { data, error } = await supabase
+            .from("account_manager_cities")
+            .select("city_id, cities!inner(id, name, state_code)")
+            .eq("user_id", targetUserId);
 
           if (error) throw error;
 
@@ -368,13 +396,14 @@ const CreateRequestForm = ({
             error instanceof Error ? error.message : "Please try again later.",
           variant: "destructive",
         });
+        setCities([]);
       } finally {
         setLoadingCities(false);
       }
     };
 
     loadCities();
-  }, [supabase, user, isAccountManager, isSuperAdmin, toast]);
+  }, [supabase, user?.id, canChooseRequester, requesterId, isAccountManager, toast]);
 
   useEffect(() => {
     if (!canChooseRequester && user?.id) {
@@ -383,10 +412,19 @@ const CreateRequestForm = ({
   }, [canChooseRequester, user]);
 
   useEffect(() => {
-    if (canChooseRequester && !requesterId && accountManagers.length) {
-      setRequesterId(accountManagers[0].id);
+    if (canChooseRequester) {
+      setCityId("");
+      setCityQuery("");
     }
-  }, [canChooseRequester, requesterId, accountManagers]);
+  }, [requesterId, canChooseRequester]);
+
+  useEffect(() => {
+    if (canChooseRequester && !requestType) {
+      setRequesterId("");
+      setCityId("");
+      setCityQuery("");
+    }
+  }, [requestType, canChooseRequester]);
 
   const filteredCities = useMemo(() => {
     const query = cityQuery.toLowerCase();
@@ -400,8 +438,20 @@ const CreateRequestForm = ({
     );
   }, [accountManagers, requesterQuery]);
 
+  const hasRequesterQuery = requesterQuery.trim().length > 0;
+
   const selectedCity = cities.find((city) => city.id === cityId);
   const selectedRequester = accountManagers.find((manager) => manager.id === requesterId);
+  const hasSelectedType = Boolean(requestType);
+  const showRequesterField = !canChooseRequester || hasSelectedType;
+  const showCityField =
+    !canChooseRequester || (canChooseRequester && requesterId && hasSelectedType);
+
+  useEffect(() => {
+    if (!showRequesterField && canChooseRequester) {
+      setRequesterPickerOpen(false);
+    }
+  }, [showRequesterField, canChooseRequester]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -423,6 +473,15 @@ const CreateRequestForm = ({
       return;
     }
 
+    if (!requestType) {
+      toast({
+        title: "Request type required",
+        description: "Select the appropriate request type.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const effectiveRequesterId = canChooseRequester ? requesterId : user.id;
     if (!effectiveRequesterId) {
       toast({
@@ -438,7 +497,7 @@ const CreateRequestForm = ({
       const payload = {
         title,
         description,
-        request_type: requestType,
+        request_type: requestType as RequestType,
         city_id: cityId,
         requester_id: effectiveRequesterId,
         created_by: user.id,
@@ -463,8 +522,9 @@ const CreateRequestForm = ({
       setDeadline("");
       setCityId("");
       setCityQuery("");
+      setRequestType("");
       if (canChooseRequester) {
-        setRequesterId(accountManagers[0]?.id ?? "");
+        setRequesterId("");
       }
       onCreated();
     } catch (error) {
@@ -485,18 +545,18 @@ const CreateRequestForm = ({
       <DialogHeader>
         <DialogTitle>New Request</DialogTitle>
       </DialogHeader>
-      <div className="flex flex-1 flex-col space-y-4 overflow-y-auto p-4">
-        <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            placeholder="Give this request a clear title"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            required
-          />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
+      <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              placeholder="Give this request a clear title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="requestType">Request Type</Label>
             <Select
@@ -514,6 +574,97 @@ const CreateRequestForm = ({
                 ))}
               </SelectContent>
             </Select>
+            {canChooseRequester && !hasSelectedType && (
+              <p className="text-xs text-muted-foreground">
+                Choose a request type to continue.
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Requested By</Label>
+            {canChooseRequester ? (
+              showRequesterField ? (
+                <Popover
+                  open={requesterPickerOpen}
+                  onOpenChange={setRequesterPickerOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                      role="combobox"
+                      disabled={accountManagersLoading}
+                    >
+                      <span className="truncate">
+                        {selectedRequester
+                          ? selectedRequester.label
+                          : "Search Account Managers"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[320px] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder={
+                          accountManagersLoading
+                            ? "Loading Account Managers..."
+                            : "Search Account Managers..."
+                        }
+                        value={requesterQuery}
+                        onValueChange={(value) => setRequesterQuery(value)}
+                        disabled={accountManagersLoading}
+                      />
+                      <CommandList>
+                        {accountManagersLoading ? (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            Loading...
+                          </div>
+                        ) : hasRequesterQuery ? (
+                          filteredRequesters.length ? (
+                            <CommandGroup>
+                              {filteredRequesters.map((option) => (
+                                <CommandItem
+                                  key={option.id}
+                                  onSelect={() => {
+                                    setRequesterId(option.id);
+                                    setRequesterQuery("");
+                                    setRequesterPickerOpen(false);
+                                  }}
+                                >
+                                  {option.label}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          ) : (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              No Account Managers found.
+                            </div>
+                          )
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            Start typing to search Account Managers.
+                          </div>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
+                  Select a request type before choosing who requested this.
+                </div>
+              )
+            ) : (
+              <Input
+                value={
+                  selectedRequester?.label || user?.email || "Your account"
+                }
+                readOnly
+              />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="deadline">Deadline</Label>
@@ -525,144 +676,64 @@ const CreateRequestForm = ({
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label>City</Label>
-          <div className="rounded-lg border border-border/70 bg-background">
-            <Command>
-              <CommandInput
-                placeholder={
-                  loadingCities ? "Loading cities..." : "Start typing to search"
-                }
-                value={cityQuery}
-                onValueChange={(value) => setCityQuery(value)}
-                disabled={loadingCities}
-              />
-              <CommandList>
-                {!loadingCities && cityQuery && filteredCities.length > 0 && (
-                  <CommandGroup>
-                    {filteredCities.map((city) => (
-                      <CommandItem
-                        key={city.id}
-                        onSelect={() => {
-                          setCityId(city.id);
-                          setCityQuery("");
-                        }}
-                      >
-                        {city.label}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                )}
-              </CommandList>
-            </Command>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {selectedCity
-              ? `Selected: ${selectedCity.label}`
-              : "Select one of your assigned cities."}
-          </p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="description">Details</Label>
-          <Textarea
-            id="description"
-            placeholder="Share the context, requirements, or helpful links..."
-            className="min-h-[120px]"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Requested By</Label>
-          {canChooseRequester ? (
-            <div className="space-y-3">
-              <Popover
-                open={requesterPickerOpen}
-                onOpenChange={setRequesterPickerOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between"
-                    role="combobox"
-                  >
-                    <span className="truncate">
-                      {selectedRequester
-                        ? selectedRequester.label
-                        : "Select Account Manager"}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[320px] p-0" align="start">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Label>City</Label>
+            {showCityField ? (
+              <>
+                <div className="rounded-lg border border-border/70 bg-background">
                   <Command>
                     <CommandInput
                       placeholder={
-                        accountManagersLoading
-                          ? "Loading Account Managers..."
-                          : "Search Account Managers..."
+                        loadingCities ? "Loading cities..." : "Start typing to search"
                       }
-                      value={requesterQuery}
-                      onValueChange={(value) => setRequesterQuery(value)}
-                      disabled={accountManagersLoading}
+                      value={cityQuery}
+                      onValueChange={(value) => setCityQuery(value)}
+                      disabled={loadingCities}
                     />
                     <CommandList>
-                      {accountManagersLoading ? (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">
-                          Loading...
-                        </div>
-                      ) : filteredRequesters.length ? (
+                      {!loadingCities && cityQuery && filteredCities.length > 0 && (
                         <CommandGroup>
-                          {filteredRequesters.map((option) => (
+                          {filteredCities.map((city) => (
                             <CommandItem
-                              key={option.id}
+                              key={city.id}
                               onSelect={() => {
-                                setRequesterId(option.id);
-                                setRequesterQuery("");
-                                setRequesterPickerOpen(false);
+                                setCityId(city.id);
+                                setCityQuery("");
                               }}
                             >
-                              {option.label}
+                              {city.label}
                             </CommandItem>
                           ))}
                         </CommandGroup>
-                      ) : (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">
-                          No Account Managers found.
-                        </div>
                       )}
                     </CommandList>
                   </Command>
-                </PopoverContent>
-              </Popover>
-              {accountManagers.length > 0 && (
-                <div className="rounded-lg border border-dashed border-border/40 bg-muted/30 p-3 text-xs text-muted-foreground">
-                  <p className="mb-2 font-medium text-foreground/70">
-                    Debug: Account Managers ({accountManagers.length})
-                  </p>
-                  <div className="max-h-32 space-y-1 overflow-y-auto pr-1">
-                    {accountManagers.map((manager) => (
-                      <div key={manager.id} className="truncate">
-                        {manager.label}
-                      </div>
-                    ))}
-                  </div>
                 </div>
-              )}
-            </div>
-          ) : (
-            <Input
-              value={
-                selectedRequester?.label || user?.email || "Your account"
-              }
-              readOnly
+                <p className="text-xs text-muted-foreground">
+                  {selectedCity
+                    ? `Selected: ${selectedCity.label}`
+                    : "Select one of your assigned cities."}
+                </p>
+              </>
+            ) : (
+              <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
+                Choose who requested this to load their assigned cities.
+              </div>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Details</Label>
+            <Textarea
+              id="description"
+              placeholder="Share the context, requirements, or helpful links..."
+              className="min-h-[120px]"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
             />
-          )}
-          <p className="text-xs text-muted-foreground">
-            Only Account Managers can own requests.
-          </p>
+          </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-3">
           <div className="space-y-2">
             <Label htmlFor="priority">Priority</Label>
             <Input
@@ -681,18 +752,18 @@ const CreateRequestForm = ({
               onChange={(event) => setCategory(event.target.value)}
             />
           </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="budget">Budget</Label>
-          <Input
-            id="budget"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Optional budget amount"
-            value={budget}
-            onChange={(event) => setBudget(event.target.value)}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="budget">Budget</Label>
+            <Input
+              id="budget"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Optional budget amount"
+              value={budget}
+              onChange={(event) => setBudget(event.target.value)}
+            />
+          </div>
         </div>
       </div>
       <div className="flex justify-end gap-2 border-t p-4">
@@ -716,7 +787,7 @@ const CreateRequestForm = ({
   );
 };
 export default function RequestPage() {
-  const { supabase, isSuperAdmin } = useAuth();
+  const { supabase, isSuperAdmin, loading } = useAuth();
   const { toast } = useToast();
   const [isDetailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<EnrichedRequest | null>(null);
@@ -884,6 +955,10 @@ export default function RequestPage() {
     setCreateDialogOpen(false);
     loadRequests();
   };
+
+  if (loading) {
+    return <SplashScreen loading />;
+  }
 
   return (
     <DashboardLayout

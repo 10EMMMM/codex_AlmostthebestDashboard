@@ -62,30 +62,53 @@ const Widget = dynamic(() => Promise.resolve(({ children, className }: { childre
   </div>
 )), { ssr: false });
 
-const FocusWidget = dynamic(() => Promise.resolve(() => (
-  <Widget className="items-center justify-center">
-    <div className="flex justify-between items-center w-full mb-4">
-      <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-        <Target className="w-5 h-5" />
-        <span>TOTAL ONBOARDS</span>
-      </h2>
-    </div>
-    <div className="relative w-full max-w-lg h-24 sm:h-32 flex items-center justify-center mb-4">
-      <div className="absolute inset-0 flex items-center justify-center z-10">
-        <span className="text-7xl sm:text-9xl md:text-[8rem] font-extrabold leading-none">
-          11
-        </span>
-      </div>
-    </div>
-    <div className="flex items-baseline justify-center">
-      <span className="text-3xl font-bold mr-2">3 onboards</span>
-      <span className="text-lg text-muted-foreground">this week</span>
-    </div>
-    <p className="text-sm text-muted-foreground mt-2">
-      
-    </p>
-  </Widget>
-)), { ssr: false });
+const FocusWidget = dynamic(
+  () =>
+    Promise.resolve(
+      ({
+        total,
+        week,
+        loading,
+        error,
+      }: {
+        total: number | null;
+        week: number | null;
+        loading: boolean;
+        error?: string | null;
+      }) => {
+        const hasData = typeof total === "number";
+        const headline = loading ? "…" : hasData ? total!.toLocaleString() : "—";
+        const subLabel = loading
+          ? "Fetching onboard counts…"
+          : error
+            ? "Unable to load latest onboards."
+            : hasData
+              ? `${(week ?? 0).toLocaleString()} BDR onboards this week`
+              : "No BDR onboards recorded yet.";
+        return (
+          <Widget className="items-center justify-center text-center">
+            <div className="flex justify-between items-center w-full mb-4">
+              <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+                <Target className="w-5 h-5" />
+                <span>Total Onboards</span>
+              </h2>
+            </div>
+            <div className="relative w-full max-w-lg h-24 sm:h-32 flex items-center justify-center mb-2">
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <span className="text-7xl sm:text-9xl md:text-[8rem] font-extrabold leading-none">
+                  {headline}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center gap-1">
+              <span className="text-lg font-semibold">{subLabel}</span>
+            </div>
+          </Widget>
+        );
+      }
+    ),
+  { ssr: false }
+);
 
 const TimeWidget = dynamic(() => Promise.resolve(() => {
   const [time, setTime] = useState<Date | null>(null);
@@ -325,8 +348,19 @@ const SalesReportWidget = dynamic(() => Promise.resolve(() => {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, hasAdminAccess, loading } = useAuth();
+  const { user, hasAdminAccess, loading, supabase } = useAuth();
   const [gridElement, setGridElement] = useState<HTMLElement | null>(null);
+  const [onboardStats, setOnboardStats] = useState<{
+    total: number | null;
+    week: number | null;
+    loading: boolean;
+    error: string | null;
+  }>({
+    total: null,
+    week: null,
+    loading: true,
+    error: null,
+  });
   const [metrics, setMetrics] = useState<{
     card: { width: number; height: number } | null;
     inner: { width: number; height: number } | null;
@@ -384,17 +418,81 @@ export default function DashboardPage() {
     };
   }, [gridElement]);
 
+  useEffect(() => {
+    let active = true;
+    const loadOnboardStats = async () => {
+      try {
+        setOnboardStats((prev) => ({ ...prev, loading: true, error: null }));
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - 7);
+        const weekStartIso = weekStart.toISOString();
+
+        const roleFilter = ["BDR", "ADMIN"];
+        const [totalRes, weeklyRes] = await Promise.all([
+          supabase
+            .from("restaurant_assignments")
+            .select("restaurant_id", { count: "exact", head: true })
+            .in("role", roleFilter),
+          supabase
+            .from("restaurant_assignments")
+            .select("restaurant_id", { count: "exact", head: true })
+            .in("role", roleFilter)
+            .gte("assigned_at", weekStartIso),
+        ]);
+
+        if (!active) return;
+
+        const firstError = totalRes.error?.message || weeklyRes.error?.message || null;
+        if (firstError) {
+          setOnboardStats({
+            total: totalRes.count ?? null,
+            week: weeklyRes.count ?? null,
+            loading: false,
+            error: firstError,
+          });
+          return;
+        }
+
+        setOnboardStats({
+          total: totalRes.count ?? 0,
+          week: weeklyRes.count ?? 0,
+          loading: false,
+          error: null,
+        });
+      } catch (err: any) {
+        if (!active) return;
+        setOnboardStats({
+          total: null,
+          week: null,
+          loading: false,
+          error: err?.message || "Unable to load onboard data.",
+        });
+      }
+    };
+
+    loadOnboardStats();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
+
   const hasMetrics = Object.values(metrics).some((value) => value !== null);
   const widgetStack = useMemo(() => {
     const stack: React.ReactNode[] = [
-      <FocusWidget key="focus" />,
+      <FocusWidget
+        key="focus"
+        total={onboardStats.total}
+        week={onboardStats.week}
+        loading={onboardStats.loading}
+        error={onboardStats.error}
+      />,
       <TimeWidget key="time" />,
       <GreetingWidget key="greet" user={user} />,
       <LineChartWidget key="line" />,
       <SalesReportWidget key="sales" />,
     ];
     return stack.filter(Boolean);
-  }, [user, hasAdminAccess]);
+  }, [user, hasAdminAccess, onboardStats]);
   const renderedWidgets = widgetStack;
 
   if (loading) {

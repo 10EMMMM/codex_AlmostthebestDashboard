@@ -527,7 +527,7 @@ export default function CreateUserPage() {
                 <span className="sr-only">New User</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
               <DialogHeader>
                 <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
                   User Details
@@ -591,7 +591,7 @@ export default function CreateUserPage() {
         </div>
       </DashboardLayout>
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <DialogHeader>
             <DialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90">
               Edit Profile
@@ -716,7 +716,7 @@ export default function CreateUserPage() {
           }
         }}
       >
-        <AlertDialogContent className="sm:max-w-md rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <AlertDialogContent className="sm:max-w-md rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90">
               Archive User
@@ -768,7 +768,7 @@ export default function CreateUserPage() {
           }
         }}
       >
-        <AlertDialogContent className="sm:max-w-md rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <AlertDialogContent className="sm:max-w-md rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90 text-rose-100">
               Delete User

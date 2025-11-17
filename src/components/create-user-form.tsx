@@ -23,9 +23,14 @@ const ROLE_LABELS: Record<(typeof AVAILABLE_ROLES)[number], string> = {
   TEAM_LEAD: "Team Lead",
 };
 const ROLE_CLASSES: Record<(typeof AVAILABLE_ROLES)[number], string> = {
-  ACCOUNT_MANAGER: "bg-emerald-600 text-white hover:bg-emerald-500",
-  BDR: "bg-amber-500 text-slate-950 hover:bg-amber-400",
-  TEAM_LEAD: "bg-rose-600 text-white hover:bg-rose-500",
+  ACCOUNT_MANAGER: "bg-emerald-500 text-white border border-emerald-500 hover:bg-emerald-500/90",
+  BDR: "bg-amber-400 text-amber-950 border border-amber-500 hover:bg-amber-400/90",
+  TEAM_LEAD: "bg-rose-500 text-white border border-rose-500 hover:bg-rose-500/90",
+};
+const ROLE_HOVER_CLASSES: Record<(typeof AVAILABLE_ROLES)[number], string> = {
+  ACCOUNT_MANAGER: "hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50",
+  BDR: "hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50",
+  TEAM_LEAD: "hover:border-rose-400 hover:text-rose-600 hover:bg-rose-50",
 };
 
 export function CreateUserForm({
@@ -223,7 +228,9 @@ export function CreateUserForm({
                   size="xs"
                   variant="ghost"
                   className={`px-2 py-1 text-xs ${
-                    selected ? ROLE_CLASSES[role] : "border border-border text-muted-foreground"
+                    selected
+                      ? ROLE_CLASSES[role]
+                      : `border border-border text-muted-foreground ${ROLE_HOVER_CLASSES[role]}`
                   }`}
                   onClick={() => toggleRole(role)}
                 >

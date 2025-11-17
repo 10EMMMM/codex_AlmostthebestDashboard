@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Crown, MapPin, Shield, UserCog, UserRound, UtensilsCrossed, Archive, MoreHorizontal, Trash2 } from "lucide-react";
+import { Crown, MapPin, Shield, UserCog, UserRound, UtensilsCrossed, Archive, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
 
 type UserProfile = {
   id: string;
@@ -74,6 +74,12 @@ const ROLE_ICON_STYLES: Record<string, string> = {
   BDR: "bg-amber-300/70 text-amber-900 shadow-amber-900/20",
   TEAM_LEAD: "bg-rose-400/60 text-rose-950 shadow-rose-900/20",
   SUPER_ADMIN: "bg-indigo-400/60 text-indigo-950 shadow-indigo-900/20",
+};
+const ROLE_HOVER_STYLES: Record<string, string> = {
+  ACCOUNT_MANAGER: "hover:bg-emerald-500/80 hover:text-emerald-50",
+  BDR: "hover:bg-amber-400/80 hover:text-amber-950",
+  TEAM_LEAD: "hover:bg-rose-500/80 hover:text-rose-50",
+  SUPER_ADMIN: "hover:bg-indigo-500/80 hover:text-indigo-50",
 };
 
 const CITY_PILL_STYLES = [
@@ -204,7 +210,7 @@ function UserCard({
             return (
               <div
                 key={`${user.id}-${role}`}
-                className={`inline-flex size-7 items-center justify-center rounded-full text-[10px] uppercase shadow-[0_0_12px_rgba(0,0,0,0.25)] ${ROLE_ICON_STYLES[role] ?? "bg-white/40 text-foreground/80"}`}
+                className={`inline-flex size-7 items-center justify-center rounded-full text-[10px] uppercase shadow-[0_0_12px_rgba(0,0,0,0.25)] transition-colors ${ROLE_ICON_STYLES[role] ?? "bg-white/40 text-foreground/80"} ${ROLE_HOVER_STYLES[role] ?? "hover:bg-white/60"}`}
                 aria-label={label}
                 title={label}
               >
@@ -516,11 +522,12 @@ export default function CreateUserPage() {
         actionButton={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="rounded-full px-4">
-                New User
+              <Button size="icon" className="rounded-full">
+                <UserPlus className="h-4 w-4" />
+                <span className="sr-only">New User</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
               <DialogHeader>
                 <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
                   User Details
@@ -584,7 +591,7 @@ export default function CreateUserPage() {
         </div>
       </DashboardLayout>
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <DialogHeader>
             <DialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90">
               Edit Profile
@@ -709,7 +716,7 @@ export default function CreateUserPage() {
           }
         }}
       >
-        <AlertDialogContent className="sm:max-w-md rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <AlertDialogContent className="sm:max-w-md rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90">
               Archive User
@@ -761,7 +768,7 @@ export default function CreateUserPage() {
           }
         }}
       >
-        <AlertDialogContent className="sm:max-w-md rounded-[24px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <AlertDialogContent className="sm:max-w-md rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90 text-rose-100">
               Delete User

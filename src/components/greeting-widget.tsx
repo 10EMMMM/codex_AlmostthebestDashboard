@@ -62,7 +62,9 @@ export const GreetingWidget = ({ user }: { user: any }) => {
                     <span>WELCOME</span>
                 </h3>
                 <div className={cn("text-sm font-medium", tone.accent)}>
-                    {user?.user_metadata?.full_name || user?.user_metadata?.display_name || user?.email}
+                    {user?.user_metadata?.display_name ||
+                        user?.user_metadata?.full_name ||
+                        (user?.email?.split("@")[0] || "Welcome")}
                 </div>
             </div>
             <div className="flex flex-col justify-center flex-grow text-center">

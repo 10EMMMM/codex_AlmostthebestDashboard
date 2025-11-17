@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import type { ReactNode } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -295,6 +296,29 @@ const FilterPopover = ({
     </Popover>
   );
 };
+
+const FieldDescription = ({ children }: { children: ReactNode }) => (
+  <p className="text-xs text-muted-foreground">{children}</p>
+);
+
+const FormSection = ({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: ReactNode;
+  children: ReactNode;
+}) => (
+  <div className="space-y-3 rounded-lg border border-border/70 bg-card/40 p-4 shadow-sm">
+    <div className="space-y-1">
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      {description && <FieldDescription>{description}</FieldDescription>}
+    </div>
+    {children}
+  </div>
+);
+
 const CreateRequestForm = ({
   onCancel,
   onCreated,
@@ -446,6 +470,7 @@ const CreateRequestForm = ({
   const showRequesterField = !canChooseRequester || hasSelectedType;
   const showCityField =
     !canChooseRequester || (canChooseRequester && requesterId && hasSelectedType);
+  const descriptionCharCount = description.length;
 
   useEffect(() => {
     if (!showRequesterField && canChooseRequester) {
@@ -544,244 +569,346 @@ const CreateRequestForm = ({
     <form onSubmit={handleSubmit} className="flex h-full flex-col">
       <DialogHeader>
         <DialogTitle>New Request</DialogTitle>
+        <FieldDescription>
+          Create a clear, actionable request so the team can respond quickly.
+        </FieldDescription>
       </DialogHeader>
       <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Give this request a clear title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="requestType">Request Type</Label>
-            <Select
-              value={requestType}
-              onValueChange={(value: RequestType) => setRequestType(value)}
-            >
-              <SelectTrigger id="requestType">
-                <SelectValue placeholder="Select a type" />
-              </SelectTrigger>
-              <SelectContent>
-                {REQUEST_TYPES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {canChooseRequester && !hasSelectedType && (
-              <p className="text-xs text-muted-foreground">
-                Choose a request type to continue.
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Requested By</Label>
-            {canChooseRequester ? (
-              showRequesterField ? (
-                <Popover
-                  open={requesterPickerOpen}
-                  onOpenChange={setRequesterPickerOpen}
+          <FormSection
+            title="Overview"
+            description="Give your request a concise headline and enough context to act on it."
+          >
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="title">Title</Label>
+                  <span className="text-[11px] font-medium uppercase text-muted-foreground">
+                    Required
+                  </span>
+                </div>
+                <Input
+                  id="title"
+                  placeholder="e.g., Arrange tapas options for Austin launch event"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  required
+                />
+                <FieldDescription>
+                  Keep it short and specific so teammates can scan it at a glance.
+                </FieldDescription>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="What are the goals, preferences, or constraints for this request?"
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={6}
+                />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Share details like cuisine style, event size, or timing notes.</span>
+                  <span>{descriptionCharCount}/500</span>
+                </div>
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection
+            title="Assignment"
+            description="Choose the request type, who owns it, and the city it applies to."
+          >
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="requestType">Request Type</Label>
+                <Select
+                  value={requestType}
+                  onValueChange={(value: RequestType) => setRequestType(value)}
                 >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-between"
-                      role="combobox"
-                      disabled={accountManagersLoading}
+                  <SelectTrigger id="requestType">
+                    <SelectValue placeholder="Select a type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REQUEST_TYPES.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {canChooseRequester && !hasSelectedType ? (
+                  <FieldDescription>
+                    Pick a request type to see eligible Account Managers and cities.
+                  </FieldDescription>
+                ) : (
+                  <FieldDescription>
+                    This helps route the request to the right playbook.
+                  </FieldDescription>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Requested By</Label>
+                  <span className="text-[11px] font-medium uppercase text-muted-foreground">
+                    {canChooseRequester ? "Required" : "Auto-assigned"}
+                  </span>
+                </div>
+                {canChooseRequester ? (
+                  showRequesterField ? (
+                    <Popover
+                      open={requesterPickerOpen}
+                      onOpenChange={setRequesterPickerOpen}
                     >
-                      <span className="truncate">
-                        {selectedRequester
-                          ? selectedRequester.label
-                          : "Search Account Managers"}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[320px] p-0" align="start">
-                    <Command>
-                      <CommandInput
-                        placeholder={
-                          accountManagersLoading
-                            ? "Loading Account Managers..."
-                            : "Search Account Managers..."
-                        }
-                        value={requesterQuery}
-                        onValueChange={(value) => setRequesterQuery(value)}
-                        disabled={accountManagersLoading}
-                      />
-                      <CommandList>
-                        {accountManagersLoading ? (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            Loading...
-                          </div>
-                        ) : hasRequesterQuery ? (
-                          filteredRequesters.length ? (
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                          role="combobox"
+                          disabled={accountManagersLoading}
+                        >
+                          <span className="truncate">
+                            {selectedRequester
+                              ? selectedRequester.label
+                              : "Search Account Managers"}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[320px] p-0" align="start">
+                        <Command>
+                          <CommandInput
+                            placeholder={
+                              accountManagersLoading
+                                ? "Loading Account Managers..."
+                                : "Search Account Managers..."
+                            }
+                            value={requesterQuery}
+                            onValueChange={(value) => setRequesterQuery(value)}
+                            disabled={accountManagersLoading}
+                          />
+                          <CommandList>
+                            {accountManagersLoading ? (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                Loading...
+                              </div>
+                            ) : hasRequesterQuery ? (
+                              filteredRequesters.length ? (
+                                <CommandGroup>
+                                  {filteredRequesters.map((option) => (
+                                    <CommandItem
+                                      key={option.id}
+                                      onSelect={() => {
+                                        setRequesterId(option.id);
+                                        setRequesterQuery("");
+                                        setRequesterPickerOpen(false);
+                                      }}
+                                    >
+                                      {option.label}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              ) : (
+                                <div className="px-3 py-2 text-sm text-muted-foreground">
+                                  No Account Managers found.
+                                </div>
+                              )
+                            ) : (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                Start typing to search Account Managers.
+                              </div>
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
+                      Select a request type before choosing who requested this.
+                    </div>
+                  )
+                ) : (
+                  <Input
+                    value={selectedRequester?.label || user?.email || "Your account"}
+                    readOnly
+                  />
+                )}
+                <FieldDescription>
+                  We’ll notify this requester once the request is logged.
+                </FieldDescription>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>City</Label>
+                  <span className="text-[11px] font-medium uppercase text-muted-foreground">
+                    Required
+                  </span>
+                </div>
+                {showCityField ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between"
+                        role="combobox"
+                        disabled={loadingCities}
+                      >
+                        <span className="truncate">
+                          {selectedCity ? selectedCity.label : "Search cities"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[320px] p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder={
+                            loadingCities ? "Loading cities..." : "Search cities..."
+                          }
+                          value={cityQuery}
+                          onValueChange={(value) => setCityQuery(value)}
+                          disabled={loadingCities}
+                        />
+                        <CommandList>
+                          {loadingCities ? (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">
+                              Loading cities...
+                            </div>
+                          ) : filteredCities.length ? (
                             <CommandGroup>
-                              {filteredRequesters.map((option) => (
+                              {filteredCities.map((city) => (
                                 <CommandItem
-                                  key={option.id}
+                                  key={city.id}
                                   onSelect={() => {
-                                    setRequesterId(option.id);
-                                    setRequesterQuery("");
-                                    setRequesterPickerOpen(false);
+                                    setCityId(city.id);
+                                    setCityQuery("");
                                   }}
                                 >
-                                  {option.label}
+                                  {city.label}
                                 </CommandItem>
                               ))}
                             </CommandGroup>
                           ) : (
                             <div className="px-3 py-2 text-sm text-muted-foreground">
-                              No Account Managers found.
+                              No cities found.
                             </div>
-                          )
-                        ) : (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            Start typing to search Account Managers.
-                          </div>
-                        )}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
-                  Select a request type before choosing who requested this.
-                </div>
-              )
-            ) : (
-              <Input
-                value={
-                  selectedRequester?.label || user?.email || "Your account"
-                }
-                readOnly
-              />
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="deadline">Deadline</Label>
-            <Input
-              id="deadline"
-              type="date"
-              value={deadline}
-              onChange={(event) => setDeadline(event.target.value)}
-            />
-          </div>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-2">
-            <Label>City</Label>
-            {showCityField ? (
-              <>
-                <div className="rounded-lg border border-border/70 bg-background">
-                  <Command>
-                    <CommandInput
-                      placeholder={
-                        loadingCities ? "Loading cities..." : "Start typing to search"
-                      }
-                      value={cityQuery}
-                      onValueChange={(value) => setCityQuery(value)}
-                      disabled={loadingCities}
-                    />
-                    <CommandList>
-                      {!loadingCities && cityQuery && filteredCities.length > 0 && (
-                        <CommandGroup>
-                          {filteredCities.map((city) => (
-                            <CommandItem
-                              key={city.id}
-                              onSelect={() => {
-                                setCityId(city.id);
-                                setCityQuery("");
-                              }}
-                            >
-                              {city.label}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      )}
-                    </CommandList>
-                  </Command>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {selectedCity
-                    ? `Selected: ${selectedCity.label}`
-                    : "Select one of your assigned cities."}
-                </p>
-              </>
-            ) : (
-              <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
-                Choose who requested this to load their assigned cities.
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
+                    Select an Account Manager to see available cities.
+                  </div>
+                )}
+                <FieldDescription>
+                  Cities update automatically based on the selected Account Manager.
+                </FieldDescription>
               </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="description">Details</Label>
-            <Textarea
-              id="description"
-              placeholder="Share the context, requirements, or helpful links..."
-              className="min-h-[120px]"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-          </div>
+            </div>
+          </FormSection>
         </div>
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority</Label>
-            <Input
-              id="priority"
-              placeholder="e.g., High, Medium"
-              value={priority}
-              onChange={(event) => setPriority(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
-            <Input
-              id="category"
-              placeholder="Optional grouping"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="budget">Budget</Label>
-            <Input
-              id="budget"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Optional budget amount"
-              value={budget}
-              onChange={(event) => setBudget(event.target.value)}
-            />
-          </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <FormSection
+            title="Schedule & Budget"
+            description="Set expectations up front so prioritization is easier."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="deadline">Deadline</Label>
+                <Input
+                  id="deadline"
+                  type="date"
+                  value={deadline}
+                  onChange={(event) => setDeadline(event.target.value)}
+                />
+                <FieldDescription>
+                  Leave blank if timing is flexible.
+                </FieldDescription>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="budget">Budget</Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Optional budget amount"
+                  value={budget}
+                  onChange={(event) => setBudget(event.target.value)}
+                />
+                <FieldDescription>
+                  Add a target budget so vendors can be shortlisted faster.
+                </FieldDescription>
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection
+            title="Preferences"
+            description="Use tags to help the team match the right options."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="priority">Priority</Label>
+                <Select
+                  value={priority}
+                  onValueChange={(value) => setPriority(value)}
+                >
+                  <SelectTrigger id="priority">
+                    <SelectValue placeholder="Optional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["low", "medium", "high"].map((level) => (
+                      <SelectItem key={level} value={level} className="capitalize">
+                        {level}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldDescription>
+                  Use "high" for blockers or launch-critical needs.
+                </FieldDescription>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  placeholder="Optional (e.g., catering, venue)"
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                />
+                <FieldDescription>Helps organize similar requests.</FieldDescription>
+              </div>
+            </div>
+          </FormSection>
         </div>
       </div>
-      <div className="flex justify-end gap-2 border-t p-4">
-        <Button variant="outline" type="button" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={
-            submitting ||
-            !title ||
-            !cityId ||
-            !requestType ||
-            (canChooseRequester && !requesterId)
-          }
-        >
-          {submitting ? "Creating..." : "Create Request"}
-        </Button>
+      <div className="flex items-center justify-between gap-2 border-t bg-card/70 p-4">
+        <div className="text-xs text-muted-foreground">
+          Required: Title, Request Type, Requester, and City.
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" type="button" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={
+              submitting ||
+              !title ||
+              !cityId ||
+              !requestType ||
+              (canChooseRequester && !requesterId)
+            }
+          >
+            {submitting ? "Creating..." : "Create Request"}
+          </Button>
+        </div>
       </div>
     </form>
   );

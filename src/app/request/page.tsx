@@ -343,21 +343,33 @@ const CreateRequestForm = ({
       setLoadingCities(true);
       try {
         if (canChooseRequester) {
-          const { data, error } = await supabase
-            .from("account_manager_cities")
-            .select("city_id, cities!inner(id, name, state_code)")
-            .eq("user_id", targetUserId);
+          const {
+            data: { session },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+          if (sessionError || !session) {
+            throw new Error("Unable to verify session for city lookup.");
+          }
 
-          if (error) throw error;
-
-          setCities(
-            data?.map((row) => ({
-              id: row.city_id,
-              label: `${row.cities.name}, ${row.cities.state_code}`,
-            })) ?? []
+          const response = await fetch(
+            `/api/admin/account-manager-cities?userId=${targetUserId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+            }
           );
+          const payload = (await response.json().catch(() => ({}))) as {
+            error?: string;
+            cities?: CityOption[];
+          };
+          if (!response.ok) {
+            throw new Error(payload.error ?? response.statusText);
+          }
 
-          if (!data?.length) {
+          const cityOptions = payload.cities ?? [];
+          setCities(cityOptions);
+          if (!cityOptions.length) {
             setCityId("");
           }
         } else if (isAccountManager) {
@@ -1039,8 +1051,12 @@ export default function RequestPage() {
   }
 
   return (
-    <DashboardLayout
-      title="Requests"
+    <>
+      <div className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]">
+        Requests
+      </div>
+      <DashboardLayout
+      title=""
       actionButton={
         <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
           <TooltipProvider>
@@ -1103,42 +1119,6 @@ export default function RequestPage() {
           </div>
         </div>
         <div className="dashboard-grid mx-auto h-full max-w-5xl overflow-y-auto pt-20">
-          {isSuperAdmin && (
-            <div className="widget">
-              <Card className="flex h-full flex-col">
-                <CardHeader>
-                  <CardTitle className="text-base">Account Managers</CardTitle>
-                  <CardDescription>
-                    {managerDirectoryLoading
-                      ? "Loading directory..."
-                      : `${managerDirectory.length} total`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto pt-0">
-                  {managerDirectoryLoading ? (
-                    <div className="py-4 text-sm text-muted-foreground">
-                      Fetching Account Managers...
-                    </div>
-                  ) : managerDirectory.length ? (
-                    <ul className="space-y-2 text-sm">
-                      {managerDirectory.map((manager) => (
-                        <li
-                          key={manager.id}
-                          className="rounded-md border border-border/60 px-3 py-2"
-                        >
-                          {manager.label}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="py-4 text-sm text-muted-foreground">
-                      No Account Managers found.
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
           {requestsLoading && (
             <div className="widget">
               <Card className="p-4 text-center text-sm text-muted-foreground">
@@ -1171,6 +1151,7 @@ export default function RequestPage() {
         </DialogContent>
       </Dialog>
     </DashboardLayout>
+    </>
   );
 }
 

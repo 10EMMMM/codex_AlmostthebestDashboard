@@ -44,7 +44,7 @@ import {
 } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, XAxis, Bar, BarChart, Line, LineChart as RechartsLineChart } from "recharts";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -326,34 +326,106 @@ const SalesReportWidget = dynamic(() => Promise.resolve(() => {
 export default function DashboardPage() {
   const router = useRouter();
   const { user, hasAdminAccess, loading } = useAuth();
+  const [gridElement, setGridElement] = useState<HTMLElement | null>(null);
+  const [metrics, setMetrics] = useState<{
+    card: { width: number; height: number } | null;
+    inner: { width: number; height: number } | null;
+    grid: { width: number; height: number } | null;
+  }>({
+    card: null,
+    inner: null,
+    grid: null,
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const card = document.querySelector<HTMLElement>("[data-layout-card]");
+    const inner = document.querySelector<HTMLElement>("[data-layout-inner]");
+    const grid = gridElement;
+
+    if (!card && !inner && !grid) {
+      return;
+    }
+
+    const measure = (element: HTMLElement | null) => {
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      };
+    };
+
+    const update = () => {
+      setMetrics({
+        card: measure(card),
+        inner: measure(inner),
+        grid: measure(grid),
+      });
+    };
+
+    const observers = [card, inner, grid]
+      .filter((element): element is HTMLElement => Boolean(element))
+      .map((element) => {
+        const observer = new ResizeObserver(update);
+        observer.observe(element);
+        return observer;
+      });
+
+    window.addEventListener("resize", update);
+    update();
+
+    return () => {
+      observers.forEach((observer) => observer.disconnect());
+      window.removeEventListener("resize", update);
+    };
+  }, [gridElement]);
+
+  const hasMetrics = Object.values(metrics).some((value) => value !== null);
+  const widgetStack = useMemo(() => {
+    const stack: React.ReactNode[] = [
+      <FocusWidget key="focus" />,
+      <TimeWidget key="time" />,
+      <GreetingWidget key="greet" user={user} />,
+      <LineChartWidget key="line" />,
+      <SalesReportWidget key="sales" />,
+    ];
+    return stack.filter(Boolean);
+  }, [user, hasAdminAccess]);
+  const renderedWidgets = widgetStack;
 
   if (loading) {
     return <SplashScreen loading={loading} />;
   }
 
   return (
-    <DashboardLayout title="Dashboard">
-
-      <div style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }} className="w-full h-full">
-        <div className="dashboard-grid mx-auto max-w-5xl">
-          <FocusWidget />
-          <TimeWidget />
-          <GreetingWidget user={user} />
-          {hasAdminAccess && (
-            <Widget className="items-center justify-center">
-              <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-                <User className="w-5 h-5" />
-                <span>SUPER ADMIN</span>
-              </h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                You have super admin privileges.
-              </p>
-            </Widget>
-          )}
-          <LineChartWidget />
-          <SalesReportWidget />
-        </div>
+    <>
+      <div
+        className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]"
+      >
+        Dashboard
       </div>
-    </DashboardLayout>
+      <DashboardLayout title="">
+        <div className="relative w-full h-full">
+          <div
+            className="relative z-10 w-full h-full pt-20"
+            style={{ transform: "scale(0.8)", transformOrigin: "top center" }}
+          >
+            <div className="h-full overflow-y-auto pr-4">
+              <div
+                ref={setGridElement}
+                data-dashboard-grid
+                className="dashboard-grid mx-auto max-w-5xl"
+              >
+                {renderedWidgets}
+              </div>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    </>
   );
 }

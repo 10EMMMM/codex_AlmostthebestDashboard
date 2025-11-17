@@ -1,0 +1,2 @@
+id,title,description,request_type,requester_id,created_by,city_id,status,priority,category,budget,deadline,archived_at,archived_by,archive_reason
+<uuid>,<text>,<text>,RESTAURANT,<auth_user_uuid>,<auth_user_uuid>,<city_uuid>,new,high,<text>,10000,2025-12-31T00:00:00Z,,,,

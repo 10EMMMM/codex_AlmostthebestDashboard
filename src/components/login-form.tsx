@@ -78,6 +78,7 @@ export function LoginForm({
           mode === "signup"
             ? "We've created your account. You will be redirected shortly."
             : "You are now logged in. Redirecting...",
+        variant: "success",
       });
       router.push("/dashboard");
     }

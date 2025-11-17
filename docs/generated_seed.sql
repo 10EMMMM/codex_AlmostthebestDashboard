@@ -1,0 +1,11 @@
+BEGIN;
+INSERT INTO auth.users (id, email, raw_app_meta) VALUES ('d9f1c5c9-3a6a-4e37-b6d0-3b1a255e37a1', 'superadmin@acme.com', '{"is_super_admin": true}');
+INSERT INTO auth.users (id, email, raw_app_meta) VALUES ('9bd6ae4c-8b73-4a1b-9c7a-1ff2e463ead2', 'am1@acme.com', '{"role": "ACCOUNT_MANAGER"}');
+INSERT INTO auth.users (id, email, raw_app_meta) VALUES ('a1f1c0f4-2b4d-40d7-9fcd-92bccb1aef34', 'bdr1@acme.com', '{"role": "BDR"}');
+INSERT INTO public.profiles (user_id, display_name, timezone, city_id) VALUES ('d9f1c5c9-3a6a-4e37-b6d0-3b1a255e37a1', 'Super Admin', 'America/New_York', '11111111-1111-1111-1111-111111111111');
+INSERT INTO public.profiles (user_id, display_name, timezone, city_id) VALUES ('9bd6ae4c-8b73-4a1b-9c7a-1ff2e463ead2', 'Account Manager One', 'America/Chicago', '22222222-2222-2222-2222-222222222222');
+INSERT INTO public.profiles (user_id, display_name, timezone, city_id) VALUES ('a1f1c0f4-2b4d-40d7-9fcd-92bccb1aef34', 'BDR One', 'America/Denver', '33333333-3333-3333-3333-333333333333');
+INSERT INTO public.account_manager_cities (user_id, city_id, assigned_by) VALUES ('9bd6ae4c-8b73-4a1b-9c7a-1ff2e463ead2', '22222222-2222-2222-2222-222222222222', 'd9f1c5c9-3a6a-4e37-b6d0-3b1a255e37a1');
+INSERT INTO public.requests (id, title, description, request_type, requester_id, created_by, city_id, status, priority, category, budget, deadline) VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Onboard Main St', 'Initial onboarding for Main Street location', 'RESTAURANT', '9bd6ae4c-8b73-4a1b-9c7a-1ff2e463ead2', 'd9f1c5c9-3a6a-4e37-b6d0-3b1a255e37a1', '22222222-2222-2222-2222-222222222222', 'new', 'high', 'Restaurant Launch', '50000', '2025-12-01');
+INSERT INTO public.request_assignments (request_id, user_id, role) VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'a1f1c0f4-2b4d-40d7-9fcd-92bccb1aef34', 'BDR');
+COMMIT;

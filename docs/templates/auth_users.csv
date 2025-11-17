@@ -1,0 +1,4 @@
+id,email,raw_app_meta
+d9f1c5c9-3a6a-4e37-b6d0-3b1a255e37a1,superadmin@acme.com,"{""is_super_admin"": true}"
+9bd6ae4c-8b73-4a1b-9c7a-1ff2e463ead2,am1@acme.com,"{""role"": ""ACCOUNT_MANAGER""}"
+a1f1c0f4-2b4d-40d7-9fcd-92bccb1aef34,bdr1@acme.com,"{""role"": ""BDR""}"

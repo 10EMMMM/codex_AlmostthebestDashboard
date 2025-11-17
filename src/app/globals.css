@@ -90,7 +90,18 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-hidden;
+  }
+  .content-scale-wrapper {
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+  }
+  .content-scale-inner {
+    transform: scale(1);
+    width: 100%;
+    max-width: 100%;
   }
 }
 
@@ -135,6 +146,7 @@ body {
     width: 100%;
     margin-bottom: 1rem;
     position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
    @keyframes slide-in-from-right {
     from {
@@ -175,6 +187,18 @@ body {
   .animate-ellipsis::after {
     content: '';
     animation: ellipsis 1.5s infinite;
+  }
+  @keyframes ticker-scan {
+    0% {
+      transform: translateX(-150%);
+    }
+    100% {
+      transform: translateX(200%);
+    }
+  }
+
+  .ticker-scan {
+    animation: ticker-scan 4s linear infinite;
   }
 }
 

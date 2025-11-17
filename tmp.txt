@@ -1,0 +1,113 @@
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { CreateUserForm } from "@/components/create-user-form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+
+export default function CreateUserPage() {
+  const [open, setOpen] = useState(false);
+  const { supabase } = useAuth();
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!supabase) return;
+    const loadUsers = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+      const response = await fetch("/api/admin/get-users", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (response.ok) {
+        const payload = await response.json();
+        setUsers(payload.users || []);
+      } else {
+        setUsers([]);
+      }
+      setLoading(false);
+    };
+    loadUsers();
+  }, [supabase]);
+
+  return (
+    <>
+      <div className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]">
+        Create User
+      </div>
+      <DashboardLayout
+        title=""
+        actionButton={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="rounded-full px-4">
+                New User
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>User Details</DialogTitle>
+              </DialogHeader>
+              <CreateUserForm
+                onCancel={() => setOpen(false)}
+                onCreated={() => setOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        }
+      >
+        <div className="relative w-full h-full">
+          <div className="relative z-10 flex flex-col gap-6 max-w-4xl mx-auto pt-6">
+            <div className="dashboard-grid">
+              {loading ? (
+                <div className="widget rounded-2xl border bg-card/60 p-6 text-center text-muted-foreground">
+                  Loading users…
+                </div>
+              ) : users.length ? (
+                users.map((u) => (
+                  <div key={u.id} className="widget rounded-2xl border bg-card/80 p-5 shadow space-y-3">
+                    <div>
+                      <p className="text-xs uppercase text-muted-foreground">Display Name</p>
+                      <p className="text-lg font-semibold truncate">{u.display_name || u.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase text-muted-foreground">Email</p>
+                      <p className="text-sm text-foreground">{u.email}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{u.timezone || "Timezone not set"}</p>
+                    {u.city_name && (
+                      <p className="text-xs text-muted-foreground">
+                        City: <span className="font-semibold text-foreground">{u.city_name}</span>
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      {u.roles?.length ? (
+                        u.roles.map((role: string) => (
+                          <span key={`${u.id}-${role}`} className="inline-flex rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold">
+                            {role.replace("_", " ")}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No roles assigned</span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="widget rounded-2xl border border-dashed bg-card/60 p-6 text-center text-muted-foreground">
+                  No users yet. Use the New User button above to create one.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    </>
+  );
+}

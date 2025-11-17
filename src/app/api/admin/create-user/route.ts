@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import { ASSIGNABLE_ROLES, Role } from '@/lib/roles';
 
 export async function POST(request: Request) {
@@ -21,6 +21,9 @@ export async function POST(request: Request) {
       ? body.roles.filter((candidate: string): candidate is Role =>
           ASSIGNABLE_ROLES.includes(candidate as Role)
         )
+      : [];
+    const cityIds: string[] = Array.isArray(body?.city_ids)
+      ? Array.from(new Set(body.city_ids.filter((id: string) => typeof id === 'string')))
       : [];
     const shouldCreateSuperAdmin = body?.is_super_admin === true;
 
@@ -48,6 +51,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: creator is not a super admin' }, { status: 403 });
     }
 
+    if (requestedRoles.includes('ACCOUNT_MANAGER') && cityIds.length === 0) {
+      return NextResponse.json({ error: 'Account Managers must have at least one city.' }, { status: 400 });
+    }
+
     const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -60,18 +67,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: createError.message }, { status: 400 });
     }
 
-    if (requestedRoles.length && createData?.user?.id) {
-      await supabaseAdmin
-        .from('user_roles')
-        .insert(
+    const userId = createData?.user?.id;
+    if (userId) {
+      await supabaseAdmin.from('profiles').upsert({
+        user_id: userId,
+        display_name: body?.display_name ?? '',
+        timezone: body?.timezone ?? 'America/New_York',
+        city_id: cityIds[0] ?? null,
+      });
+
+      if (requestedRoles.length) {
+        await supabaseAdmin.from('user_roles').insert(
           requestedRoles.map((role) => ({
-            user_id: createData.user!.id,
+            user_id: userId,
             role,
-          })),
+            assigned_by: creator.id,
+          }))
         );
+      }
+
+      if (requestedRoles.includes('ACCOUNT_MANAGER') && cityIds.length) {
+        await supabaseAdmin.from('account_manager_cities').delete().eq('user_id', userId);
+        await supabaseAdmin.from('account_manager_cities').insert(
+          cityIds.map((cityId) => ({
+            user_id: userId,
+            city_id: cityId,
+            assigned_by: creator.id,
+          }))
+        );
+      }
     }
 
-    return NextResponse.json({ user: createData?.user }, { status: 200 });
+    return NextResponse.json({
+      user: {
+        ...createData?.user,
+        city_ids: cityIds,
+      },
+    }, { status: 200 });
   } catch (err) {
     console.error('Unexpected error in create user handler:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,0 +1,26 @@
+City|State Code|Country|Timezone
+New York|NY|US|America/New_York
+Los Angeles|CA|US|America/Los_Angeles
+Chicago|IL|US|America/Chicago
+Houston|TX|US|America/Chicago
+Phoenix|AZ|US|America/Phoenix
+Philadelphia|PA|US|America/New_York
+San Antonio|TX|US|America/Chicago
+San Diego|CA|US|America/Los_Angeles
+Dallas|TX|US|America/Chicago
+San Jose|CA|US|America/Los_Angeles
+Austin|TX|US|America/Chicago
+Jacksonville|FL|US|America/New_York
+Fort Worth|TX|US|America/Chicago
+Columbus|OH|US|America/New_York
+Charlotte|NC|US|America/New_York
+San Francisco|CA|US|America/Los_Angeles
+Indianapolis|IN|US|America/Indiana/Indianapolis
+Seattle|WA|US|America/Los_Angeles
+Denver|CO|US|America/Denver
+Washington|DC|US|America/New_York
+Boston|MA|US|America/New_York
+El Paso|TX|US|America/Denver
+Detroit|MI|US|America/Detroit
+Nashville|TN|US|America/Chicago
+Portland|OR|US|America/Los_Angeles

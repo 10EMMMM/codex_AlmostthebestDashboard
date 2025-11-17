@@ -1,149 +1,173 @@
+﻿
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import {
-  X,
   Calendar,
   CheckCircle,
+  ChevronsUpDown,
+  FilePlus,
+  MapPin,
+  PauseCircle,
   PlusCircle,
   RefreshCw,
-  PauseCircle,
-  FileEdit,
-  MapPin,
-  ChevronsUpDown,
-  Search,
-  FilePlus,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { cn } from '@/lib/utils';
-import { DashboardLayout } from '@/components/dashboard-layout';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
-const initialRequests = [
-  {
-    id: 1,
-    title: 'New Marketing Campaign',
-    requester: 'Alice Johnson',
-    avatar: '/avatars/01.png',
-    city: 'New York, NY',
-    date: '2024-10-28',
-    deadline: '2024-11-15',
-    status: 'done',
-    description: 'Request to launch a new marketing campaign for the Q4 product release. Includes social media push, email marketing, and influencer collaborations. Budget approval needed.',
-    notes: [],
-  },
-  // ... other initial requests
-];
 
-type Note = {
-  text: string;
-  author: string;
-  date: string;
+type Status = "new" | "on progress" | "done" | "on hold";
+type RequestType = "RESTAURANT" | "EVENT" | "CUISINE";
+
+type RequestRecord = {
+  id: string;
+  title: string;
+  description: string | null;
+  request_type: RequestType;
+  requester_id: string;
+  city_id: string;
+  status: Status | null;
+  priority: string | null;
+  category: string | null;
+  budget: number | null;
+  deadline: string | null;
+  created_at: string;
 };
 
-type Request = (typeof initialRequests)[0] & { notes: Note[] };
+type EnrichedRequest = Omit<RequestRecord, "status"> & {
+  status: Status;
+  requesterName: string;
+  cityLabel: string;
+};
 
-const statusConfig = {
+type CityOption = { id: string; label: string };
+type RequesterOption = { id: string; label: string };
+
+const statusConfig: Record<
+  Status,
+  {
+    icon: typeof PlusCircle;
+    badgeClass: string;
+  }
+> = {
   new: {
     icon: PlusCircle,
-    color: 'text-blue-500',
-    badgeVariant: 'outline',
-    badgeClass: 'border-blue-500/50 text-blue-500',
+    badgeClass: "border-blue-500/50 text-blue-500",
   },
-  'on progress': {
+  "on progress": {
     icon: RefreshCw,
-    color: 'text-yellow-500',
-    badgeVariant: 'outline',
-    badgeClass: 'border-yellow-500/50 text-yellow-500',
+    badgeClass: "border-yellow-500/50 text-yellow-500",
   },
   done: {
     icon: CheckCircle,
-    color: 'text-green-500',
-    badgeVariant: 'outline',
-    badgeClass: 'border-green-500/50 text-green-500',
+    badgeClass: "border-green-500/50 text-green-500",
   },
-  'on hold': {
+  "on hold": {
     icon: PauseCircle,
-    color: 'text-gray-500',
-    badgeVariant: 'outline',
-    badgeClass: 'border-gray-500/50 text-gray-500',
+    badgeClass: "border-gray-500/50 text-gray-500",
   },
-} as const;
+};
 
-type Status = keyof typeof statusConfig;
+const REQUEST_TYPES: { value: RequestType; label: string }[] = [
+  { value: "RESTAURANT", label: "Restaurant" },
+  { value: "EVENT", label: "Event" },
+  { value: "CUISINE", label: "Cuisine" },
+];
 
+const normalizeStatus = (value: string | null | undefined): Status => {
+  if (value && value in statusConfig) {
+    return value as Status;
+  }
+  return "new";
+};
+
+const formatDate = (value: string | null, detailed?: boolean) => {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString(
+    "en-US",
+    detailed
+      ? { year: "numeric", month: "long", day: "numeric" }
+      : undefined
+  );
+};
 const RequestCard = ({
   request,
   onClick,
-}: { 
-  request: Request;
+}: {
+  request: EnrichedRequest;
   onClick: () => void;
 }) => {
-  const { badgeVariant, badgeClass } = statusConfig[request.status as keyof typeof statusConfig];
+  const { icon: StatusIcon, badgeClass } = statusConfig[request.status];
 
   return (
     <div className="widget flex flex-col">
       <Card
-        className="flex-grow flex flex-col cursor-pointer hover:border-primary"
+        className="flex flex-1 cursor-pointer flex-col hover:border-primary"
         onClick={onClick}
       >
-        <CardHeader className="p-4 flex-row items-start justify-between">
+        <CardHeader className="flex flex-row items-start justify-between p-4">
           <div className="flex flex-col gap-1">
             <CardTitle className="text-lg">{request.title}</CardTitle>
             <div className="flex flex-col text-sm text-muted-foreground">
-              <span className='font-medium'>{request.requester}</span>
-               <div className="flex items-center gap-1 text-xs">
+              <span className="font-medium">{request.requesterName}</span>
+              <div className="flex items-center gap-1 text-xs">
                 <MapPin className="h-3 w-3" />
-                <span>{request.city}</span>
+                <span>{request.cityLabel}</span>
               </div>
               <div className="flex items-center gap-1 text-xs">
                 <Calendar className="h-3 w-3" />
-                <span>Req. Date: {new Date(request.date).toLocaleDateString()}</span>
+                <span>Req. Date: {formatDate(request.created_at)}</span>
               </div>
-               <div className="flex items-center gap-1 text-xs">
+              <div className="flex items-center gap-1 text-xs">
                 <Calendar className="h-3 w-3 text-destructive" />
-                <span>Deadline: {new Date(request.deadline).toLocaleDateString()}</span>
+                <span>Deadline: {formatDate(request.deadline)}</span>
               </div>
             </div>
           </div>
-          <Badge
-            variant={badgeVariant}
-            className={cn('whitespace-nowrap capitalize', badgeClass)}
-          >
+          <Badge variant="outline" className={cn("capitalize", badgeClass)}>
+            <StatusIcon className="mr-1 h-3 w-3" />
             {request.status}
           </Badge>
         </CardHeader>
-        <CardContent className="p-4 pt-0 flex-grow">
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {request.description}
+        <CardContent className="flex flex-1 flex-col p-4 pt-0">
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {request.description ?? "No description"}
           </p>
         </CardContent>
       </Card>
@@ -151,121 +175,58 @@ const RequestCard = ({
   );
 };
 
-const RequestDetailView = ({ request }: { request: Request }) => {
-  const { icon: StatusIcon, color, badgeVariant, badgeClass } = statusConfig[request.status as keyof typeof statusConfig];
-  
+const RequestDetailView = ({ request }: { request: EnrichedRequest }) => {
+  const { badgeClass } = statusConfig[request.status];
+
   return (
-    <Card className="flex-grow flex flex-col">
-      <CardHeader className="p-4 flex-row items-start justify-between">
+    <Card className="flex flex-1 flex-col">
+      <CardHeader className="flex flex-row items-start justify-between p-4">
         <div className="flex flex-col gap-1">
           <CardTitle className="text-lg">{request.title}</CardTitle>
           <div className="flex flex-col text-sm text-muted-foreground">
-            <span className='font-medium'>{request.requester}</span>
+            <span className="font-medium">{request.requesterName}</span>
             <div className="flex items-center gap-1 text-xs">
               <MapPin className="h-3 w-3" />
-              <span>{request.city}</span>
+              <span>{request.cityLabel}</span>
             </div>
             <div className="flex items-center gap-1 text-xs">
               <Calendar className="h-3 w-3" />
-              <span>Req. Date: {new Date(request.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              <span>Req. Date: {formatDate(request.created_at, true)}</span>
             </div>
             <div className="flex items-center gap-1 text-xs">
               <Calendar className="h-3 w-3 text-destructive" />
-              <span>Deadline: {new Date(request.deadline).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              <span>Deadline: {formatDate(request.deadline, true)}</span>
             </div>
           </div>
         </div>
-        <Badge
-          variant={badgeVariant}
-          className={cn('whitespace-nowrap capitalize', badgeClass)}
-        >
+        <Badge variant="outline" className={cn("capitalize", badgeClass)}>
           {request.status}
         </Badge>
       </CardHeader>
-      <CardContent className="p-4 pt-0 flex-grow">
-        <p className="text-sm text-muted-foreground">
-          {request.description}
-        </p>
+      <CardContent className="flex flex-1 flex-col p-4 pt-0 text-sm text-muted-foreground">
+        <p>{request.description ?? "No description"}</p>
+        <div className="mt-4 space-y-2">
+          <p>
+            <span className="font-medium text-foreground">Type:</span> {request.request_type}
+          </p>
+          {request.priority && (
+            <p>
+              <span className="font-medium text-foreground">Priority:</span> {request.priority}
+            </p>
+          )}
+          {request.category && (
+            <p>
+              <span className="font-medium text-foreground">Category:</span> {request.category}
+            </p>
+          )}
+          {typeof request.budget === "number" && (
+            <p>
+              <span className="font-medium text-foreground">Budget:</span> ${request.budget.toLocaleString()}
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
-  )
-};
-
-const CreateRequestForm = ({ onCancel }: { onCancel: () => void }) => {
-  const [requestType, setRequestType] = useState('');
-
-  return (
-    <>
-      <DialogHeader>
-        <DialogTitle>New Request</DialogTitle>
-      </DialogHeader>
-      <div className="p-4 flex-grow space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="requestType">Request Type</Label>
-          <Select onValueChange={setRequestType}>
-            <SelectTrigger id="requestType">
-              <SelectValue placeholder="Select a type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="restaurant">Restaurant</SelectItem>
-              <SelectItem value="event">Event</SelectItem>
-              <SelectItem value="cuisine">Cuisine</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {requestType === 'restaurant' && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="restaurantName">Restaurant Name</Label>
-              <Input id="restaurantName" placeholder="Enter restaurant name" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
-              <Input id="city" placeholder="Enter city" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" placeholder="Describe the restaurant..." className="min-h-[100px]" />
-            </div>
-          </>
-        )}
-
-        {requestType === 'event' && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="eventName">Event Name</Label>
-              <Input id="eventName" placeholder="Enter event name" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="eventDate">Event Date</Label>
-              <Input id="eventDate" type="date" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" placeholder="Enter event location" />
-            </div>
-          </>
-        )}
-
-        {requestType === 'cuisine' && (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="cuisineType">Cuisine Type</Label>
-              <Input id="cuisineType" placeholder="e.g., Italian, Mexican, etc." />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dietaryRestrictions">Dietary Restrictions</Label>
-              <Input id="dietaryRestrictions" placeholder="e.g., Gluten-free, Vegan, etc." />
-            </div>
-          </>
-        )}
-      </div>
-      <div className="p-4 border-t-0 flex justify-end gap-2">
-        <Button variant="secondary">Submit</Button>
-        <Button variant="outline" onClick={onCancel}>Cancel</Button>
-      </div>
-    </>
   );
 };
 
@@ -274,8 +235,8 @@ const FilterPopover = ({
   value,
   onValueChange,
   items,
-  placeholder
-}: { 
+  placeholder,
+}: {
   triggerLabel: string;
   value: string;
   onValueChange: (value: string) => void;
@@ -283,7 +244,7 @@ const FilterPopover = ({
   placeholder: string;
 }) => {
   const [open, setOpen] = useState(false);
-  const currentItem = value === 'all' ? triggerLabel : value;
+  const currentValue = value === "all" ? triggerLabel : value;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -292,21 +253,37 @@ const FilterPopover = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="h-auto px-2 py-1 text-xs w-[150px] justify-between capitalize"
+          className="h-auto w-[150px] justify-between px-2 py-1 text-xs capitalize"
         >
-          <span className='truncate'>{currentItem}</span>
+          <span className="truncate">{currentValue}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }}>
+      <PopoverContent
+        className="w-[200px] p-0"
+        style={{ transform: "scale(0.85)", transformOrigin: "top center" }}
+      >
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem onSelect={() => { onValueChange('all'); setOpen(false); }}>All</CommandItem>
+              <CommandItem
+                onSelect={() => {
+                  onValueChange("all");
+                  setOpen(false);
+                }}
+              >
+                All
+              </CommandItem>
               {items.map((item) => (
-                <CommandItem key={item} onSelect={() => { onValueChange(item); setOpen(false); }} className="capitalize">
+                <CommandItem
+                  key={item}
+                  onSelect={() => {
+                    onValueChange(item);
+                    setOpen(false);
+                  }}
+                  className="capitalize"
+                >
                   {item}
                 </CommandItem>
               ))}
@@ -317,57 +294,596 @@ const FilterPopover = ({
     </Popover>
   );
 };
+const CreateRequestForm = ({
+  onCancel,
+  onCreated,
+  accountManagers,
+  accountManagersLoading,
+}: {
+  onCancel: () => void;
+  onCreated: () => void;
+  accountManagers: RequesterOption[];
+  accountManagersLoading: boolean;
+}) => {
+  const { supabase, user, roles, isSuperAdmin } = useAuth();
+  const { toast } = useToast();
+  const [title, setTitle] = useState("");
+  const [requestType, setRequestType] = useState<RequestType>("RESTAURANT");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("");
+  const [category, setCategory] = useState("");
+  const [budget, setBudget] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [cityId, setCityId] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [cities, setCities] = useState<CityOption[]>([]);
+  const [loadingCities, setLoadingCities] = useState(true);
+  const [requesterId, setRequesterId] = useState("");
+  const [requesterQuery, setRequesterQuery] = useState("");
+  const [requesterPickerOpen, setRequesterPickerOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-export default function RequestPage() {
-  const [isDetailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
-  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
-  const [requests, setRequests] = useState<Request[]>(initialRequests as Request[]);
-  const [cities, setCities] = useState<string[]>([]);
-  const supabase = getSupabaseClient();
+  const canChooseRequester = isSuperAdmin;
+  const isAccountManager = roles.includes("ACCOUNT_MANAGER");
 
   useEffect(() => {
-    const fetchCities = async () => {
-      const { data, error } = await supabase
-        .from('cities')
-        .select('name, state_code');
+    const loadCities = async () => {
+      if (!supabase || !user) return;
+      setLoadingCities(true);
+      try {
+        if (isAccountManager && !isSuperAdmin) {
+          const { data, error } = await supabase
+            .from("account_manager_cities")
+            .select("city_id, cities!inner(id, name, state_code)")
+            .eq("user_id", user.id);
 
-      if (data) {
-        setCities(data.map(city => `${city.name}, ${city.state_code}`));
-      }
-      if (error) {
-        console.error('Error fetching cities:', error);
+          if (error) throw error;
+
+          setCities(
+            data?.map((row) => ({
+              id: row.city_id,
+              label: `${row.cities.name}, ${row.cities.state_code}`,
+            })) ?? []
+          );
+        } else {
+          const { data, error } = await supabase
+            .from("cities")
+            .select("id, name, state_code")
+            .order("name");
+
+          if (error) throw error;
+
+          setCities(
+            data?.map((city) => ({
+              id: city.id,
+              label: `${city.name}, ${city.state_code}`,
+            })) ?? []
+          );
+        }
+      } catch (error) {
+        console.error("Error loading cities", error);
+        toast({
+          title: "Unable to load cities",
+          description:
+            error instanceof Error ? error.message : "Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingCities(false);
       }
     };
-    fetchCities();
-  }, [supabase]);
-  const [filters, setFilters] = useState({
-    status: 'all',
-    city: 'all',
-    requester: 'all',
-  });
 
-  const handleRequestClick = (request: Request) => {
-    setSelectedRequest(request);
-    setDetailDialogOpen(true);
+    loadCities();
+  }, [supabase, user, isAccountManager, isSuperAdmin, toast]);
+
+  useEffect(() => {
+    if (!canChooseRequester && user?.id) {
+      setRequesterId(user.id);
+    }
+  }, [canChooseRequester, user]);
+
+  useEffect(() => {
+    if (canChooseRequester && !requesterId && accountManagers.length) {
+      setRequesterId(accountManagers[0].id);
+    }
+  }, [canChooseRequester, requesterId, accountManagers]);
+
+  const filteredCities = useMemo(() => {
+    const query = cityQuery.toLowerCase();
+    return cities.filter((city) => city.label.toLowerCase().includes(query));
+  }, [cities, cityQuery]);
+
+  const filteredRequesters = useMemo(() => {
+    const query = requesterQuery.toLowerCase();
+    return accountManagers.filter((manager) =>
+      manager.label.toLowerCase().includes(query)
+    );
+  }, [accountManagers, requesterQuery]);
+
+  const selectedCity = cities.find((city) => city.id === cityId);
+  const selectedRequester = accountManagers.find((manager) => manager.id === requesterId);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!supabase || !user) {
+      toast({
+        title: "You must be signed in",
+        description: "Sign in again and retry.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!cityId) {
+      toast({
+        title: "City required",
+        description: "Select one of your assigned cities.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const effectiveRequesterId = canChooseRequester ? requesterId : user.id;
+    if (!effectiveRequesterId) {
+      toast({
+        title: "Requester missing",
+        description: "Select an Account Manager for this request.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        title,
+        description,
+        request_type: requestType,
+        city_id: cityId,
+        requester_id: effectiveRequesterId,
+        created_by: user.id,
+        priority: priority || null,
+        category: category || null,
+        budget: budget ? Number(budget) : null,
+        deadline: deadline || null,
+      };
+
+      const { error } = await supabase.from("requests").insert(payload);
+      if (error) throw error;
+
+      toast({
+        title: "Request created",
+        description: "Your request has been added to the queue.",
+      });
+      setTitle("");
+      setDescription("");
+      setPriority("");
+      setCategory("");
+      setBudget("");
+      setDeadline("");
+      setCityId("");
+      setCityQuery("");
+      if (canChooseRequester) {
+        setRequesterId(accountManagers[0]?.id ?? "");
+      }
+      onCreated();
+    } catch (error) {
+      console.error("Error creating request", error);
+      toast({
+        title: "Failed to create request",
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const uniqueCities = useMemo(() => [...cities], [cities]);
-  const uniqueRequesters = useMemo(() => [...new Set(requests.map(req => req.requester))], [requests]);
-  const uniqueStatuses = useMemo(() => Object.keys(statusConfig), []);
+  return (
+    <form onSubmit={handleSubmit} className="flex h-full flex-col">
+      <DialogHeader>
+        <DialogTitle>New Request</DialogTitle>
+      </DialogHeader>
+      <div className="flex flex-1 flex-col space-y-4 overflow-y-auto p-4">
+        <div className="space-y-2">
+          <Label htmlFor="title">Title</Label>
+          <Input
+            id="title"
+            placeholder="Give this request a clear title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            required
+          />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="requestType">Request Type</Label>
+            <Select
+              value={requestType}
+              onValueChange={(value: RequestType) => setRequestType(value)}
+            >
+              <SelectTrigger id="requestType">
+                <SelectValue placeholder="Select a type" />
+              </SelectTrigger>
+              <SelectContent>
+                {REQUEST_TYPES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="deadline">Deadline</Label>
+            <Input
+              id="deadline"
+              type="date"
+              value={deadline}
+              onChange={(event) => setDeadline(event.target.value)}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>City</Label>
+          <div className="rounded-lg border border-border/70 bg-background">
+            <Command>
+              <CommandInput
+                placeholder={
+                  loadingCities ? "Loading cities..." : "Start typing to search"
+                }
+                value={cityQuery}
+                onValueChange={(value) => setCityQuery(value)}
+                disabled={loadingCities}
+              />
+              <CommandList>
+                {!loadingCities && cityQuery && filteredCities.length > 0 && (
+                  <CommandGroup>
+                    {filteredCities.map((city) => (
+                      <CommandItem
+                        key={city.id}
+                        onSelect={() => {
+                          setCityId(city.id);
+                          setCityQuery("");
+                        }}
+                      >
+                        {city.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                )}
+              </CommandList>
+            </Command>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {selectedCity
+              ? `Selected: ${selectedCity.label}`
+              : "Select one of your assigned cities."}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="description">Details</Label>
+          <Textarea
+            id="description"
+            placeholder="Share the context, requirements, or helpful links..."
+            className="min-h-[120px]"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Requested By</Label>
+          {canChooseRequester ? (
+            <div className="space-y-3">
+              <Popover
+                open={requesterPickerOpen}
+                onOpenChange={setRequesterPickerOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between"
+                    role="combobox"
+                  >
+                    <span className="truncate">
+                      {selectedRequester
+                        ? selectedRequester.label
+                        : "Select Account Manager"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[320px] p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder={
+                        accountManagersLoading
+                          ? "Loading Account Managers..."
+                          : "Search Account Managers..."
+                      }
+                      value={requesterQuery}
+                      onValueChange={(value) => setRequesterQuery(value)}
+                      disabled={accountManagersLoading}
+                    />
+                    <CommandList>
+                      {accountManagersLoading ? (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          Loading...
+                        </div>
+                      ) : filteredRequesters.length ? (
+                        <CommandGroup>
+                          {filteredRequesters.map((option) => (
+                            <CommandItem
+                              key={option.id}
+                              onSelect={() => {
+                                setRequesterId(option.id);
+                                setRequesterQuery("");
+                                setRequesterPickerOpen(false);
+                              }}
+                            >
+                              {option.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          No Account Managers found.
+                        </div>
+                      )}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {accountManagers.length > 0 && (
+                <div className="rounded-lg border border-dashed border-border/40 bg-muted/30 p-3 text-xs text-muted-foreground">
+                  <p className="mb-2 font-medium text-foreground/70">
+                    Debug: Account Managers ({accountManagers.length})
+                  </p>
+                  <div className="max-h-32 space-y-1 overflow-y-auto pr-1">
+                    {accountManagers.map((manager) => (
+                      <div key={manager.id} className="truncate">
+                        {manager.label}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Input
+              value={
+                selectedRequester?.label || user?.email || "Your account"
+              }
+              readOnly
+            />
+          )}
+          <p className="text-xs text-muted-foreground">
+            Only Account Managers can own requests.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <Input
+              id="priority"
+              placeholder="e.g., High, Medium"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              placeholder="Optional grouping"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="budget">Budget</Label>
+          <Input
+            id="budget"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="Optional budget amount"
+            value={budget}
+            onChange={(event) => setBudget(event.target.value)}
+          />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 border-t p-4">
+        <Button variant="outline" type="button" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={
+            submitting ||
+            !title ||
+            !cityId ||
+            !requestType ||
+            (canChooseRequester && !requesterId)
+          }
+        >
+          {submitting ? "Creating..." : "Create Request"}
+        </Button>
+      </div>
+    </form>
+  );
+};
+export default function RequestPage() {
+  const { supabase, isSuperAdmin } = useAuth();
+  const { toast } = useToast();
+  const [isDetailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<EnrichedRequest | null>(null);
+  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [requests, setRequests] = useState<EnrichedRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    status: "all",
+    city: "all",
+    requester: "all",
+  });
+  const [managerDirectory, setManagerDirectory] = useState<RequesterOption[]>([]);
+  const [managerDirectoryLoading, setManagerDirectoryLoading] = useState(false);
+
+  const loadRequests = useCallback(async () => {
+    setRequestsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("requests")
+        .select(
+          "id, title, description, request_type, requester_id, city_id, status, priority, category, budget, deadline, created_at"
+        )
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const records = (data ?? []) as RequestRecord[];
+      if (!records.length) {
+        setRequests([]);
+        return;
+      }
+
+      const cityIds = Array.from(new Set(records.map((record) => record.city_id)));
+      const requesterIds = Array.from(new Set(records.map((record) => record.requester_id)));
+
+      const cityLookup: Record<string, string> = {};
+      if (cityIds.length) {
+        const { data: cityRows, error: cityError } = await supabase
+          .from("cities")
+          .select("id, name, state_code")
+          .in("id", cityIds);
+        if (cityError) throw cityError;
+        cityRows?.forEach((city) => {
+          cityLookup[city.id] = `${city.name}, ${city.state_code}`;
+        });
+      }
+
+      const requesterLookup: Record<string, string> = {};
+      if (requesterIds.length) {
+        const { data: profileRows, error: profileError } = await supabase
+          .from("profiles")
+          .select("user_id, display_name")
+          .in("user_id", requesterIds);
+        if (profileError) throw profileError;
+        profileRows?.forEach((profile) => {
+          requesterLookup[profile.user_id] = profile.display_name ?? "Account Manager";
+        });
+      }
+
+      const enriched: EnrichedRequest[] = records.map((record) => ({
+        ...record,
+        status: normalizeStatus(record.status),
+        cityLabel: cityLookup[record.city_id] ?? "Unassigned city",
+        requesterName: requesterLookup[record.requester_id] ?? "Account Manager",
+      }));
+
+      setRequests(enriched);
+    } catch (error) {
+      console.error("Error loading requests", error);
+      toast({
+        title: "Unable to load requests",
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+      setRequests([]);
+    } finally {
+      setRequestsLoading(false);
+    }
+  }, [supabase, toast]);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
+
+  const loadManagers = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setManagerDirectory([]);
+      return;
+    }
+
+    setManagerDirectoryLoading(true);
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error("Unable to verify session for manager lookup.");
+      }
+
+      const response = await fetch("/api/admin/account-managers", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error ?? response.statusText);
+      }
+
+      const payload = await response.json();
+      setManagerDirectory(payload.managers ?? []);
+    } catch (error) {
+      console.error("Error loading Account Managers", error);
+      toast({
+        title: "Unable to load Account Managers",
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+      setManagerDirectory([]);
+    } finally {
+      setManagerDirectoryLoading(false);
+    }
+  }, [isSuperAdmin, supabase, toast]);
+
+  useEffect(() => {
+    loadManagers();
+  }, [loadManagers]);
 
   const filteredRequests = useMemo(() => {
-    return requests.filter(req => {
-      const statusMatch = filters.status === 'all' || req.status === filters.status;
-      const cityMatch = filters.city === 'all' || req.city === filters.city;
-      const requesterMatch = filters.requester === 'all' || req.requester === filters.requester;
+    return requests.filter((request) => {
+      const statusMatch =
+        filters.status === "all" || request.status === filters.status;
+      const cityMatch =
+        filters.city === "all" || request.cityLabel === filters.city;
+      const requesterMatch =
+        filters.requester === "all" || request.requesterName === filters.requester;
       return statusMatch && cityMatch && requesterMatch;
     });
   }, [requests, filters]);
 
-  const handleFilterChange = (filterType: keyof typeof filters, value: string) => {
-    setFilters(prev => ({...prev, [filterType]: value}));
-  }
+  const uniqueStatuses = useMemo(() => Object.keys(statusConfig), []);
+  const uniqueCities = useMemo(
+    () => Array.from(new Set(requests.map((req) => req.cityLabel))).filter(Boolean),
+    [requests]
+  );
+  const uniqueRequesters = useMemo(
+    () => Array.from(new Set(requests.map((req) => req.requesterName))).filter(Boolean),
+    [requests]
+  );
+
+  const handleRequestClick = (request: EnrichedRequest) => {
+    setSelectedRequest(request);
+    setDetailDialogOpen(true);
+  };
+
+  const handleFilterChange = (key: keyof typeof filters, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleRequestCreated = () => {
+    setCreateDialogOpen(false);
+    loadRequests();
+  };
 
   return (
     <DashboardLayout
@@ -377,7 +893,11 @@ export default function RequestPage() {
           <TooltipProvider>
             <Tooltip>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="border-transparent hover:border-primary rounded-xl">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-xl border-transparent hover:border-primary"
+                >
                   <FilePlus className="h-4 w-4" />
                   <span className="sr-only">New Request</span>
                 </Button>
@@ -388,47 +908,107 @@ export default function RequestPage() {
             </Tooltip>
           </TooltipProvider>
           <DialogContent className="scale-80">
-            <CreateRequestForm onCancel={() => setCreateDialogOpen(false)} />
+            <CreateRequestForm
+              onCancel={() => setCreateDialogOpen(false)}
+              onCreated={handleRequestCreated}
+              accountManagers={managerDirectory}
+              accountManagersLoading={managerDirectoryLoading}
+            />
           </DialogContent>
         </Dialog>
       }
     >
-      <div style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }} className="w-full h-full relative">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-5xl px-4">
-          <div className="flex justify-center items-center mb-4">
-            <div className="flex gap-2 p-2 backdrop-blur-sm rounded-full">
-              <FilterPopover 
+      <div
+        style={{ transform: "scale(0.8)", transformOrigin: "top center" }}
+        className="relative h-full w-full"
+      >
+        <div className="absolute left-1/2 top-0 z-10 w-full max-w-5xl -translate-x-1/2 px-4">
+          <div className="mb-4 flex items-center justify-center">
+            <div className="flex gap-2 rounded-full p-2 backdrop-blur-sm">
+              <FilterPopover
                 triggerLabel="Status"
                 value={filters.status}
-                onValueChange={(value) => handleFilterChange('status', value)}
+                onValueChange={(value) => handleFilterChange("status", value)}
                 items={uniqueStatuses}
-                placeholder="Filter by status..."
+                placeholder="Filter status..."
               />
-              <FilterPopover 
+              <FilterPopover
                 triggerLabel="City"
                 value={filters.city}
-                onValueChange={(value) => handleFilterChange('city', value)}
+                onValueChange={(value) => handleFilterChange("city", value)}
                 items={uniqueCities}
-                placeholder="Filter by city..."
+                placeholder="Filter city..."
               />
-              <FilterPopover 
+              <FilterPopover
                 triggerLabel="Requester"
                 value={filters.requester}
-                onValueChange={(value) => handleFilterChange('requester', value)}
+                onValueChange={(value) => handleFilterChange("requester", value)}
                 items={uniqueRequesters}
-                placeholder="Filter by requester..."
+                placeholder="Filter requester..."
               />
             </div>
           </div>
         </div>
-        <div className="dashboard-grid mx-auto max-w-5xl h-full overflow-y-auto pt-20">
-            {filteredRequests.map(req => (
-              <RequestCard
-                key={req.id}
-                request={req}
-                onClick={() => handleRequestClick(req)}
-              />
-            ))}
+        <div className="dashboard-grid mx-auto h-full max-w-5xl overflow-y-auto pt-20">
+          {isSuperAdmin && (
+            <div className="widget">
+              <Card className="flex h-full flex-col">
+                <CardHeader>
+                  <CardTitle className="text-base">Account Managers</CardTitle>
+                  <CardDescription>
+                    {managerDirectoryLoading
+                      ? "Loading directory..."
+                      : `${managerDirectory.length} total`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto pt-0">
+                  {managerDirectoryLoading ? (
+                    <div className="py-4 text-sm text-muted-foreground">
+                      Fetching Account Managers...
+                    </div>
+                  ) : managerDirectory.length ? (
+                    <ul className="space-y-2 text-sm">
+                      {managerDirectory.map((manager) => (
+                        <li
+                          key={manager.id}
+                          className="rounded-md border border-border/60 px-3 py-2"
+                        >
+                          {manager.label}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="py-4 text-sm text-muted-foreground">
+                      No Account Managers found.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {requestsLoading && (
+            <div className="widget">
+              <Card className="p-4 text-center text-sm text-muted-foreground">
+                Loading requests...
+              </Card>
+            </div>
+          )}
+          {!requestsLoading && !filteredRequests.length && (
+            <div className="widget">
+              <Card className="p-4 text-center text-sm text-muted-foreground">
+                {requests.length === 0
+                  ? "No requests have been submitted yet."
+                  : "No requests match your filters."}
+              </Card>
+            </div>
+          )}
+          {filteredRequests.map((request) => (
+            <RequestCard
+              key={request.id}
+              request={request}
+              onClick={() => handleRequestClick(request)}
+            />
+          ))}
         </div>
       </div>
       <Dialog open={isDetailDialogOpen} onOpenChange={setDetailDialogOpen}>
@@ -440,3 +1020,4 @@ export default function RequestPage() {
     </DashboardLayout>
   );
 }
+

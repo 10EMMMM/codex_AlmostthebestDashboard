@@ -1,0 +1,49 @@
+          <div className="mx-auto w-full max-w-none pt-12">
+              <div className="rounded-[36px] bg-gradient-to-r from-sky-500/40 via-amber-400/40 to-emerald-400/40 p-[2px]">
+                <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur w-full">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60">
+                      Requests Dashboard
+                  </p>
+                  <h2 className="text-2xl font-semibold text-white">Kanban Board</h2>
+                  <p className="text-sm text-white/70">
+                    Track every restaurant request from intake through launch.
+                  </p>
+                </div>
+                <div className="text-xs uppercase tracking-[0.2em] text-white/60">
+                  Visible{" "}
+                  <span className="text-white">{filteredRequests.length}</span>
+                </div>
+              </div>
+              {requestsLoading ? (
+                <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  {KANBAN_COLUMNS.map((column) => (
+                    <div
+                      key={`loading-kanban-${column.key}`}
+                      className="space-y-4"
+                    >
+                      <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                        <span>{column.label}</span>
+                        <Skeleton className="h-4 w-6 rounded-full" />
+                      </div>
+                      <RequestCardSkeleton />
+                      <RequestCardSkeleton />
+                    </div>
+                  ))}
+                </div>
+              ) : hasRequests ? (
+                <div className="mt-8">
+                  <RequestKanban
+                    groups={groupedRequests}
+                    onView={handleRequestClick}
+                    onEdit={openEditDialog}
+                    canEdit={canEditRequest}
+                  />
+                </div>
+              ) : (
+                <div className="mt-8 rounded-2xl border border-dashed border-white/20 bg-white/5 p-8 text-center text-sm text-white/70">
+                  {requests.length === 0
+                    ? "No requests have been submitted yet."
+                    : "No requests match your filters."}
+                </div>

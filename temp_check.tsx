@@ -160,108 +160,6 @@ const FilterSelect = ({
   </div>
 );
 
-type KanbanColumn = {
-  title: string;
-  accent: string;
-  containerClass: string;
-  cardClass: string;
-  items: {
-    title: string;
-    subtitle: string;
-    meta: string;
-  }[];
-};
-
-const kanbanDemoColumns: KanbanColumn[] = [
-  {
-    title: "Intake",
-    accent: "text-sky-200",
-    containerClass: "bg-gradient-to-b from-sky-500/30 via-sky-500/10 to-transparent border-sky-400/40",
-    cardClass: "bg-white/10 border-sky-300/40",
-    items: [
-      {
-        title: "Monarch Bistro",
-        subtitle: "Awaiting documents",
-        meta: "Chicago • 4 attachments",
-      },
-      {
-        title: "Pasta Nova",
-        subtitle: "Needs compliance form",
-        meta: "Atlanta • 2 tasks",
-      },
-    ],
-  },
-  {
-    title: "Onboarding",
-    accent: "text-amber-200",
-    containerClass: "bg-gradient-to-b from-amber-500/30 via-amber-500/10 to-transparent border-amber-400/40",
-    cardClass: "bg-white/10 border-amber-300/40",
-    items: [
-      {
-        title: "Sunset Tacos",
-        subtitle: "Menu shoot scheduled",
-        meta: "Austin • Due Friday",
-      },
-      {
-        title: "Velvet Sushi",
-        subtitle: "Taste review in progress",
-        meta: "Seattle • 6 tasks",
-      },
-    ],
-  },
-  {
-    title: "Ready",
-    accent: "text-emerald-200",
-    containerClass: "bg-gradient-to-b from-emerald-500/30 via-emerald-500/10 to-transparent border-emerald-400/40",
-    cardClass: "bg-white/10 border-emerald-300/40",
-    items: [
-      {
-        title: "Garden Bowl",
-        subtitle: "QA complete",
-        meta: "Denver • Launch Monday",
-      },
-      {
-        title: "Cafe Aurora",
-        subtitle: "Awaiting final sign-off",
-        meta: "NYC • 1 blocker",
-      },
-    ],
-  },
-];
-
-const DemoKanbanBoard = () => (
-  <div className="flex flex-col gap-4 md:flex-row">
-    {kanbanDemoColumns.map((column) => (
-      <div
-        key={column.title}
-        className={cn(
-          "flex-1 min-w-[220px] space-y-3 rounded-2xl border p-3",
-          column.containerClass
-        )}
-      >
-        <p className={cn("text-xs font-semibold uppercase tracking-[0.3em]", column.accent)}>
-          {column.title}
-        </p>
-        {column.items.map((item) => (
-          <div
-            key={item.title}
-            className={cn(
-              "rounded-xl bg-white/10 p-3 shadow-[0_10px_25px_rgba(0,0,0,0.25)]",
-              column.cardClass
-            )}
-          >
-            <p className="text-sm font-semibold text-white">{item.title}</p>
-            <p className="text-xs text-white/70">{item.subtitle}</p>
-            <p className="mt-2 text-[11px] uppercase tracking-[0.2em] text-white/40">
-              {item.meta}
-            </p>
-          </div>
-        ))}
-      </div>
-    ))}
-  </div>
-);
-
 const OPTIONAL_VALUE = "__none__";
 
 const normalizeStatus = (value: string | null | undefined): RestaurantStatus =>
@@ -584,12 +482,14 @@ const CreateRestaurantForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
       <DialogHeader>
-        <DialogTitle>New Restaurant Onboarding</DialogTitle>
+        <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
+          New Restaurant Onboarding
+        </DialogTitle>
       </DialogHeader>
-
-      <div className="grid gap-4 md:grid-cols-2">
+      <form onSubmit={handleSubmit} className="space-y-6 px-4 pb-4">
+        <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="restaurant-name">Restaurant Name</Label>
           <Input
@@ -650,7 +550,6 @@ const CreateRestaurantForm = ({
           </Select>
         </div>
       </div>
-
       <div className="space-y-2">
         <Label>Description / Notes</Label>
         <Textarea
@@ -660,8 +559,7 @@ const CreateRestaurantForm = ({
           className={cn("min-h-[140px]", rounded)}
         />
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label>Primary Contact</Label>
           <Input
@@ -721,7 +619,6 @@ const CreateRestaurantForm = ({
           )}
         </div>
       </div>
-
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel
@@ -974,30 +871,29 @@ export default function RestaurantOnboardingPage() {
 
     setBdrOptionsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "BDR");
-      if (error) throw error;
-
-      const ids = Array.from(new Set(data?.map((row) => row.user_id) ?? []));
-      if (!ids.length) {
-        setBdrOptions([]);
-        return;
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error("Unable to verify session for BDR lookup.");
       }
 
-      const { data: profileRows, error: profileError } = await supabase
-        .from("profiles")
-        .select("user_id, display_name")
-        .in("user_id", ids);
-      if (profileError) throw profileError;
+      const response = await fetch("/api/admin/bdrs", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
 
-      setBdrOptions(
-        profileRows?.map((profile) => ({
-          id: profile.user_id,
-          label: profile.display_name ?? "BDR",
-        })) ?? []
-      );
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error ?? response.statusText);
+      }
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        bdrs?: BdrOption[];
+      };
+      setBdrOptions(payload.bdrs ?? []);
     } catch (error) {
       console.error("Error loading BDR options", error);
       toast({
@@ -1097,7 +993,7 @@ export default function RestaurantOnboardingPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-full border-transparent hover:border-primary"
+                    className="rounded-xl border-transparent hover:border-primary"
                   >
                     <FilePlus className="h-4 w-4" />
                     <span className="sr-only">New Onboarding</span>
@@ -1129,7 +1025,6 @@ export default function RestaurantOnboardingPage() {
           className="w-full"
         >
           <div className="mx-auto flex max-w-5xl flex-col gap-6">
-            <DemoKanbanBoard />
             <div className="grid gap-4 rounded-3xl border border-white/10 bg-white/5 p-4 sm:grid-cols-3">
               {summaryStats.map((stat) => (
                 <div
@@ -1207,6 +1102,3 @@ export default function RestaurantOnboardingPage() {
     </>
   );
 }
-
-
-

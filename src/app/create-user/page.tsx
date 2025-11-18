@@ -15,6 +15,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SplashScreen } from "@/components/ui/splash-screen";
@@ -38,7 +39,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Crown, MapPin, Shield, UserCog, UserRound, UtensilsCrossed, Archive, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
+import {
+  Crown,
+  MapPin,
+  Shield,
+  UserCog,
+  UserRound,
+  UtensilsCrossed,
+  Archive,
+  MoreHorizontal,
+  Trash2,
+  UserPlus,
+  Target,
+  Send,
+} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type UserProfile = {
   id: string;
@@ -49,6 +64,8 @@ type UserProfile = {
   city_name?: string;
   city_ids?: string[];
   city_names?: string[];
+  onboards?: number;
+  requestsAssigned?: number;
   roles?: string[];
 };
 
@@ -128,13 +145,10 @@ function UserCard({
           onClick(user);
         }
       }}
-      className="widget rounded-xl border bg-card p-5 text-left shadow-lg space-y-3 transition hover:border-primary/40 min-w-[260px] w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      className="widget rounded-xl border border-white/15 bg-card p-5 text-center shadow-lg space-y-3 transition hover:border-primary/40 min-w-[260px] w-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase text-muted-foreground">Display Name</p>
-          <p className="text-lg font-semibold truncate">{user.display_name || user.email}</p>
-        </div>
+      <div className="flex items-center justify-between">
+        <div className="flex-1" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -174,36 +188,18 @@ function UserCard({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div>
-        <p className="text-xs uppercase text-muted-foreground">Email</p>
-        <p className="text-sm text-foreground break-all">{user.email}</p>
+      <div className="flex justify-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/5 text-2xl font-semibold text-primary/80">
+          {(user.display_name || user.email || "?")
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((chunk) => chunk[0]?.toUpperCase())
+            .join("")}
+        </div>
       </div>
-      <div className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Cities</p>
-        {user.city_names?.length ? (
-          <div className="flex flex-wrap gap-1.5">
-            {user.city_names.map((city, idx) => (
-              <span
-                key={`${user.id}-city-${idx}`}
-                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur ${getCityPillClass(
-                  city
-                )}`}
-                title={city}
-              >
-                <span className="truncate">{formatCityLabel(city)}</span>
-              </span>
-            ))}
-          </div>
-        ) : (
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/80">
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-white/30 text-[10px] font-bold text-muted-foreground">
-              --
-            </span>
-            No cities
-          </div>
-        )}
-      </div>
-      <div className="flex gap-1.5 overflow-x-auto">
+      <p className="text-base font-semibold truncate">{user.display_name || user.email}</p>
+      <div className="flex justify-center gap-1 overflow-x-auto">
         {user.roles?.length ? (
           user.roles.map((role) => {
             const label = ROLE_LABELS[role as (typeof AVAILABLE_ROLES)[number]] ?? role.replace("_", " ");
@@ -222,8 +218,35 @@ function UserCard({
             );
           })
         ) : (
-          <span className="text-xs text-muted-foreground whitespace-nowrap">No roles assigned</span>
+          <span className="text-[11px] text-muted-foreground whitespace-nowrap">No roles assigned</span>
         )}
+      </div>
+      <div className="space-y-1">
+        {user.city_names?.length ? (
+          <div className="flex flex-wrap justify-center gap-1">
+            {user.city_names.map((city, idx) => (
+              <span
+                key={`${user.id}-city-${idx}`}
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold backdrop-blur ${getCityPillClass(
+                  city
+                )}`}
+                title={city}
+              >
+                <span className="truncate">{formatCityLabel(city)}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="flex flex-wrap justify-center gap-2 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-foreground">
+          <Target className="h-3 w-3" />
+          {user.onboards ?? 0} onboards
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-foreground">
+          <Send className="h-3 w-3" />
+          {user.requestsAssigned ?? 0} requests
+        </span>
       </div>
     </div>
   );
@@ -247,6 +270,7 @@ export default function CreateUserPage() {
   });
   const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
   const [cityQuery, setCityQuery] = useState("");
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<UserProfile | null>(null);
   const [archiveReason, setArchiveReason] = useState("");
   const [archiveLoading, setArchiveLoading] = useState(false);
@@ -267,7 +291,13 @@ export default function CreateUserPage() {
     });
     if (response.ok) {
       const payload = await response.json();
-      setUsers(payload.users || []);
+      setUsers(
+        (payload.users || []).map((user: any) => ({
+          ...user,
+          onboards: user.onboards ?? 0,
+          requestsAssigned: user.requestsAssigned ?? 0,
+        }))
+      );
     } else {
       setUsers([]);
     }
@@ -522,24 +552,43 @@ export default function CreateUserPage() {
         actionButton={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="icon" className="rounded-full">
-                <UserPlus className="h-4 w-4" />
-                <span className="sr-only">New User</span>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      className="h-7 w-7 rounded-full"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen(true);
+                      }}
+                    >
+                      <span className="text-lg leading-none">+</span>
+                      <span className="sr-only">New User</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Create new user</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
               <DialogHeader>
                 <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
                   User Details
                 </DialogTitle>
               </DialogHeader>
-              <CreateUserForm
+              <div className="px-4 sm:px-6">
+                <CreateUserForm
                 onCancel={() => setOpen(false)}
                 onCreated={async () => {
                   setOpen(false);
                   await loadUsers();
                 }}
-              />
+                />
+              </div>
             </DialogContent>
           </Dialog>
         }
@@ -551,23 +600,25 @@ export default function CreateUserPage() {
                 Array.from({ length: 6 }).map((_, index) => (
                   <div
                     key={`user-skeleton-${index}`}
-                    className="widget rounded-xl border bg-card/60 p-5 shadow-lg space-y-4"
+                    className="widget rounded-xl border border-white/10 bg-card/60 p-5 text-center shadow-lg space-y-3"
                   >
-                    <div className="flex items-center gap-4">
-                      <Skeleton className="h-12 w-12 rounded-full" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
+                    <div className="flex justify-end">
+                      <Skeleton className="h-6 w-6 rounded-full" />
+                    </div>
+                    <div className="flex justify-center">
+                      <Skeleton className="h-16 w-16 rounded-full" />
+                    </div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-2/3 mx-auto" />
+                      <div className="flex justify-center gap-2">
+                        <Skeleton className="h-6 w-6 rounded-full" />
+                        <Skeleton className="h-6 w-6 rounded-full" />
                       </div>
-                    </div>
-                    <div className="space-y-2 pt-1">
-                      <Skeleton className="h-3 w-full" />
-                      <Skeleton className="h-3 w-2/3" />
-                    </div>
-                    <div className="flex gap-2">
-                      <Skeleton className="h-6 w-6 rounded-full" />
-                      <Skeleton className="h-6 w-6 rounded-full" />
-                      <Skeleton className="h-6 w-12 rounded-full" />
+                      <Skeleton className="h-3 w-3/4 mx-auto" />
+                      <div className="flex justify-center gap-2">
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      </div>
                     </div>
                   </div>
                 ))
@@ -591,9 +642,9 @@ export default function CreateUserPage() {
         </div>
       </DashboardLayout>
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <DialogHeader>
-            <DialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90">
+            <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
               Edit Profile
             </DialogTitle>
           </DialogHeader>
@@ -633,42 +684,62 @@ export default function CreateUserPage() {
             {profileForm.roles.includes("ACCOUNT_MANAGER") && (
               <div className="space-y-1.5">
                 <Label>Account Manager Cities</Label>
-                <div className="rounded-lg border border-border/70 bg-background px-2 py-1">
-                  <Command>
-                    <CommandInput
-                      placeholder="Search cities..."
-                      value={cityQuery}
-                      onValueChange={(value) => setCityQuery(value)}
-                      className="w-full placeholder:text-muted-foreground"
-                    />
-                    {cityQuery ? (
-                      <CommandList>
-                        {!filteredCities.length && <CommandEmpty>No cities found.</CommandEmpty>}
-                        <CommandGroup>
-                          {filteredCities.map((city) => (
-                            <CommandItem
-                              key={city.id}
-                              onSelect={() => {
-                                if (!profileForm.city_ids.includes(city.id)) {
-                                  setProfileForm((prev) => ({
-                                    ...prev,
-                                    city_ids: [...prev.city_ids, city.id],
-                                  }));
-                                }
-                                setCityQuery("");
-                              }}
-                            >
-                              {city.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    ) : (
-                      <p className="px-2 py-1 text-xs text-muted-foreground">
-                        Start typing to search cities.
-                      </p>
-                    )}
-                  </Command>
+                <div className="relative">
+                  <Popover open={cityPickerOpen} onOpenChange={setCityPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-between text-sm"
+                        onClick={() => setCityPickerOpen(true)}
+                      >
+                        {profileForm.city_ids.length
+                          ? `${profileForm.city_ids.length} cities selected`
+                          : "Search cities"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[320px] rounded-[12px] border border-border/70 bg-background p-2 shadow-xl"
+                      align="start"
+                    >
+                      <Command>
+                        <CommandInput
+                          placeholder="Search cities..."
+                          value={cityQuery}
+                          onValueChange={(value) => setCityQuery(value)}
+                          className="placeholder:text-muted-foreground"
+                        />
+                        {cityQuery ? (
+                          <CommandList>
+                            {!filteredCities.length && <CommandEmpty>No cities found.</CommandEmpty>}
+                            <CommandGroup>
+                              {filteredCities.map((city) => (
+                                <CommandItem
+                                  key={city.id}
+                                  onSelect={() => {
+                                    if (!profileForm.city_ids.includes(city.id)) {
+                                      setProfileForm((prev) => ({
+                                        ...prev,
+                                        city_ids: [...prev.city_ids, city.id],
+                                      }));
+                                    }
+                                    setCityQuery("");
+                                    setCityPickerOpen(false);
+                                  }}
+                                >
+                                  {city.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        ) : (
+                          <p className="px-2 py-1 text-xs text-muted-foreground">
+                            Start typing to search cities.
+                          </p>
+                        )}
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 {profileForm.city_ids.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
@@ -696,14 +767,11 @@ export default function CreateUserPage() {
                 )}
               </div>
             )}
-            <div className="flex justify-end gap-2">
-              <Button size="sm" variant="outline" onClick={() => setProfileDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleProfileSave} disabled={profileSaving}>
-                {profileSaving ? "Saving..." : "Save"}
-              </Button>
-            </div>
+      <div className="flex justify-end">
+        <Button size="sm" onClick={handleProfileSave} disabled={profileSaving}>
+          {profileSaving ? "Saving..." : "Save"}
+        </Button>
+      </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -718,7 +786,7 @@ export default function CreateUserPage() {
       >
         <AlertDialogContent className="sm:max-w-md rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90">
+            <AlertDialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
               Archive User
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-xs text-muted-foreground">
@@ -770,7 +838,7 @@ export default function CreateUserPage() {
       >
         <AlertDialogContent className="sm:max-w-md rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-base font-semibold tracking-[0.3em] uppercase text-white/90 text-rose-100">
+            <AlertDialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
               Delete User
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-xs text-muted-foreground">

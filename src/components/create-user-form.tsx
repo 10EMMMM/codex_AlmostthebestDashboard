@@ -28,9 +28,9 @@ const ROLE_CLASSES: Record<(typeof AVAILABLE_ROLES)[number], string> = {
   TEAM_LEAD: "bg-rose-500 text-white border border-rose-500 hover:bg-rose-500/90",
 };
 const ROLE_HOVER_CLASSES: Record<(typeof AVAILABLE_ROLES)[number], string> = {
-  ACCOUNT_MANAGER: "hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50",
-  BDR: "hover:border-amber-400 hover:text-amber-600 hover:bg-amber-50",
-  TEAM_LEAD: "hover:border-rose-400 hover:text-rose-600 hover:bg-rose-50",
+  ACCOUNT_MANAGER: "hover:bg-emerald-100 hover:text-emerald-700",
+  BDR: "hover:bg-amber-100 hover:text-amber-700",
+  TEAM_LEAD: "hover:bg-rose-100 hover:text-rose-700",
 };
 
 export function CreateUserForm({
@@ -50,6 +50,18 @@ export function CreateUserForm({
   const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const randomDisplayPlaceholder = useMemo(() => {
+    const suggestions = [
+      "Nova Quinn",
+      "Avery Lane",
+      "Kai Mercer",
+      "Reese Calder",
+      "Parker Wynn",
+      "River Sloan",
+      "Remy Hart",
+    ];
+    return suggestions[Math.floor(Math.random() * suggestions.length)];
+  }, []);
 
   const { toast } = useToast();
   const { supabase } = useAuth();
@@ -175,7 +187,7 @@ export function CreateUserForm({
           <Label htmlFor="displayName">Display Name</Label>
           <Input
             id="displayName"
-            placeholder="Jane Doe"
+            placeholder={randomDisplayPlaceholder}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
           />
@@ -212,8 +224,8 @@ export function CreateUserForm({
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
-          <Button type="button" variant="outline" onClick={handleGeneratePassword} className="mt-2">
-            Generate password
+          <Button type="button" variant="outline" size="sm" onClick={handleGeneratePassword} className="mt-2">
+            Generate Password
           </Button>
         </div>
         <div className="space-y-2">
@@ -301,10 +313,7 @@ export function CreateUserForm({
           </div>
         )}
       </div>
-      <div className="flex justify-between gap-2 pt-6">
-        <Button size="sm" variant="outline" type="button" onClick={onCancel}>
-          Cancel
-        </Button>
+      <div className="flex justify-end pt-6">
         <Button size="sm" type="submit" disabled={loading}>
           {loading ? "Creating..." : "Save"}
         </Button>

@@ -159,10 +159,7 @@ const TimeWidget = dynamic(() => Promise.resolve(() => {
       </span>
     </Widget>
   );
-      }
-    ),
-  { ssr: false }
-);
+}), { ssr: false });
 
 const chartData = [
   { month: "January", tasks: 186 },
@@ -242,18 +239,7 @@ const LineChartWidget = dynamic(() => Promise.resolve(() => (
   </Widget>
 )), { ssr: false });
 
-const SalesReportWidget = dynamic(
-  () =>
-    Promise.resolve(
-      ({
-        totalRequests,
-        loading,
-        error,
-      }: {
-        totalRequests: number | null;
-        loading: boolean;
-        error: string | null;
-      }) => {
+const SalesReportWidget = dynamic(() => Promise.resolve(() => {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [locationData, setLocationData] = useState<any[]>([]);
 
@@ -304,84 +290,62 @@ const SalesReportWidget = dynamic(
     generateData();
   }, []);
 
-  const requestHeadline =
-    loading || totalRequests === null
-      ? "…"
-      : totalRequests.toLocaleString();
-  const requestSub =
-    loading ? "Loading request totals…" : error ? "Unable to load requests." : "Total requests captured across all statuses.";
-
   return (
-    <div className="space-y-0">
-      <Widget>
-        <header>
-          <h1 className="text-xl font-bold font-sans mb-4">Onboard Report</h1>
-        </header>
-        <main className="space-y-4 text-sm">
-          <section>
-            <div className="grid grid-cols-7 gap-1">
-              {salesData.map((item, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    'aspect-square flex items-center justify-center rounded-md text-xs',
-                    item.color,
-                    item.textColor
-                  )}
-                  title={`Value: ${item.randomValue}`}
-                >
-                  {item.value}
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="flex space-x-4">
-            <div className="w-1/2">
-              <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-                <TrendingUp className="text-green-500 w-4 h-4" />
-                <span className="text-xs font-medium">Yearly</span>
+    <Widget>
+      <header>
+        <h1 className="text-xl font-bold font-sans mb-4">Onboard Report</h1>
+      </header>
+      <main className="space-y-4 text-sm">
+        <section>
+          <div className="grid grid-cols-7 gap-1">
+            {salesData.map((item, index) => (
+              <div
+                key={index}
+                className={cn(
+                  'aspect-square flex items-center justify-center rounded-md text-xs',
+                  item.color,
+                  item.textColor
+                )}
+                title={`Value: ${item.randomValue}`}
+              >
+                {item.value}
               </div>
-              <p className="text-xl font-bold">$301,002</p>
+            ))}
+          </div>
+        </section>
+        <section className="flex space-x-4">
+          <div className="w-1/2">
+            <div className="flex items-center space-x-2 text-muted-foreground mb-1">
+              <TrendingUp className="text-green-500 w-4 h-4" />
+              <span className="text-xs font-medium">Yearly</span>
             </div>
-            <div className="w-1/2">
-              <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-                <TrendingUp className="text-green-500 w-4 h-4" />
-                <span className="text-xs font-medium">Monthly</span>
-              </div>
-              <p className="text-xl font-bold">$8,097</p>
+            <p className="text-xl font-bold">$301,002</p>
+          </div>
+          <div className="w-1/2">
+            <div className="flex items-center space-x-2 text-muted-foreground mb-1">
+              <TrendingUp className="text-green-500 w-4 h-4" />
+              <span className="text-xs font-medium">Monthly</span>
             </div>
-          </section>
-          <section className="pt-2">
-            <ul className="space-y-2">
-              {locationData.map((location, index) => (
+            <p className="text-xl font-bold">$8,097</p>
+          </div>
+        </section>
+        <section className="pt-2">
+          <ul className="space-y-2">
+            {locationData.map((location, index) => (
                 <React.Fragment key={location.name}>
-                  <li className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">{location.name}</span>
-                    <span className="font-medium">{location.value.toLocaleString()}</span>
-                  </li>
-                  {index < locationData.length - 1 && <hr className="border-border" />}
+                    <li className="flex justify-between items-center text-xs">
+                        <span className="text-muted-foreground">{location.name}</span>
+                        <span className="font-medium">{location.value.toLocaleString()}</span>
+                    </li>
+                    {index < locationData.length - 1 && <hr className="border-border" />}
                 </React.Fragment>
-              ))}
-            </ul>
-          </section>
-        </main>
-      </Widget>
-      <Widget className="text-center space-y-3">
-        <div className="flex justify-between items-center w-full">
-          <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-            <Target className="w-4 h-4" />
-            <span>Total Requests</span>
-          </h2>
-        </div>
-        <div className="text-5xl font-extrabold text-foreground">{requestHeadline}</div>
-        <p className="text-xs text-muted-foreground">{requestSub}</p>
-      </Widget>
-    </div>
+            ))}
+          </ul>
+        </section>
+      </main>
+    </Widget>
   );
-      }
-    ),
-  { ssr: false }
-);
+}), { ssr: false });
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -398,11 +362,6 @@ export default function DashboardPage() {
     loading: true,
     error: null,
   });
-  const [requestStats, setRequestStats] = useState<{
-    total: number | null;
-    loading: boolean;
-    error: string | null;
-  }>({ total: null, loading: true, error: null });
   useEffect(() => {
     let active = true;
     const loadOnboardStats = async () => {
@@ -460,38 +419,6 @@ export default function DashboardPage() {
       active = false;
     };
   }, [supabase]);
-  useEffect(() => {
-    if (!supabase) return;
-    let active = true;
-    const loadRequestStats = async () => {
-      try {
-        setRequestStats((prev) => ({ ...prev, loading: true, error: null }));
-        const { count, error } = await supabase
-          .from("requests")
-          .select("id", { count: "exact", head: true });
-        if (!active) return;
-        if (error) {
-          throw error;
-        }
-        setRequestStats({
-          total: count ?? 0,
-          loading: false,
-          error: null,
-        });
-      } catch (err: any) {
-        if (!active) return;
-        setRequestStats({
-          total: null,
-          loading: false,
-          error: err?.message || "Unable to load request totals.",
-        });
-      }
-    };
-    loadRequestStats();
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
 const widgetStack = useMemo(() => {
     const stack: React.ReactNode[] = [
       <GreetingWidget key="greet" user={user} />,
@@ -505,12 +432,7 @@ const widgetStack = useMemo(() => {
       <TimeWidget key="time" />,
       <NotificationWidget key="notifications" userId={user?.id ?? null} supabase={supabase} />,
       <LineChartWidget key="line" />,
-      <SalesReportWidget
-        key="sales"
-        totalRequests={requestStats.total}
-        loading={requestStats.loading}
-        error={requestStats.error}
-      />,
+      <SalesReportWidget key="sales" />,
     ];
     return stack.filter(Boolean);
   }, [user, hasAdminAccess, onboardStats]);
@@ -529,102 +451,111 @@ const widgetStack = useMemo(() => {
       </div>
       <DashboardLayout title="">
         <div className="relative w-full h-full">
-          <div className="relative z-10 w-full h-full" style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
-            <div className="h-full overflow-y-auto pr-4" style={{ paddingTop: '5%' }}>
+          <div
+            className="relative z-10 w-full h-full pt-20"
+            style={{ transform: "scale(0.8)", transformOrigin: "top center" }}
+          >
+            <div className="h-full overflow-y-auto pr-4">
               <div
                 ref={setGridElement}
                 data-dashboard-grid
                 className="dashboard-grid mx-auto max-w-5xl"
               >
                 {renderedWidgets}
-              </div>
             </div>
           </div>
+        </div>
         </div>
       </DashboardLayout>
     </>
   );
 }
-const NotificationWidget = ({
-  userId,
-  supabase,
-}: {
-  userId: string | null;
-  supabase: ReturnType<typeof useAuth>["supabase"];
-}) => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<
-    Array<{ id: string; title: string; created_at: string }>
-  >([]);
+const NotificationWidget = dynamic(
+  () =>
+    Promise.resolve(
+      ({
+        userId,
+        supabase,
+      }: {
+        userId: string | null;
+        supabase: ReturnType<typeof useAuth>["supabase"];
+      }) => {
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState<string | null>(null);
+        const [notifications, setNotifications] = useState<
+          Array<{ id: string; title: string; created_at: string }>
+        >([]);
 
-  useEffect(() => {
-    let active = true;
-    if (!userId) {
-      setLoading(false);
-      setNotifications([]);
-      return;
-    }
-    const loadNotifications = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("notifications")
-          .select("id, title, created_at")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(5);
-        if (!active) return;
-        if (error) throw error;
-        setNotifications(data ?? []);
-        setError(null);
-      } catch (err: any) {
-        if (!active) return;
-        setError(err?.message || "Unable to load notifications.");
-        setNotifications([]);
-      } finally {
-        if (active) setLoading(false);
+        useEffect(() => {
+          let active = true;
+          if (!userId) {
+            setLoading(false);
+            setNotifications([]);
+            return;
+          }
+          const loadNotifications = async () => {
+            try {
+              setLoading(true);
+              const { data, error } = await supabase
+                .from("notifications")
+                .select("id, title, created_at")
+                .eq("user_id", userId)
+                .order("created_at", { ascending: false })
+                .limit(5);
+              if (!active) return;
+              if (error) throw error;
+              setNotifications(data ?? []);
+              setError(null);
+            } catch (err: any) {
+              if (!active) return;
+              setError(err?.message || "Unable to load notifications.");
+              setNotifications([]);
+            } finally {
+              if (active) setLoading(false);
+            }
+          };
+          loadNotifications();
+          return () => {
+            active = false;
+          };
+        }, [userId, supabase]);
+
+        return (
+          <Widget className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+                <Bell className="w-4 h-4" />
+                <span>Notifications</span>
+              </h3>
+            </div>
+            {loading ? (
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
+              </div>
+            ) : error ? (
+              <div className="text-sm text-destructive">{error}</div>
+            ) : notifications.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No notifications yet.</div>
+            ) : (
+              <ul className="space-y-3 text-sm">
+                {notifications.map((notification) => (
+                  <li
+                    key={notification.id}
+                    className="rounded-lg border border-white/10 bg-background/60 p-3 shadow-sm hover:border-primary/30 transition"
+                  >
+                    <p className="font-semibold text-foreground">{notification.title || "New notification"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Widget>
+        );
       }
-    };
-    loadNotifications();
-    return () => {
-      active = false;
-    };
-  }, [userId, supabase]);
-
-  return (
-    <Widget className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-          <Bell className="w-4 h-4" />
-          <span>Notifications</span>
-        </h3>
-      </div>
-      {loading ? (
-        <div className="space-y-2 text-sm text-muted-foreground">
-          <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
-          <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
-          <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
-        </div>
-      ) : error ? (
-        <div className="text-sm text-destructive">{error}</div>
-      ) : notifications.length === 0 ? (
-        <div className="text-sm text-muted-foreground">No notifications yet.</div>
-      ) : (
-        <ul className="space-y-3 text-sm">
-          {notifications.map((notification) => (
-            <li
-              key={notification.id}
-              className="rounded-lg border border-white/10 bg-background/60 p-3 shadow-sm hover:border-primary/30 transition"
-            >
-              <p className="font-semibold text-foreground">{notification.title || "New notification"}</p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(notification.created_at).toLocaleString()}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Widget>
-  );
-};
+    ),
+  { ssr: false }
+);

@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from("request_assignments")
-      .select("request_id, user_id, profiles:profiles!request_assignments_user_id_fkey(display_name)")
+      .select("request_id, user_id")
       .eq("role", "BDR");
 
     if (ids && ids.length) {
@@ -67,12 +67,38 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    const assignments = data ?? [];
+    const userIds = Array.from(
+      new Set(assignments.map((assignment) => assignment.user_id).filter(Boolean))
+    );
+
+    let profileLookup: Record<string, string | null> = {};
+    if (userIds.length) {
+      const { data: profileRows, error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", userIds);
+      if (profileError) {
+        console.error("Supabase select profiles error:", profileError);
+        return NextResponse.json(
+          { error: profileError.message },
+          { status: 400 }
+        );
+      }
+      profileRows?.forEach((profile) => {
+        if (profile.user_id) {
+          profileLookup[profile.user_id] = profile.display_name ?? null;
+        }
+      });
+    }
+
     const payload =
-      data?.map((row) => ({
+      assignments.map((row) => ({
         request_id: row.request_id,
         user_id: row.user_id,
-        display_name:
-          (row as any)?.profiles?.display_name ?? null,
+        display_name: row.user_id
+          ? profileLookup[row.user_id] ?? null
+          : null,
       })) ?? [];
 
     return NextResponse.json({ assignments: payload });
@@ -125,6 +151,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Unexpected error assigning BDR:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const supabaseAdmin = getSupabaseAdmin();
+    const authResult = await requireSuperAdmin(request, supabaseAdmin);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const body = await request.json().catch(() => null);
+    const requestId = body?.requestId;
+    const bdrUserId = body?.bdrUserId;
+
+    if (!requestId || !bdrUserId) {
+      return NextResponse.json(
+        { error: "requestId and bdrUserId are required" },
+        { status: 400 }
+      );
+    }
+
+    const { error } = await supabaseAdmin
+      .from("request_assignments")
+      .delete()
+      .eq("request_id", requestId)
+      .eq("user_id", bdrUserId)
+      .eq("role", "BDR");
+
+    if (error) {
+      console.error("Supabase delete request_assignments error:", error);
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Unexpected error removing BDR assignment:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

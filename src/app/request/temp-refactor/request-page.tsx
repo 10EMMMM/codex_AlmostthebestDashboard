@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Search,
   UtensilsCrossed,
+  ChevronsUpDown,
 } from "lucide-react";
 import {
   Card,
@@ -744,8 +745,7 @@ const CreateRequestForm = ({
   const [cities, setCities] = useState<CityOption[]>([]);
   const [loadingCities, setLoadingCities] = useState(true);
   const [requesterId, setRequesterId] = useState("");
-  const [requesterQuery, setRequesterQuery] = useState("");
-  const [requesterPickerOpen, setRequesterPickerOpen] = useState(false);
+  const [requesterSearch, setRequesterSearch] = useState("");
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -832,6 +832,7 @@ const CreateRequestForm = ({
       setCityId("");
       setCityQuery("");
       setCityPickerOpen(false);
+      setRequesterSearch("");
     }
   }, [requesterId, canChooseRequester]);
   useEffect(() => {
@@ -847,12 +848,12 @@ const CreateRequestForm = ({
     return cities.filter((city) => city.label.toLowerCase().includes(query));
   }, [cities, cityQuery]);
   const filteredRequesters = useMemo(() => {
-    const query = requesterQuery.toLowerCase();
+    const term = requesterSearch.toLowerCase().trim();
+    if (!term) return accountManagers;
     return accountManagers.filter((manager) =>
-      manager.label.toLowerCase().includes(query)
+      manager.label.toLowerCase().includes(term)
     );
-  }, [accountManagers, requesterQuery]);
-  const hasRequesterQuery = requesterQuery.trim().length > 0;
+  }, [accountManagers, requesterSearch]);
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
   const steps = useMemo(() => {
     if (canChooseRequester) {
@@ -914,7 +915,8 @@ const CreateRequestForm = ({
   }, [steps.length, currentStep]);
   useEffect(() => {
     if (canChooseRequester && !hasSelectedType) {
-      setRequesterPickerOpen(false);
+      setRequesterSearch("");
+      setRequesterId("");
     }
   }, [canChooseRequester, hasSelectedType]);
   useEffect(() => {
@@ -1100,74 +1102,61 @@ const CreateRequestForm = ({
   const RequesterSelector = () => (
     <div className="space-y-2">
       <Label>Requested By</Label>
-      <Popover
-        open={requesterPickerOpen}
-        onOpenChange={setRequesterPickerOpen}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            role="combobox"
-            disabled={!hasSelectedType || accountManagersLoading}
-          >
-            <span className="truncate">
-              {selectedRequester
-                ? selectedRequester.label
-                : hasSelectedType
-                  ? "Search Account Managers"
-                  : "Choose a request type first"}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
-          <Command>
-            <CommandInput
-              placeholder={
-                accountManagersLoading
-                  ? "Loading Account Managers..."
-                  : "Search Account Managers..."
-              }
-              value={requesterQuery}
-              onValueChange={(value) => setRequesterQuery(value)}
-              disabled={accountManagersLoading}
-            />
-            <CommandList>
-              {accountManagersLoading ? (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  Loading...
-                </div>
-              ) : hasRequesterQuery ? (
-                filteredRequesters.length ? (
-                  <CommandGroup>
-                    {filteredRequesters.map((option) => (
-                      <CommandItem
-                        key={option.id}
-                        onSelect={() => {
-                          setRequesterId(option.id);
-                          setRequesterQuery("");
-                          setRequesterPickerOpen(false);
-                        }}
-                      >
-                        {option.label}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                ) : (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    No Account Managers found.
-                  </div>
-                )
-              ) : (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  Start typing to search Account Managers.
-                </div>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      {!hasSelectedType ? (
+        <p className="text-xs text-muted-foreground">
+          Choose a request type first to pick an Account Manager.
+        </p>
+      ) : (
+        <Command className="rounded-[12px] border border-white/15 bg-background/60">
+          <CommandInput
+            placeholder={
+              accountManagersLoading
+                ? "Loading Account Managers..."
+                : "Search Account Managers..."
+            }
+            value={requesterSearch}
+            onValueChange={setRequesterSearch}
+            disabled={accountManagersLoading}
+            className="placeholder:text-muted-foreground"
+          />
+          <CommandList>
+            {accountManagersLoading ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                Loading...
+              </div>
+            ) : (
+              <>
+                <CommandEmpty>No Account Managers found.</CommandEmpty>
+                <CommandGroup>
+                  {filteredRequesters.map((option) => (
+                    <CommandItem
+                      key={option.id}
+                      className="flex items-center justify-between"
+                      onSelect={() => {
+                        setRequesterId(option.id);
+                        setRequesterSearch("");
+                      }}
+                    >
+                      <span>{option.label}</span>
+                      {option.id === requesterId && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      )}
+      {selectedRequester && (
+        <p className="text-xs text-muted-foreground">
+          Selected:{" "}
+          <span className="font-semibold text-foreground">
+            {selectedRequester.label}
+          </span>
+        </p>
+      )}
     </div>
   );
 
@@ -1489,53 +1478,34 @@ const CreateRequestForm = ({
         </DialogTitle>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-center gap-[1px] text-[10px] font-semibold">
+        <div className="space-y-4">
+          <ul className="steps steps-horizontal w-full justify-center text-[11px] uppercase tracking-[0.25em]">
             {steps.map((step, index) => {
-              const status =
-                index < currentStep
-                  ? "done"
-                  : index === currentStep
-                    ? "current"
-                    : "upcoming";
+              const isCompleted = index < currentStep;
+              const isActive = index === currentStep;
               return (
-                <div key={`${step.id}-line`} className="flex items-center gap-1">
+                <li
+                  key={step.id}
+                  data-content={isCompleted ? "✓" : index + 1}
+                  className={cn(
+                    "step whitespace-nowrap text-muted-foreground transition-colors",
+                    isCompleted && "step-primary text-primary",
+                    isActive && "step-primary text-primary",
+                    !isCompleted && !isActive && "step-neutral"
+                  )}
+                >
                   <span
                     className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition",
-                      status === "current"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : status === "done"
-                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
-                          : "border-border/60 text-muted-foreground"
+                      "text-[10px] font-semibold tracking-[0.2em]",
+                      isActive ? "text-primary" : "text-muted-foreground"
                     )}
                   >
-                    <span
-                      className={cn(
-                        "inline-flex h-5 w-5 items-center justify-center rounded-full",
-                        status === "current"
-                          ? "bg-primary text-white"
-                          : "bg-transparent"
-                      )}
-                    >
-                      {index + 1}
-                    </span>
-                    {status === "done" && (
-                      <span className="text-emerald-600">?</span>
-                    )}
-                    {status === "current" && (
-                      <span className="uppercase tracking-[0.3em]">
-                        {step.label}
-                      </span>
-                    )}
+                    {step.label}
                   </span>
-                  {index < steps.length - 1 && (
-                    <div className="h-px w-8 bg-border/40" />
-                  )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
           {renderStepContent()}
         </div>
         <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-end">
@@ -1594,6 +1564,7 @@ const useRequestPageController = () => {
   const [assignTargetRequest, setAssignTargetRequest] = useState<EnrichedRequest | null>(null);
   const [assignSearch, setAssignSearch] = useState("");
   const [assignSaving, setAssignSaving] = useState(false);
+  const [assignSelectedBdrs, setAssignSelectedBdrs] = useState<string[]>([]);
   const [editForm, setEditForm] = useState<EditFormState>({
     title: "",
     description: "",
@@ -2126,21 +2097,24 @@ const useRequestPageController = () => {
       if (!isSuperAdmin) return;
       setAssignTargetRequest(request);
       setAssignSearch("");
+      setAssignSelectedBdrs([]);
       setAssignDialogOpen(true);
     },
-    [isSuperAdmin]
+  [isSuperAdmin]
   );
-  const assignBdrToRequest = useCallback(
-    async (bdrUserId: string) => {
-      if (!assignTargetRequest || !supabase) return;
-      setAssignSaving(true);
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) {
-          throw new Error("Session expired. Please sign in again.");
-        }
+  const assignSelectedBdrsToRequest = useCallback(async () => {
+    if (!assignTargetRequest || !supabase || assignSelectedBdrs.length === 0) {
+      return;
+    }
+    setAssignSaving(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Session expired. Please sign in again.");
+      }
+      for (const bdrUserId of assignSelectedBdrs) {
         const response = await fetch("/api/admin/request-assignments", {
           method: "POST",
           headers: {
@@ -2160,25 +2134,78 @@ const useRequestPageController = () => {
           bdrDirectory.find((option) => option.id === bdrUserId)?.label ?? "BDR";
         setRequestBdrAssignments((prev) => {
           const next = { ...prev };
-          const list =
-            (next[assignTargetRequest.id] ?? []).filter(
-              (assignment) => assignment.user_id !== bdrUserId
-            ) ?? [];
+          const list = next[assignTargetRequest.id] ?? [];
           next[assignTargetRequest.id] = [
-            ...list,
+            ...list.filter((assignment) => assignment.user_id !== bdrUserId),
             { user_id: bdrUserId, display_name: label },
           ];
           return next;
         });
-        toast({
-          title: "BDR assigned",
-          description: `${assignTargetRequest.title} assigned to ${label}.`,
+      }
+      toast({
+        title: "BDR assigned",
+        description:
+          assignSelectedBdrs.length === 1
+            ? `${assignTargetRequest.title} assigned to ${bdrDirectory.find(
+                (option) => option.id === assignSelectedBdrs[0]
+              )?.label ?? "BDR"}.`
+            : `${assignSelectedBdrs.length} BDRs assigned to ${assignTargetRequest.title}.`,
+      });
+      setAssignDialogOpen(false);
+      setAssignTargetRequest(null);
+      setAssignSearch("");
+      setAssignSelectedBdrs([]);
+    } catch (error) {
+      toast({
+        title: "Unable to assign BDR",
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setAssignSaving(false);
+    }
+  }, [assignTargetRequest, supabase, assignSelectedBdrs, bdrDirectory, toast]);
+  const unassignBdrFromRequest = useCallback(
+    async (bdrUserId: string) => {
+      if (!assignTargetRequest || !supabase) return;
+      setAssignSaving(true);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("Session expired. Please sign in again.");
+        }
+        const response = await fetch("/api/admin/request-assignments", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            requestId: assignTargetRequest.id,
+            bdrUserId,
+          }),
         });
-        setAssignDialogOpen(false);
-        setAssignTargetRequest(null);
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(payload?.error ?? response.statusText);
+        }
+        setRequestBdrAssignments((prev) => {
+          const next = { ...prev };
+          next[assignTargetRequest.id] = (next[assignTargetRequest.id] ?? []).filter(
+            (assignment) => assignment.user_id !== bdrUserId
+          );
+          return next;
+        });
+        toast({
+          title: "BDR unassigned",
+          description: `${assignTargetRequest.title} no longer assigned to this BDR.`,
+        });
       } catch (error) {
         toast({
-          title: "Unable to assign BDR",
+          title: "Unable to unassign BDR",
           description:
             error instanceof Error ? error.message : "Please try again later.",
           variant: "destructive",
@@ -2187,17 +2214,35 @@ const useRequestPageController = () => {
         setAssignSaving(false);
       }
     },
-    [assignTargetRequest, supabase, bdrDirectory, toast]
+    [assignTargetRequest, supabase, toast]
   );
+  const handlePendingBdrToggle = useCallback((bdrUserId: string) => {
+    setAssignSelectedBdrs((prev) =>
+      prev.includes(bdrUserId)
+        ? prev.filter((id) => id !== bdrUserId)
+        : [...prev, bdrUserId]
+    );
+  }, []);
   const filteredBdrDirectory = useMemo(() => {
     const term = assignSearch.toLowerCase().trim();
-    if (!term) {
-      return bdrDirectory;
-    }
-    return bdrDirectory.filter((option) =>
-      option.label.toLowerCase().includes(term)
+    const assignedIds = new Set(
+      assignTargetRequest
+        ? (requestBdrAssignments[assignTargetRequest.id] ?? []).map(
+            (assignment) => assignment.user_id
+          )
+        : []
     );
-  }, [assignSearch, bdrDirectory]);
+    assignSelectedBdrs.forEach((id) => assignedIds.add(id));
+    return bdrDirectory.filter((option) => {
+      if (assignedIds.has(option.id)) {
+        return false;
+      }
+      if (!term) {
+        return true;
+      }
+      return option.label.toLowerCase().includes(term);
+    });
+  }, [assignSearch, bdrDirectory, assignTargetRequest, requestBdrAssignments, assignSelectedBdrs]);
   const handleEditDialogOpenChange = (open: boolean) => {
     if (!open && !editSaving) {
       setEditDialogOpen(false);
@@ -2238,6 +2283,7 @@ const useRequestPageController = () => {
     editSaving,
     editTarget,
     handleRequestCreated,
+    isSuperAdmin,
     draggingRequestId,
     activeDropStatus,
     handleKanbanDrop,
@@ -2252,25 +2298,17 @@ const useRequestPageController = () => {
     assignDialogOpen,
     setAssignDialogOpen,
     assignTargetRequest,
-    assignSearch,
-    setAssignSearch,
-    assignSaving,
-    filteredBdrDirectory,
-    openAssignDialogForRequest,
-    assignBdrToRequest,
-    bdrDirectory,
-    bdrDirectoryLoading,
-    requestBdrAssignments,
-    assignDialogOpen,
-    setAssignDialogOpen,
-    assignTargetRequest,
     setAssignTargetRequest,
     assignSearch,
     setAssignSearch,
+    assignSelectedBdrs,
+    setAssignSelectedBdrs,
     assignSaving,
     filteredBdrDirectory,
     openAssignDialogForRequest,
-    assignBdrToRequest,
+    handlePendingBdrToggle,
+    assignSelectedBdrsToRequest,
+    unassignBdrFromRequest,
   };
 };
 
@@ -2311,6 +2349,7 @@ const RequestPageLayout = ({
     editTarget,
     handleRequestCreated,
     setSelectedRequest,
+    isSuperAdmin,
     draggingRequestId,
     activeDropStatus,
     handleKanbanDrop,
@@ -2319,6 +2358,23 @@ const RequestPageLayout = ({
     handleDragOverStatusChange,
     movingRequestId,
     activeDropCardId,
+    bdrDirectory,
+    bdrDirectoryLoading,
+    requestBdrAssignments,
+    openAssignDialogForRequest,
+    assignDialogOpen,
+    setAssignDialogOpen,
+    assignTargetRequest,
+    setAssignTargetRequest,
+    assignSearch,
+    setAssignSearch,
+    assignSelectedBdrs,
+    setAssignSelectedBdrs,
+    assignSaving,
+    filteredBdrDirectory,
+    handlePendingBdrToggle,
+    assignSelectedBdrsToRequest,
+    unassignBdrFromRequest,
   } = controller;
 
   if (loading) {
@@ -2370,12 +2426,9 @@ const RequestPageLayout = ({
         {COLUMN_PREVIEW ? (
           <div className="w-[80vw] px-6 mx-auto">
             {requestsLoading ? (
-              <div className="grid gap-4 grid-cols-4">
+              <div className="grid grid-cols-4 gap-4">
                 {KANBAN_COLUMNS.map((column) => (
-                  <div
-                    key={`loading-column-${column.key}`}
-                    className="space-y-4"
-                  >
+                  <div key={`loading-column-${column.key}`} className="space-y-4">
                     <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
                       <span>{column.label}</span>
                       <Skeleton className="h-4 w-6 rounded-full" />
@@ -2392,116 +2445,102 @@ const RequestPageLayout = ({
                   : "No requests match your filters."}
               </div>
             ) : (
-              <div className="grid gap-4 grid-cols-4">
+              <div className="grid grid-cols-4 gap-4">
                 {groupedRequests.map(({ column, items }) => (
-              <div
-                key={`kanban-column-${column.key}`}
-                className={cn(
-                  "space-y-4 rounded-2xl border-2 p-3 transition",
-                  draggingRequestId
-                    ? "border-dashed border-white/40"
-                    : "border-transparent",
-                  activeDropStatus === column.key
-                    ? "border-primary/70 bg-white/5"
-                    : ""
-                )}
-                onDragOver={(event) => {
-                  if (!draggingRequestId) return;
-                  event.preventDefault();
-                  handleDragOverStatusChange(column.key, null);
-                }}
-                onDrop={(event) => {
-                  if (!draggingRequestId) return;
-                  event.preventDefault();
-                  handleDragOverStatusChange(null, null);
-                  handleKanbanDrop(column.key, null);
-                }}
-                onDragEnter={(event) => {
-                  if (!draggingRequestId) return;
-                  event.preventDefault();
-                  handleDragOverStatusChange(column.key, null);
-                }}
-                onDragLeave={(event) => {
-                  if (!draggingRequestId) return;
-                  event.preventDefault();
-                  handleDragOverStatusChange(null, null);
-                }}
-              >
-                <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                  <span>{column.label}</span>
-                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-foreground">
-                    {items.length}
-                  </span>
-                </div>
-                {items.length ? (
-                  items.map((request) => {
-                    const editable = canEditRequest(request);
-                    const assignedBdrs = requestBdrAssignments[request.id] ?? [];
-                    return (
-                      <div
-                        key={`${column.key}-${request.id}`}
-                        draggable={editable}
-                        onDragStart={(event) => {
-                          if (!editable) return;
-                          event.stopPropagation();
-                          handleCardDragStart(request.id);
-                          event.dataTransfer.effectAllowed = "move";
-                          event.dataTransfer.setData("text/plain", request.id);
-                        }}
-                        onDragEnd={(event) => {
-                          event.preventDefault();
-                          handleCardDragEnd();
-                        }}
-                        onDragOver={(event) => {
-                          if (!editable || !draggingRequestId) return;
-                          event.preventDefault();
-                          handleDragOverStatusChange(column.key, request.id);
-                        }}
-                        onDrop={(event) => {
-                          if (!editable) return;
-                          event.preventDefault();
-                          handleDragOverStatusChange(null, null);
-                          handleKanbanDrop(column.key, request.id);
-                        }}
-                        className={cn(
-                          "relative",
-                          editable ? "cursor-grab active:cursor-grabbing" : "",
-                          activeDropCardId === request.id
-                            ? "before:absolute before:-top-2 before:left-0 before:right-0 before:h-1 before:rounded-full before:bg-primary/70 before:content-['']"
-                            : ""
-                        )}
-                      >
-                        <RequestCard
-                          request={request}
-                          onView={() => handleRequestClick(request)}
-                          onEdit={() => openEditDialog(request)}
-                          canEdit={editable}
-                          isPendingMove={
-                            draggingRequestId === request.id ||
-                            movingRequestId === request.id
-                          }
-                          assignedBdrs={assignedBdrs}
-                          showAssignAction={isSuperAdmin}
-                          onAssignBdr={() => openAssignDialogForRequest(request)}
-                        />
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="widget rounded-2xl border border-dashed bg-card/20 p-4 text-center text-[11px] text-muted-foreground">
-                    No {column.label.toLowerCase()} requests
-                  </div>
-                )}
-              </div>
-            ))
-            ) : (
-                  <div className="widget rounded-2xl border border-dashed bg-card/20 p-4 text-center text-[11px] text-muted-foreground">
-                    No {column.label.toLowerCase()} requests
-                  </div>
-                )}
-              </div>
-            ))
-            ) : (
+                  <div
+                    key={`kanban-column-${column.key}`}
+                    className={cn(
+                      "space-y-4 rounded-2xl border-2 p-3 transition",
+                      draggingRequestId
+                        ? "border-dashed border-white/40"
+                        : "border-transparent",
+                      activeDropStatus === column.key
+                        ? "border-primary/70 bg-white/5"
+                        : ""
+                    )}
+                    onDragOver={(event) => {
+                      if (!draggingRequestId) return;
+                      event.preventDefault();
+                      handleDragOverStatusChange(column.key, null);
+                    }}
+                    onDrop={(event) => {
+                      if (!draggingRequestId) return;
+                      event.preventDefault();
+                      handleDragOverStatusChange(null, null);
+                      handleKanbanDrop(column.key, null);
+                    }}
+                    onDragEnter={(event) => {
+                      if (!draggingRequestId) return;
+                      event.preventDefault();
+                      handleDragOverStatusChange(column.key, null);
+                    }}
+                    onDragLeave={(event) => {
+                      if (!draggingRequestId) return;
+                      event.preventDefault();
+                      handleDragOverStatusChange(null, null);
+                    }}
+                  >
+                    <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                      <span>{column.label}</span>
+                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-foreground">
+                        {items.length}
+                      </span>
+                    </div>
+                    {items.length ? (
+                      items.map((request) => {
+                        const editable = canEditRequest(request);
+                        const assignedBdrs = requestBdrAssignments[request.id] ?? [];
+                        return (
+                          <div
+                            key={`${column.key}-${request.id}`}
+                            draggable={editable}
+                            onDragStart={(event) => {
+                              if (!editable) return;
+                              event.stopPropagation();
+                              handleCardDragStart(request.id);
+                              event.dataTransfer.effectAllowed = "move";
+                              event.dataTransfer.setData("text/plain", request.id);
+                            }}
+                            onDragEnd={(event) => {
+                              event.preventDefault();
+                              handleCardDragEnd();
+                            }}
+                            onDragOver={(event) => {
+                              if (!editable || !draggingRequestId) return;
+                              event.preventDefault();
+                              handleDragOverStatusChange(column.key, request.id);
+                            }}
+                            onDrop={(event) => {
+                              if (!editable) return;
+                              event.preventDefault();
+                              handleDragOverStatusChange(null, null);
+                              handleKanbanDrop(column.key, request.id);
+                            }}
+                            className={cn(
+                              "relative",
+                              editable ? "cursor-grab active:cursor-grabbing" : "",
+                              activeDropCardId === request.id
+                                ? "before:absolute before:-top-2 before:left-0 before:right-0 before:h-1 before:rounded-full before:bg-primary/70 before:content-['']"
+                                : ""
+                            )}
+                          >
+                            <RequestCard
+                              request={request}
+                              onView={() => handleRequestClick(request)}
+                              onEdit={() => openEditDialog(request)}
+                              canEdit={editable}
+                              isPendingMove={
+                                draggingRequestId === request.id ||
+                                movingRequestId === request.id
+                              }
+                              assignedBdrs={assignedBdrs}
+                              showAssignAction={isSuperAdmin}
+                              onAssignBdr={() => openAssignDialogForRequest(request)}
+                            />
+                          </div>
+                        );
+                      })
+                    ) : (
                       <div className="widget rounded-2xl border border-dashed bg-card/20 p-4 text-center text-[11px] text-muted-foreground">
                         No {column.label.toLowerCase()} requests
                       </div>
@@ -2808,6 +2847,135 @@ const RequestPageLayout = ({
           </form>
         </DialogContent>
       </Dialog>
+      <Dialog
+        open={assignDialogOpen}
+        onOpenChange={(open) => {
+          setAssignDialogOpen(open);
+          if (!open) {
+            setAssignTargetRequest(null);
+            setAssignSearch("");
+            setAssignSelectedBdrs([]);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md rounded-[12px] border border-white/20 bg-white/5 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold tracking-[0.3em] uppercase text-muted-foreground">
+              Assign BDR
+            </DialogTitle>
+          </DialogHeader>
+          {assignTargetRequest ? (
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Search BDRs</Label>
+                <Command className="rounded-[12px] border border-white/15 bg-background/60">
+                  <CommandInput
+                    placeholder="Type a name or email..."
+                    value={assignSearch}
+                    onValueChange={setAssignSearch}
+                    className="placeholder:text-muted-foreground"
+                  />
+                  <CommandList>
+                    {filteredBdrDirectory.length === 0 ? (
+                      <CommandEmpty>
+                        {bdrDirectory.length ===
+                        (requestBdrAssignments[assignTargetRequest.id]?.length ?? 0) +
+                          assignSelectedBdrs.length
+                          ? "All BDRs are selected."
+                          : "No BDRs found."}
+                      </CommandEmpty>
+                    ) : (
+                      <CommandGroup>
+                        {filteredBdrDirectory.map((option) => (
+                          <CommandItem
+                            key={option.id}
+                            disabled={assignSaving}
+                            className="cursor-pointer hover:bg-primary/10 data-[selected=true]:bg-transparent data-[selected=true]:text-foreground"
+                            onSelect={() => {
+                              handlePendingBdrToggle(option.id);
+                              setAssignSearch("");
+                            }}
+                          >
+                            {option.label}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </div>
+              {assignSelectedBdrs.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {assignSelectedBdrs.map((bdrId) => (
+                    <span
+                      key={`pending-${bdrId}`}
+                      className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary"
+                    >
+                      {bdrDirectory.find((option) => option.id === bdrId)?.label ??
+                        "Selected BDR"}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 rounded-full p-0 text-xs"
+                        onClick={() => handlePendingBdrToggle(bdrId)}
+                      >
+                        ×
+                        <span className="sr-only">Remove pending BDR</span>
+                      </Button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {requestBdrAssignments[assignTargetRequest.id]?.length ? (
+                <div className="space-y-1">
+                  <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                    Assigned BDRs
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {requestBdrAssignments[assignTargetRequest.id].map((assignment) => (
+                      <span
+                        key={assignment.user_id}
+                        className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold"
+                      >
+                        {assignment.display_name ?? "BDR"}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={assignSaving}
+                          onClick={() => unassignBdrFromRequest(assignment.user_id)}
+                          className="h-5 w-5 rounded-full p-0 text-xs"
+                        >
+                          ×
+                          <span className="sr-only">Remove BDR</span>
+                        </Button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs italic text-muted-foreground">
+                  No BDRs assigned yet.
+                </p>
+              )}
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="button"
+                  disabled={assignSelectedBdrs.length === 0 || assignSaving}
+                  onClick={assignSelectedBdrsToRequest}
+                >
+                  {assignSaving ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Select a request first to assign a BDR.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
       <CommandDialog open={filterSpotlightOpen} onOpenChange={setFilterSpotlightOpen}>
         <CommandInput
           placeholder="Search requests by title, company, or city..."
@@ -2866,4 +3034,3 @@ export const RequestPageRefactor = () => {
 };
 
 export default RequestPageRefactor;
-

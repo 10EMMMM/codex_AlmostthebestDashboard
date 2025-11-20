@@ -39,7 +39,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save, UtensilsCrossed, PartyPopper, ChefHat, AlignLeft } from "lucide-react";
+import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save, UtensilsCrossed, PartyPopper, ChefHat, AlignLeft, Building2, User } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import { format } from "date-fns";
@@ -56,9 +56,10 @@ type Request = {
     volume?: number;
     need_answer_by?: string;
     delivery_date?: string;
+    company?: string;
     status: string;
     created_by: string;
-    requested_by: string;
+    requester_id: string;
     created_on_behalf: boolean;
     created_at: string;
     creator_name?: string;
@@ -80,10 +81,21 @@ const REQUEST_TYPE_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-    PENDING: "bg-yellow-500 text-yellow-950",
-    IN_PROGRESS: "bg-blue-500 text-white",
-    COMPLETED: "bg-green-500 text-white",
-    CANCELLED: "bg-gray-500 text-white",
+    "new": "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+    "ongoing": "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
+    "on hold": "bg-gradient-to-r from-orange-500 to-amber-500 text-white",
+    "done": "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
+    // Legacy/fallback statuses
+    NEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+    PENDING: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+    IN_PROGRESS: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
+    ON_PROGRESS: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
+    ON_HOLD: "bg-gradient-to-r from-orange-500 to-amber-500 text-white",
+    DONE: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
+    COMPLETED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
+    CANCELLED: "bg-gray-500/90 text-white",
+    OPEN: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
+    CLOSED: "bg-slate-500/90 text-white",
 };
 
 const REQUEST_TYPE_CONFIG = {
@@ -113,7 +125,7 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
     return (
         <div className="widget">
             <Card
-                className="bg-card rounded-xl p-6 flex flex-col border shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full"
+                className="bg-card rounded-xl p-6 flex flex-col shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full border-0"
                 onClick={onClick}
             >
                 <div className="space-y-4">
@@ -242,16 +254,37 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
                     )}
 
                     {/* Details Grid */}
-                    <div className="grid grid-cols-1 gap-3 text-sm">
-                        {request.city_name && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <MapPin className="h-4 w-4 flex-shrink-0" />
-                                <span className="font-medium">
-                                    {request.city_name}
-                                    {request.city_state && `, ${request.city_state}`}
-                                </span>
-                            </div>
-                        )}
+                    <div className="grid grid-cols-1 text-sm">
+                        {/* Requested for/by and Company */}
+                        <div className="text-sm space-y-1">
+                            {request.company && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Building2 className="h-4 w-4 flex-shrink-0" />
+                                    <span>Company: {request.company}</span>
+                                </div>
+                            )}
+                            {request.requester_name && (
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <User className="h-4 w-4 flex-shrink-0" />
+                                    <span>Requested for: {request.requester_name}</span>
+                                </div>
+                            )}
+                            {!request.requester_name && request.creator_name && (
+                                <div className="flex items-center gap-2 text-foreground">
+                                    <User className="h-4 w-4 flex-shrink-0" />
+                                    <span>Requested by: {request.creator_name}</span>
+                                </div>
+                            )}
+                            {request.city_name && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <MapPin className="h-4 w-4 flex-shrink-0" />
+                                    <span className="font-medium">
+                                        {request.city_name}
+                                        {request.city_state && `, ${request.city_state}`}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
 
                         <div className="flex flex-wrap gap-2">
                             {request.volume !== undefined && request.volume !== null && (
@@ -264,60 +297,60 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
                     </div>
 
                     {/* Footer */}
-                    <div className="pt-4 border-t border-border text-xs text-muted-foreground space-y-2">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                {(() => {
-                                    const now = new Date();
-                                    const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
-                                    const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
-                                    const badgeColor = isOverdueForReply
-                                        ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                        : "bg-primary/10 text-primary";
+                    <div className="pt-4 border-t border-border text-xs space-y-2">
+                        {/* Date badges */}
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            {(() => {
+                                const now = new Date();
+                                const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
+                                const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
+                                const badgeColor = isOverdueForReply
+                                    ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                    : "bg-primary/10 text-primary";
 
-                                    return (
-                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
-                                            <Calendar className="h-3.5 w-3.5" />
-                                            <span className="font-medium">
-                                                {isNew ? (
-                                                    <span>Just created</span>
-                                                ) : (
-                                                    `${daysOld}d old`
-                                                )}
-                                            </span>
-                                        </div>
-                                    );
-                                })()}
-                                {request.need_answer_by && (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
-                                        <Clock className="h-3.5 w-3.5" />
-                                        <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
+                                return (
+                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        <span className="font-medium">
+                                            {isNew ? (
+                                                <span>Just created</span>
+                                            ) : (
+                                                `${daysOld}d old`
+                                            )}
+                                        </span>
                                     </div>
-                                )}
-                                {request.delivery_date && (() => {
-                                    const now = new Date();
-                                    const deliveryDate = new Date(request.delivery_date);
-                                    const isOverdue = now > deliveryDate;
-                                    const badgeColor = isOverdue
-                                        ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                        : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+                                );
+                            })()}
+                            {request.need_answer_by && (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
+                                </div>
+                            )}
+                            {request.delivery_date && (() => {
+                                const now = new Date();
+                                const deliveryDate = new Date(request.delivery_date);
+                                const isOverdue = now > deliveryDate;
+                                const badgeColor = isOverdue
+                                    ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                    : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
 
-                                    return (
-                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
-                                            <Truck className="h-3.5 w-3.5" />
-                                            <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                            {request.creator_name && <span className="font-medium">by {request.creator_name}</span>}
+                                return (
+                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                        <Truck className="h-3.5 w-3.5" />
+                                        <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
+                                    </div>
+                                );
+                            })()}
                         </div>
+
                         {request.created_on_behalf && request.requester_name && (
                             <div className="flex items-center gap-2 text-primary">
                                 <UserCog className="h-3.5 w-3.5" />
                                 <span className="font-medium">Created by admin for {request.requester_name}</span>
                             </div>
                         )}
+
                     </div>
                 </div>
             </Card>
@@ -381,6 +414,7 @@ export default function RequestPage() {
         volume: undefined as number | undefined,
         need_answer_by: undefined as Date | undefined,
         delivery_date: undefined as Date | undefined,
+        company: "",
     });
     const [saving, setSaving] = useState(false);
 
@@ -423,6 +457,7 @@ export default function RequestPage() {
             volume: request.volume,
             need_answer_by: request.need_answer_by ? new Date(request.need_answer_by) : undefined,
             delivery_date: request.delivery_date ? new Date(request.delivery_date) : undefined,
+            company: request.company || "",
         });
         setIsEditing(false);
         setShowDetailSheet(true);
@@ -519,7 +554,7 @@ export default function RequestPage() {
                 <div className="relative w-full h-full">
                     <div className="relative z-10 w-full h-full" style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
                         <div className="h-full overflow-y-auto pr-4" style={{ paddingTop: '5%' }}>
-                            <div className="mx-auto max-w-5xl">
+                            <div className="mx-auto max-w-7xl">
                                 {/* Create Request Button */}
                                 <div className="mb-6">
                                     <Button onClick={() => setShowCreateModal(true)} size="lg">
@@ -533,7 +568,7 @@ export default function RequestPage() {
                                     {loading ? (
                                         [...Array(6)].map((_, i) => (
                                             <div key={i} className="widget">
-                                                <Card className="bg-card rounded-xl p-6 flex flex-col border shadow-lg h-full">
+                                                <Card className="bg-card rounded-xl p-6 flex flex-col shadow-lg h-full border-0">
                                                     <div className="space-y-4">
                                                         {/* Header badges */}
                                                         <div className="flex gap-2 mb-3">
@@ -633,17 +668,35 @@ export default function RequestPage() {
                                             </div>
                                         )}
 
-                                        {/* Details Grid */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {selectedRequest.city_name && (
+                                        {/* Details Section */}
+                                        <div className="space-y-4">
+                                            {selectedRequest.company && (
                                                 <div>
                                                     <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                                        <MapPin className="h-4 w-4" />
-                                                        City
+                                                        <Building2 className="h-4 w-4" />
+                                                        Company
                                                     </h4>
-                                                    <p className="text-sm text-muted-foreground">
+                                                    <p className="text-sm text-muted-foreground">{selectedRequest.company}</p>
+                                                </div>
+                                            )}
+
+                                            {(selectedRequest.requester_name || selectedRequest.creator_name) && (
+                                                <div className="flex items-center gap-2">
+                                                    <User className="h-4 w-4" />
+                                                    <span className="text-sm font-semibold">Requested For:</span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {selectedRequest.requester_name || selectedRequest.creator_name}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {selectedRequest.city_name && (
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="h-4 w-4" />
+                                                    <span className="text-sm font-semibold">City:</span>
+                                                    <span className="text-sm text-muted-foreground">
                                                         {selectedRequest.city_name}{selectedRequest.city_state && `, ${selectedRequest.city_state}`}
-                                                    </p>
+                                                    </span>
                                                 </div>
                                             )}
 
@@ -656,41 +709,74 @@ export default function RequestPage() {
                                                     <p className="text-sm text-muted-foreground">{selectedRequest.volume}</p>
                                                 </div>
                                             )}
-
-                                            {selectedRequest.need_answer_by && (
-                                                <div>
-                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                                        <Clock className="h-4 w-4" />
-                                                        Need Answer By
-                                                    </h4>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {format(new Date(selectedRequest.need_answer_by), "MMM d, yyyy")}
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {selectedRequest.delivery_date && (
-                                                <div>
-                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                                        <Truck className="h-4 w-4" />
-                                                        Delivery Date
-                                                    </h4>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {format(new Date(selectedRequest.delivery_date), "MMM d, yyyy")}
-                                                    </p>
-                                                </div>
-                                            )}
                                         </div>
 
-                                        {/* Footer Info */}
-                                        <div className="pt-4 border-t space-y-2 text-sm text-muted-foreground">
-                                            {selectedRequest.creator_name && (
-                                                <p>Created by: <span className="font-medium">{selectedRequest.creator_name}</span></p>
-                                            )}
-                                            <p>Created: <span className="font-medium">{format(new Date(selectedRequest.created_at), "MMM d, yyyy 'at' h:mm a")}</span></p>
-                                            {selectedRequest.created_on_behalf && selectedRequest.requester_name && (
-                                                <p className="text-primary">On behalf of: <span className="font-medium">{selectedRequest.requester_name}</span></p>
-                                            )}
+                                        {/* Footer Info with Badges */}
+                                        <div className="pt-4 border-t space-y-3">
+                                            {/* Date Badges Row */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {(() => {
+                                                    const daysOld = getDaysOld(selectedRequest.created_at);
+                                                    const isNew = daysOld === 0;
+                                                    const now = new Date();
+                                                    const needAnswerByDate = selectedRequest.need_answer_by ? new Date(selectedRequest.need_answer_by) : null;
+                                                    const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
+                                                    const badgeColor = isOverdueForReply
+                                                        ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                                        : "bg-primary/10 text-primary";
+
+                                                    return (
+                                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                                            <Calendar className="h-3.5 w-3.5" />
+                                                            <span className="font-medium">
+                                                                {isNew ? (
+                                                                    <span>Just created</span>
+                                                                ) : (
+                                                                    `${daysOld}d old`
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {selectedRequest.need_answer_by && (
+                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
+                                                        <Clock className="h-3.5 w-3.5" />
+                                                        <span className="font-medium">Reply: {format(new Date(selectedRequest.need_answer_by), "MMM d")}</span>
+                                                    </div>
+                                                )}
+                                                {selectedRequest.delivery_date && (() => {
+                                                    const now = new Date();
+                                                    const deliveryDate = new Date(selectedRequest.delivery_date);
+                                                    const isOverdue = now > deliveryDate;
+                                                    const badgeColor = isOverdue
+                                                        ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                                        : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+
+                                                    return (
+                                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                                            <Truck className="h-3.5 w-3.5" />
+                                                            <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {selectedRequest.volume !== undefined && selectedRequest.volume !== null && (
+                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs">
+                                                        <Package className="h-3.5 w-3.5" />
+                                                        <span className="font-medium">{selectedRequest.volume}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Creator/Requester Info */}
+                                            <div className="text-sm text-muted-foreground space-y-1">
+                                                {selectedRequest.creator_name && (
+                                                    <p className="flex items-center gap-2">
+                                                        <UserCog className="h-4 w-4" />
+                                                        <span className="font-medium text-foreground">{selectedRequest.creator_name}</span>
+                                                    </p>
+                                                )}
+                                                <p>Created: <span className="font-medium">{format(new Date(selectedRequest.created_at), "MMM d, yyyy 'at' h:mm a")}</span></p>
+                                            </div>
                                         </div>
                                     </>
                                 ) : (
@@ -781,70 +867,17 @@ export default function RequestPage() {
 
                                             {/* Dates Stacked */}
                                             <div className="space-y-4">
-                                                {/* Need Answer By */}
+                                                {/* Company */}
                                                 <div className="space-y-3">
                                                     <div className="flex items-center gap-2">
-                                                        <Clock className="h-4 w-4 text-muted-foreground" />
-                                                        <Label>Need Answer By <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                        <Label>Company <span className="text-muted-foreground text-xs">(optional)</span></Label>
                                                     </div>
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                className={cn(
-                                                                    "w-full justify-start text-left font-normal",
-                                                                    !editFormData.need_answer_by && "text-muted-foreground"
-                                                                )}
-                                                            >
-                                                                <Clock className="mr-2 h-4 w-4" />
-                                                                {editFormData.need_answer_by
-                                                                    ? format(editFormData.need_answer_by, "MMM d")
-                                                                    : "Pick date"}
-                                                            </Button>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                            <CalendarComponent
-                                                                mode="single"
-                                                                selected={editFormData.need_answer_by}
-                                                                onSelect={(date) => setEditFormData({ ...editFormData, need_answer_by: date })}
-                                                                initialFocus
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                </div>
-
-                                                {/* Delivery Date */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <Truck className="h-4 w-4 text-muted-foreground" />
-                                                        <Label>Delivery Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                                                    </div>
-                                                    <Popover>
-                                                        <PopoverTrigger asChild>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                className={cn(
-                                                                    "w-full justify-start text-left font-normal",
-                                                                    !editFormData.delivery_date && "text-muted-foreground"
-                                                                )}
-                                                            >
-                                                                <Truck className="mr-2 h-4 w-4" />
-                                                                {editFormData.delivery_date
-                                                                    ? format(editFormData.delivery_date, "MMM d")
-                                                                    : "Pick date"}
-                                                            </Button>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-auto p-0" align="start">
-                                                            <CalendarComponent
-                                                                mode="single"
-                                                                selected={editFormData.delivery_date}
-                                                                onSelect={(date) => setEditFormData({ ...editFormData, delivery_date: date })}
-                                                                initialFocus
-                                                            />
-                                                        </PopoverContent>
-                                                    </Popover>
+                                                    <Input
+                                                        value={editFormData.company || ""}
+                                                        onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                                                        placeholder="Enter company name"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>

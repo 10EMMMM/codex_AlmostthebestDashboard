@@ -1,0 +1,31 @@
+=== AUDIT OF public.requests TABLE ===
+
+Total columns: 19
+
+ALL COLUMNS:
+============================================================
+  1. id                             string     9510032d-57db-428f-8529-074108
+  2. title                          string     Punjabi
+  3. description                    null       NULL
+  4. request_type                   string     RESTAURANT
+  5. requester_id                   string     142495da-d700-4287-a5d4-7be69f
+  6. created_by                     string     9aa9a129-8911-45a4-81f2-0eec48
+  7. city_id                        string     4b609c29-b13e-459a-9c12-51e55e
+  8. status                         string     new
+  9. priority                       null       NULL
+ 10. category                       null       NULL
+ 11. volume                         null       NULL
+ 12. delivery_date                  string     2025-11-17
+ 13. created_at                     string     2025-11-17T15:43:08.379552+00:
+ 14. updated_at                     string     2025-11-17T15:43:08.379552+00:
+ 15. archived_at                    null       NULL
+ 16. archived_by                    null       NULL
+ 17. archive_reason                 null       NULL
+ 18. need_answer_by                 null       NULL
+ 19. company                        null       NULL
+
+============================================================
+USER-RELATED COLUMNS:
+============================================================
+requester_id: 142495da-d700-4287-a5d4-7be69fd6543e
+created_by: 9aa9a129-8911-45a4-81f2-0eec48d862e1

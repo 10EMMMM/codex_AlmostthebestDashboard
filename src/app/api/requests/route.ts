@@ -40,7 +40,7 @@ export async function GET(request: Request) {
 
         if (!isSuperAdmin) {
             // For non-super admins, only show requests they created, requested, or are assigned to
-            query = query.or(`created_by.eq.${user.id},requested_by.eq.${user.id},id.in.(
+            query = query.or(`created_by.eq.${user.id},requester_id.eq.${user.id},id.in.(
         select request_id from request_assignments where user_id = '${user.id}'
       )`);
         }
@@ -58,13 +58,13 @@ export async function GET(request: Request) {
 
         // Get unique user IDs for creators and requesters
         const creatorIds = [...new Set(requests.map((r: any) => r.created_by).filter(Boolean))];
-        const requesterIds = [...new Set(requests.map((r: any) => r.requested_by).filter(Boolean))];
+        const requesterIds = [...new Set(requests.map((r: any) => r.requester_id).filter(Boolean))];
         const allUserIds = [...new Set([...creatorIds, ...requesterIds])];
 
         // Fetch profiles for all users
         const { data: profiles } = await supabase
             .from("profiles")
-            .select("user_id, display_name, email")
+            .select("user_id, display_name")
             .in("user_id", allUserIds);
 
         // Create a map for quick lookup
@@ -73,10 +73,29 @@ export async function GET(request: Request) {
             profileMap.set(profile.user_id, profile);
         });
 
+        // For users without profiles, fetch from auth.users
+        const missingUserIds = allUserIds.filter(id => !profileMap.has(id));
+        if (missingUserIds.length > 0) {
+            for (const userId of missingUserIds) {
+                try {
+                    const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+                    if (authUser?.user) {
+                        profileMap.set(userId, {
+                            user_id: userId,
+                            display_name: authUser.user.user_metadata?.display_name || null,
+                            email: authUser.user.email,
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Failed to fetch auth user ${userId}:`, error);
+                }
+            }
+        }
+
         // Format the response
         const formattedRequests = requests?.map((req: any) => {
             const creator = profileMap.get(req.created_by);
-            const requester = profileMap.get(req.requested_by);
+            const requester = profileMap.get(req.requester_id);
 
             return {
                 id: req.id,
@@ -91,9 +110,10 @@ export async function GET(request: Request) {
                 delivery_date: req.delivery_date,
                 priority: req.priority,
                 category: req.category,
+                company: req.company,
                 status: req.status || "PENDING",
                 created_by: req.created_by,
-                requested_by: req.requested_by,
+                requester_id: req.requester_id,
                 created_on_behalf: req.created_on_behalf || false,
                 created_at: req.created_at,
                 creator_name: creator?.display_name || creator?.email,

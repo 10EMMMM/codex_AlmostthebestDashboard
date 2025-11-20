@@ -125,21 +125,6 @@ function getDaysOld(dateString: string): number {
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
 }
-
-function RequestCard({ request, onClick }: { request: Request; onClick: () => void }) {
-    const daysOld = getDaysOld(request.created_at);
-    const isNew = daysOld === 0;
-
-    return (
-        <Card
-            className="relative bg-card rounded-xl p-4 flex flex-col shadow-lg hover:shadow-xl transition-shadow cursor-pointer border-0"
-            onClick={onClick}
-        >
-            <div className="space-y-3">
-                {/* Header with badges and avatar */}
-                <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-3">
                             <span
                                 className={`text-xs px-2.5 py-1 rounded-full font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}
                             >
@@ -150,211 +135,217 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
                             >
                                 {request.status}
                             </span>
-                            {isNew && (
-                                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
-                                    New ✨
-                                </span>
+{
+    isNew && (
+        <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+            New ✨
+        </span>
+    )
+}
+                        </div >
+    <h3 className="font-semibold text-xl line-clamp-2 mb-2">{request.title}</h3>
+                    </div >
+    {/* BDR Avatar(s) */ }
+    < div className = "flex flex-col items-center gap-1" >
+    {
+        request.assigned_bdrs && request.assigned_bdrs.length > 0 ? (
+            <>
+                {request.assigned_bdrs.length === 1 ? (
+                    // Single BDR
+                    <>
+                        <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                            {request.assigned_bdrs[0].avatar ? (
+                                <img
+                                    src={request.assigned_bdrs[0].avatar}
+                                    alt={request.assigned_bdrs[0].name}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                    <UserCog className="h-6 w-6 text-primary" />
+                                </div>
                             )}
                         </div>
-                        <h3 className="font-semibold text-xl line-clamp-2 mb-2">{request.title}</h3>
-                    </div>
-                    {/* BDR Avatar(s) */}
-                    <div className="flex flex-col items-center gap-1">
-                        {request.assigned_bdrs && request.assigned_bdrs.length > 0 ? (
-                            <>
-                                {request.assigned_bdrs.length === 1 ? (
-                                    // Single BDR
-                                    <>
-                                        <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
-                                            {request.assigned_bdrs[0].avatar ? (
-                                                <img
-                                                    src={request.assigned_bdrs[0].avatar}
-                                                    alt={request.assigned_bdrs[0].name}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="h-full w-full flex items-center justify-center bg-primary/20">
-                                                    <UserCog className="h-6 w-6 text-primary" />
-                                                </div>
-                                            )}
+                        <span className="text-xs text-muted-foreground font-medium text-center">
+                            {request.assigned_bdrs[0].name}
+                        </span>
+                    </>
+                ) : (
+                    // Multiple BDRs - Stacked avatars
+                    <>
+                        <div className="relative h-12 w-16">
+                            {request.assigned_bdrs.slice(0, 2).map((bdr, idx) => (
+                                <div
+                                    key={bdr.id}
+                                    className="absolute h-10 w-10 rounded-full border-2 border-background overflow-hidden"
+                                    style={{
+                                        left: `${idx * 24}px`,
+                                        zIndex: 2 - idx,
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}
+                                >
+                                    {bdr.avatar ? (
+                                        <img
+                                            src={bdr.avatar}
+                                            alt={bdr.name}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                            <UserCog className="h-5 w-5 text-primary" />
                                         </div>
-                                        <span className="text-xs text-muted-foreground font-medium text-center">
-                                            {request.assigned_bdrs[0].name}
-                                        </span>
-                                    </>
-                                ) : (
-                                    // Multiple BDRs - Stacked avatars
-                                    <>
-                                        <div className="relative h-12 w-16">
-                                            {request.assigned_bdrs.slice(0, 2).map((bdr, idx) => (
-                                                <div
-                                                    key={bdr.id}
-                                                    className="absolute h-10 w-10 rounded-full border-2 border-background overflow-hidden"
-                                                    style={{
-                                                        left: `${idx * 24}px`,
-                                                        zIndex: 2 - idx,
-                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                    }}
-                                                >
-                                                    {bdr.avatar ? (
-                                                        <img
-                                                            src={bdr.avatar}
-                                                            alt={bdr.name}
-                                                            className="h-full w-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="h-full w-full flex items-center justify-center bg-primary/20">
-                                                            <UserCog className="h-5 w-5 text-primary" />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            {request.assigned_bdrs.length > 2 && (
-                                                <div
-                                                    className="absolute h-10 w-10 rounded-full border-2 border-background bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground"
-                                                    style={{
-                                                        left: '48px',
-                                                        zIndex: 0,
-                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                    }}
-                                                >
-                                                    +{request.assigned_bdrs.length - 2}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-xs text-primary font-semibold text-center bg-primary/10 px-2 py-0.5 rounded-full">
-                                            Team ({request.assigned_bdrs.length})
-                                        </span>
-                                    </>
-                                )}
-                            </>
-                        ) : request.assigned_bdr_avatar ? (
-                            // Fallback to single BDR fields (backward compatibility)
-                            <>
-                                <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
-                                    <img
-                                        src={request.assigned_bdr_avatar}
-                                        alt={request.assigned_bdr_name || "BDR"}
-                                        className="h-full w-full object-cover"
-                                    />
+                                    )}
                                 </div>
-                                {request.assigned_bdr_name && (
-                                    <span className="text-xs text-muted-foreground font-medium text-center">
-                                        {request.assigned_bdr_name}
-                                    </span>
-                                )}
-                            </>
-                        ) : (
-                            // No BDR assigned
-                            <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center bg-muted">
-                                <UserCog className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Description */}
-                {request.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-                        {request.description}
-                    </p>
+                            ))}
+                            {request.assigned_bdrs.length > 2 && (
+                                <div
+                                    className="absolute h-10 w-10 rounded-full border-2 border-background bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground"
+                                    style={{
+                                        left: '48px',
+                                        zIndex: 0,
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}
+                                >
+                                    +{request.assigned_bdrs.length - 2}
+                                </div>
+                            )}
+                        </div>
+                        <span className="text-xs text-primary font-semibold text-center bg-primary/10 px-2 py-0.5 rounded-full">
+                            Team ({request.assigned_bdrs.length})
+                        </span>
+                    </>
                 )}
-
-                {/* Details Grid - All Inline */}
-                <div className="text-sm space-y-1">
-                    {request.company && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <Building2 className="h-4 w-4 flex-shrink-0" />
-                            <span>{request.company}</span>
-                        </div>
-                    )}
-                    {request.requester_name && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <User className="h-4 w-4 flex-shrink-0" />
-                            <span>{request.requester_name}</span>
-                        </div>
-                    )}
-                    {!request.requester_name && request.creator_name && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <User className="h-4 w-4 flex-shrink-0" />
-                            <span>{request.creator_name}</span>
-                        </div>
-                    )}
-                    {request.city_name && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="h-4 w-4 flex-shrink-0" />
-                            <span>
-                                {request.city_name}
-                                {request.city_state && `, ${request.city_state}`}
-                            </span>
-                        </div>
-                    )}
-                    {request.volume !== undefined && request.volume !== null && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <Package className="h-4 w-4 flex-shrink-0" />
-                            <span>{request.volume}</span>
-                        </div>
-                    )}
+            </>
+        ) : request.assigned_bdr_avatar ? (
+            // Fallback to single BDR fields (backward compatibility)
+            <>
+                <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                    <img
+                        src={request.assigned_bdr_avatar}
+                        alt={request.assigned_bdr_name || "BDR"}
+                        className="h-full w-full object-cover"
+                    />
                 </div>
-
-                {/* Footer */}
-                <div className="pt-4 border-t border-border text-xs space-y-2">
-                    {/* Date badges */}
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                        {(() => {
-                            const now = new Date();
-                            const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
-                            const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
-                            const badgeColor = isOverdueForReply
-                                ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                : "bg-primary/10 text-primary";
-
-                            return (
-                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
-                                    <Calendar className="h-3.5 w-3.5" />
-                                    <span className="font-medium">
-                                        {isNew ? (
-                                            <span>Just created</span>
-                                        ) : (
-                                            `${daysOld}d old`
-                                        )}
-                                    </span>
-                                </div>
-                            );
-                        })()}
-                        {request.need_answer_by && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
-                                <Clock className="h-3.5 w-3.5" />
-                                <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
-                            </div>
-                        )}
-                        {request.delivery_date && (() => {
-                            const now = new Date();
-                            const deliveryDate = new Date(request.delivery_date);
-                            const isOverdue = now > deliveryDate;
-                            const badgeColor = isOverdue
-                                ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
-
-                            return (
-                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
-                                    <Truck className="h-3.5 w-3.5" />
-                                    <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
-                                </div>
-                            );
-                        })()}
-                    </div>
-
-                    {request.created_on_behalf && request.requester_name && (
-                        <div className="flex items-center gap-2 text-primary">
-                            <UserCog className="h-3.5 w-3.5" />
-                            <span className="font-medium">Created by admin for {request.requester_name}</span>
-                        </div>
-                    )}
-
-                </div>
+                {request.assigned_bdr_name && (
+                    <span className="text-xs text-muted-foreground font-medium text-center">
+                        {request.assigned_bdr_name}
+                    </span>
+                )}
+            </>
+        ) : (
+            // No BDR assigned
+            <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center bg-muted">
+                <UserCog className="h-6 w-6 text-muted-foreground" />
             </div>
-        </Card>
+        )
+    }
+                    </div >
+                </div >
+
+    {/* Description */ }
+{
+    request.description && (
+        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+            {request.description}
+        </p>
+    )
+}
+
+{/* Details Grid - All Inline */ }
+<div className="text-sm space-y-1">
+    {request.company && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <Building2 className="h-4 w-4 flex-shrink-0" />
+            <span>{request.company}</span>
+        </div>
+    )}
+    {request.requester_name && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <User className="h-4 w-4 flex-shrink-0" />
+            <span>{request.requester_name}</span>
+        </div>
+    )}
+    {!request.requester_name && request.creator_name && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <User className="h-4 w-4 flex-shrink-0" />
+            <span>{request.creator_name}</span>
+        </div>
+    )}
+    {request.city_name && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <MapPin className="h-4 w-4 flex-shrink-0" />
+            <span>
+                {request.city_name}
+                {request.city_state && `, ${request.city_state}`}
+            </span>
+        </div>
+    )}
+    {request.volume !== undefined && request.volume !== null && (
+        <div className="flex items-center gap-2 text-muted-foreground">
+            <Package className="h-4 w-4 flex-shrink-0" />
+            <span>{request.volume}</span>
+        </div>
+    )}
+</div>
+
+{/* Footer */ }
+<div className="pt-4 border-t border-border text-xs space-y-2">
+    {/* Date badges */}
+    <div className="flex items-center gap-2 text-muted-foreground">
+        {(() => {
+            const now = new Date();
+            const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
+            const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
+            const badgeColor = isOverdueForReply
+                ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                : "bg-primary/10 text-primary";
+
+            return (
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span className="font-medium">
+                        {isNew ? (
+                            <span>Just created</span>
+                        ) : (
+                            `${daysOld}d old`
+                        )}
+                    </span>
+                </div>
+            );
+        })()}
+        {request.need_answer_by && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
+            </div>
+        )}
+        {request.delivery_date && (() => {
+            const now = new Date();
+            const deliveryDate = new Date(request.delivery_date);
+            const isOverdue = now > deliveryDate;
+            const badgeColor = isOverdue
+                ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+
+            return (
+                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                    <Truck className="h-3.5 w-3.5" />
+                    <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
+                </div>
+            );
+        })()}
+    </div>
+
+    {request.created_on_behalf && request.requester_name && (
+        <div className="flex items-center gap-2 text-primary">
+            <UserCog className="h-3.5 w-3.5" />
+            <span className="font-medium">Created by admin for {request.requester_name}</span>
+        </div>
+    )}
+
+</div>
+            </div >
+        </Card >
     );
 }
 

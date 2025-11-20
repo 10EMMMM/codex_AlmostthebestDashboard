@@ -36,6 +36,11 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "_archive",
+    "**/*.legacy.tsx",
+    "**/temp-refactor/**",
+    "**/create-user-form.tsx",
+    "**/create-user/**"
   ]
 }

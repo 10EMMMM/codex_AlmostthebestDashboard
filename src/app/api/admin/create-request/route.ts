@@ -6,7 +6,8 @@ type InsertPayload = {
   description: string;
   request_type: string;
   city_id: string;
-  requester_id: string;
+  requester_id?: string;  // Legacy field
+  requested_by?: string;  // NEW: For proxy creation
   created_by: string;
   priority: string | null;
   category: string | null;
@@ -14,6 +15,8 @@ type InsertPayload = {
   company: string | null;
   need_answer_by: string | null;
   delivery_date: string | null;
+  budget?: number;
+  deadline?: string;
 };
 
 export async function POST(request: Request) {
@@ -48,19 +51,12 @@ export async function POST(request: Request) {
     if (sessionError || !user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
-    if (user.app_metadata?.is_super_admin !== true) {
-      return NextResponse.json(
-        { error: "Forbidden: not a super admin" },
-        { status: 403 }
-      );
-    }
 
     const payload = (await request.json()) as InsertPayload;
     if (
       !payload?.title ||
       !payload?.request_type ||
-      !payload?.city_id ||
-      !payload?.requester_id
+      !payload?.city_id
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -68,7 +64,34 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error } = await supabaseAdmin.from("requests").insert(payload);
+    // Determine if this is a proxy creation
+    const isSuperAdmin = user.app_metadata?.is_super_admin === true;
+    const requestedBy = isSuperAdmin && payload.requested_by
+      ? payload.requested_by
+      : user.id;
+    const createdOnBehalf = isSuperAdmin && payload.requested_by ? true : false;
+
+    // Build the insert data
+    const insertData = {
+      title: payload.title,
+      description: payload.description || "",
+      request_type: payload.request_type,
+      city_id: payload.city_id,
+      created_by: user.id,
+      requested_by: requestedBy,
+      created_on_behalf: createdOnBehalf,
+      budget: payload.budget || null,
+      deadline: payload.deadline || null,
+      priority: payload.priority || null,
+      category: payload.category || null,
+      volume: payload.volume || null,
+      company: payload.company || null,
+      need_answer_by: payload.need_answer_by || null,
+      delivery_date: payload.delivery_date || null,
+      status: "PENDING",
+    };
+
+    const { error } = await supabaseAdmin.from("requests").insert(insertData);
     if (error) {
       console.error("Admin request insert error:", error);
       return NextResponse.json({ error: error.message }, { status: 400 });

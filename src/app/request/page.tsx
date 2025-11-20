@@ -1,8 +1,429 @@
 "use client";
 
-/**
- * Temporary refactored request page wrapper.
- * The original implementation lives in `page.legacy.tsx`.
- * Switching back is as easy as editing this file to export from that module.
- */
-export { RequestPageRefactor as default } from "./temp-refactor/request-page";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { CreateRequestForm } from "@/components/features/requests/create-request-form";
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog } from "lucide-react";
+import { SplashScreen } from "@/components/ui/splash-screen";
+import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
+import { format } from "date-fns";
+
+type Request = {
+    id: string;
+    request_type: string;
+    title: string;
+    description?: string;
+    city_id: string;
+    city_name?: string;
+    city_state?: string;
+    deadline?: string;
+    status: string;
+    created_by: string;
+    requested_by: string;
+    created_on_behalf: boolean;
+    created_at: string;
+    creator_name?: string;
+    requester_name?: string;
+    assigned_bdr_id?: string;
+    assigned_bdr_name?: string;
+    assigned_bdr_avatar?: string;
+    assigned_bdrs?: Array<{
+        id: string;
+        name: string;
+        avatar?: string;
+    }>;
+};
+
+const REQUEST_TYPE_COLORS: Record<string, string> = {
+    RESTAURANT: "bg-emerald-500 text-white",
+    EVENT: "bg-blue-500 text-white",
+    CUISINE: "bg-purple-500 text-white",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+    PENDING: "bg-yellow-500 text-yellow-950",
+    IN_PROGRESS: "bg-blue-500 text-white",
+    COMPLETED: "bg-green-500 text-white",
+    CANCELLED: "bg-gray-500 text-white",
+};
+
+function getDaysOld(dateString: string): number {
+    const createdDate = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+}
+
+function RequestCard({ request }: { request: Request }) {
+    const daysOld = getDaysOld(request.created_at);
+    const isNew = daysOld === 0;
+
+    return (
+        <div className="widget">
+            <Card
+                className="bg-card rounded-xl p-6 flex flex-col border shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full"
+                onClick={() => console.log("Request clicked:", request.id)}
+            >
+                <div className="space-y-4">
+                    {/* Header with badges and avatar */}
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span
+                                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}
+                                >
+                                    {request.request_type}
+                                </span>
+                                <span
+                                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[request.status] || "bg-gray-500 text-white"}`}
+                                >
+                                    {request.status}
+                                </span>
+                                {isNew && (
+                                    <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                                        New ✨
+                                    </span>
+                                )}
+                            </div>
+                            <h3 className="font-semibold text-xl line-clamp-2 mb-2">{request.title}</h3>
+                        </div>
+                        {/* BDR Avatar(s) */}
+                        <div className="flex flex-col items-center gap-1">
+                            {request.assigned_bdrs && request.assigned_bdrs.length > 0 ? (
+                                <>
+                                    {request.assigned_bdrs.length === 1 ? (
+                                        // Single BDR
+                                        <>
+                                            <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                                                {request.assigned_bdrs[0].avatar ? (
+                                                    <img
+                                                        src={request.assigned_bdrs[0].avatar}
+                                                        alt={request.assigned_bdrs[0].name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                                        <UserCog className="h-6 w-6 text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-muted-foreground font-medium text-center">
+                                                {request.assigned_bdrs[0].name}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        // Multiple BDRs - Stacked avatars
+                                        <>
+                                            <div className="relative h-12 w-16">
+                                                {request.assigned_bdrs.slice(0, 2).map((bdr, idx) => (
+                                                    <div
+                                                        key={bdr.id}
+                                                        className="absolute h-10 w-10 rounded-full border-2 border-background overflow-hidden"
+                                                        style={{
+                                                            left: `${idx * 24}px`,
+                                                            zIndex: 2 - idx,
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    >
+                                                        {bdr.avatar ? (
+                                                            <img
+                                                                src={bdr.avatar}
+                                                                alt={bdr.name}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                                                <UserCog className="h-5 w-5 text-primary" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {request.assigned_bdrs.length > 2 && (
+                                                    <div
+                                                        className="absolute h-10 w-10 rounded-full border-2 border-background bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground"
+                                                        style={{
+                                                            left: '48px',
+                                                            zIndex: 0,
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    >
+                                                        +{request.assigned_bdrs.length - 2}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-primary font-semibold text-center bg-primary/10 px-2 py-0.5 rounded-full">
+                                                Team ({request.assigned_bdrs.length})
+                                            </span>
+                                        </>
+                                    )}
+                                </>
+                            ) : request.assigned_bdr_avatar ? (
+                                // Fallback to single BDR fields (backward compatibility)
+                                <>
+                                    <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                                        <img
+                                            src={request.assigned_bdr_avatar}
+                                            alt={request.assigned_bdr_name || "BDR"}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                    {request.assigned_bdr_name && (
+                                        <span className="text-xs text-muted-foreground font-medium text-center">
+                                            {request.assigned_bdr_name}
+                                        </span>
+                                    )}
+                                </>
+                            ) : (
+                                // No BDR assigned
+                                <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center bg-muted">
+                                    <UserCog className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    {request.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                            {request.description}
+                        </p>
+                    )}
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                        {request.city_name && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <MapPin className="h-4 w-4 flex-shrink-0" />
+                                <span className="font-medium">
+                                    {request.city_name}
+                                    {request.city_state && `, ${request.city_state}`}
+                                </span>
+                            </div>
+                        )}
+
+                        {request.deadline && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Calendar className="h-4 w-4 flex-shrink-0" />
+                                <span>{format(new Date(request.deadline), "MMM d, yyyy")}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="pt-4 border-t border-border text-xs text-muted-foreground space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span>
+                                {isNew ? (
+                                    <span className="text-primary font-semibold">Just created</span>
+                                ) : (
+                                    `${daysOld} day${daysOld === 1 ? '' : 's'} old`
+                                )}
+                            </span>
+                            {request.creator_name && <span className="font-medium">by {request.creator_name}</span>}
+                        </div>
+                        {request.created_on_behalf && request.requester_name && (
+                            <div className="flex items-center gap-2 text-primary">
+                                <UserCog className="h-3.5 w-3.5" />
+                                <span className="font-medium">Created by admin for {request.requester_name}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+const RequestListCard = dynamic(
+    () =>
+        Promise.resolve(
+            ({ requests, loading }: { requests: Request[]; loading: boolean }) => (
+                <div className="widget">
+                    <Card className="border border-white/15 p-6">
+                        <h3 className="text-lg font-semibold mb-4">All Requests ({requests.length})</h3>
+                        {loading ? (
+                            <div className="space-y-2">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="space-y-2 p-3 border border-white/10 rounded-lg">
+                                        <div className="flex gap-2">
+                                            <Skeleton className="h-5 w-20 rounded-full" />
+                                            <Skeleton className="h-5 w-16 rounded-full" />
+                                        </div>
+                                        <Skeleton className="h-5 w-2/3" />
+                                        <Skeleton className="h-3 w-full" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : requests.length === 0 ? (
+                            <div className="text-center py-8">
+                                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                                <p className="text-muted-foreground">No requests found</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Create your first request to get started
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                Click on a request card to view details
+                            </p>
+                        )}
+                    </Card>
+                </div>
+            )
+        ),
+    { ssr: false }
+);
+
+export default function RequestPage() {
+    const { user, loading: authLoading } = useAuth();
+    const { toast } = useToast();
+    const [requests, setRequests] = useState<Request[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+
+    const loadRequests = async () => {
+        try {
+            setLoading(true);
+            const supabase = (window as any).supabase;
+            if (!supabase) {
+                throw new Error("Supabase client not initialized");
+            }
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const response = await fetch("/api/requests", {
+                headers: {
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch requests");
+
+            const data = await response.json();
+            setRequests(data.requests || []);
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            loadRequests();
+        }
+    }, [user]);
+
+    if (authLoading) return <SplashScreen />;
+    if (!user) return <ErrorSplashScreen message="Please log in" actionText="Go to Login" onActionClick={() => window.location.href = '/'} />;
+
+    return (
+        <>
+            {/* Page wordmark */}
+            <div className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]">
+                Requests
+            </div>
+            <DashboardLayout title="">
+
+                {/* Viewport wrapper with scaling */}
+                <div className="relative w-full h-full">
+                    <div className="relative z-10 w-full h-full" style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
+                        <div className="h-full overflow-y-auto pr-4" style={{ paddingTop: '5%' }}>
+                            <div className="mx-auto max-w-5xl">
+                                {/* Create Request Button */}
+                                <div className="mb-6">
+                                    <Button onClick={() => setShowCreateModal(true)} size="lg">
+                                        <Plus className="mr-2 h-5 w-5" />
+                                        Create New Request
+                                    </Button>
+                                </div>
+
+                                <div className="dashboard-grid">
+
+                                    {loading ? (
+                                        [...Array(6)].map((_, i) => (
+                                            <div key={i} className="widget">
+                                                <Card className="bg-card rounded-xl p-6 flex flex-col border shadow-lg h-full">
+                                                    <div className="space-y-4">
+                                                        {/* Header badges */}
+                                                        <div className="flex gap-2 mb-3">
+                                                            <Skeleton className="h-6 w-24 rounded-full" />
+                                                            <Skeleton className="h-6 w-20 rounded-full" />
+                                                        </div>
+                                                        {/* Title */}
+                                                        <Skeleton className="h-7 w-3/4" />
+                                                        {/* Description */}
+                                                        <div className="space-y-2">
+                                                            <Skeleton className="h-4 w-full" />
+                                                            <Skeleton className="h-4 w-5/6" />
+                                                            <Skeleton className="h-4 w-4/6" />
+                                                        </div>
+                                                        {/* Details */}
+                                                        <div className="space-y-3">
+                                                            <Skeleton className="h-4 w-32" />
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <Skeleton className="h-4 w-24" />
+                                                                <Skeleton className="h-4 w-28" />
+                                                            </div>
+                                                        </div>
+                                                        {/* Footer */}
+                                                        <div className="pt-4 border-t border-border">
+                                                            <div className="flex items-center justify-between">
+                                                                <Skeleton className="h-3 w-24" />
+                                                                <Skeleton className="h-3 w-20" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        requests.map((request) => <RequestCard key={request.id} request={request} />)
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Create Request Sheet */}
+                <Sheet open={showCreateModal} onOpenChange={setShowCreateModal}>
+                    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+                        <SheetHeader>
+                            <SheetTitle>Create New Request</SheetTitle>
+                            <SheetDescription>
+                                Fill out the form below to create a new request
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-6">
+                            <CreateRequestForm
+                                onCancel={() => setShowCreateModal(false)}
+                                onCreated={() => {
+                                    setShowCreateModal(false);
+                                    loadRequests();
+                                }}
+                            />
+                        </div>
+                    </SheetContent>
+                </Sheet>
+            </DashboardLayout>
+        </>
+    );
+}

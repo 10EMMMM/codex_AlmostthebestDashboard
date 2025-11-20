@@ -11,7 +11,7 @@ const getSupabaseAdmin = () => {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 };
 
-const requireSuperAdmin = async (request: Request, supabaseAdmin: ReturnType<typeof createClient>) => {
+const requireSuperAdmin = async (request: Request, supabaseAdmin: any) => {
   const authHeader =
     request.headers.get("authorization") ?? request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {

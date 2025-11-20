@@ -8,8 +8,10 @@ This guide describes the end-to-end data flow that powers Almost The Best Dashbo
    Every new request automatically creates a public.request_assignments row for the creating super admin so ownership is captured before BDR handoff.
 3. **Onboarding controls** - Approve/reject restaurant onboarding entries, edit onboarding checklists, run CSV imports, and flag or clean up problematic data.
 4. **System configuration** - Toggle feature flags, manage API keys/service accounts, schedule maintenance windows, and customize dashboard widgets/layouts for the organization.
+   - Schema-wise, `public.system_settings` stores durable switches/secret blobs while `public.feature_flags` plus `public.feature_flag_targets` capture scoped toggles and overrides, keeping all writes behind super-admin RLS.
 5. **Monitoring & analytics** - Access platform-wide dashboards (request volume, onboarding velocity, user activity), download reports, and configure alerts for anomalies.
 6. **Messaging & notifications** - Broadcast announcements, override notification settings when critical, and review/clear sensitive message threads.
+   - Templated copy, delivery transports, and city/team-specific channel overrides now live in `public.message_templates`, `public.notification_channels`, and `public.notification_channel_settings`, so every emission can be audited and routed via the same schema.
 
 ## Plain User Feature Plan
 A public view of all requests (without assignment details) will be available so every user can see what is underway at a glance, while individual editing rights remain scoped by role.

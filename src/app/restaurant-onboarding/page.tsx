@@ -16,7 +16,7 @@ import {
   User,
   UtensilsCrossed,
 } from "lucide-react";
-import { DashboardLayout } from "@/components/dashboard-layout";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -272,10 +272,10 @@ const normalizeStatus = (value: string | null | undefined): RestaurantStatus =>
 const formatDate = (value: string | null) =>
   value
     ? new Date(value).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
     : "—";
 
 const initials = (value: string) =>
@@ -787,15 +787,15 @@ export default function RestaurantOnboardingPage() {
         await Promise.all([
           cityIds.length
             ? supabase
-                .from("cities")
-                .select("id, name, state_code")
-                .in("id", cityIds)
+              .from("cities")
+              .select("id, name, state_code")
+              .in("id", cityIds)
             : Promise.resolve({ data: [], error: null }),
           cuisineIds.length
             ? supabase
-                .from("cuisines")
-                .select("id, name")
-                .in("id", cuisineIds)
+              .from("cuisines")
+              .select("id, name")
+              .in("id", cuisineIds)
             : Promise.resolve({ data: [], error: null }),
           supabase
             .from("restaurant_contacts")
@@ -814,7 +814,7 @@ export default function RestaurantOnboardingPage() {
       if (assignmentRows.error) throw assignmentRows.error;
 
       const cityLookup: Record<string, string> = {};
-      (cityRows.data ?? []).forEach((city) => {
+      (cityRows.data ?? []).forEach((city: any) => {
         cityLookup[city.id] = `${city.name}, ${city.state_code ?? ""}`.trim();
       });
 
@@ -838,9 +838,9 @@ export default function RestaurantOnboardingPage() {
 
       const { data: profileRows, error: profileError } = bdrUserIds.length
         ? await supabase
-            .from("profiles")
-            .select("user_id, display_name")
-            .in("user_id", bdrUserIds)
+          .from("profiles")
+          .select("user_id, display_name")
+          .in("user_id", bdrUserIds)
         : { data: [], error: null };
       if (profileError) throw profileError;
 
@@ -911,7 +911,7 @@ export default function RestaurantOnboardingPage() {
           .eq("user_id", user.id);
         if (error) throw error;
         setCityOptions(
-          data?.map((row) => ({
+          data?.map((row: any) => ({
             id: row.city_id,
             label: `${row.cities.name}, ${row.cities.state_code}`,
           })) ?? []

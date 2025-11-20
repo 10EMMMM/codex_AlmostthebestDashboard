@@ -9,13 +9,11 @@
 - [x] **Assignments vs tasks consistency**
   - Notes: tasks still default to super admins, but the workflow now requires them to set `public.restaurant_tasks.assigned_to` to the BDR who finished the work before onboarding completes, so ownership stays accurate.
 
-- [ ] **Client notification templates**
-  - Gap: guide promises AMs can send templated acknowledgments, but there's no table for templates/transport settings.
-  - Action: design a `public.message_templates` (or similar) table plus configuration for delivery channels.
+- [x] **Client notification templates**
+  - Notes: `docs/database-v1-plan.sql` now defines `public.message_templates` alongside `public.notification_channels` and `public.notification_channel_settings` so templated content plus delivery configs are captured in schema (RLS keeps editing scoped to super admins).
 
-- [ ] **System configuration storage**
-  - Gap: Super admin feature flags/API key management lacks a home in the schema.
-  - Action: add `public.system_settings` / `public.feature_flags` with RLS limiting writes to super admins.
+- [x] **System configuration storage**
+  - Notes: the plan now includes `public.system_settings`, `public.feature_flags`, and `public.feature_flag_targets` so feature toggles, API keys, and scoped overrides have a canonical home with super-admin-only writes enforced by RLS.
 
 - [x] **KPI population plan**
   - Notes: a nightly Supabase cron job now aggregates `public.task_activity` into `public.monthly_task_metrics`, `public.onboarding_kpis`, and `public.location_performance` so dashboards stay current.

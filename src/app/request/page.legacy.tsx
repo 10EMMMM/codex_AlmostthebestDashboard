@@ -64,7 +64,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { DashboardLayout } from "@/components/dashboard-layout";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { SplashScreen } from "@/components/ui/splash-screen";
@@ -606,600 +606,466 @@ const CreateRequestForm = ({
           }
           const cityOptions = payload.cities ?? [];
           setCities(cityOptions);
-          if (!cityOptions.length) {
-            setCityId("");
-          }
-        } else {
-          const { data, error } = await supabase
-            .from("account_manager_cities")
-            .select("city_id, cities!inner(id, name, state_code)")
-            .eq("user_id", targetUserId);
-          if (error) throw error;
-          const cityOptions =
-            data?.map((row) => ({
-              id: row.city_id,
-              label: `${row.cities.name}, ${row.cities.state_code}`,
-            })) ?? [];
-          setCities(cityOptions);
-          if (!cityOptions.length) {
-            setCityId("");
-          }
-        }
-      } catch (error) {
-        console.error("Error loading cities", error);
-        toast({
           title: "Unable to load cities",
-          description:
-            error instanceof Error ? error.message : "Please try again later.",
-          variant: "destructive",
-        });
-        setCities([]);
-      } finally {
-        setLoadingCities(false);
-      }
-    };
-    loadCities();
-  }, [supabase, user?.id, canChooseRequester, requesterId, toast]);
-  useEffect(() => {
-    if (!canChooseRequester && user?.id) {
-      setRequesterId(user.id);
-    }
-  }, [canChooseRequester, user]);
-  useEffect(() => {
-    if (canChooseRequester) {
-      setCityId("");
-      setCityQuery("");
-      setCityPickerOpen(false);
-    }
-  }, [requesterId, canChooseRequester]);
-  useEffect(() => {
-    if (canChooseRequester && !requestType) {
-      setRequesterId("");
-      setCityId("");
-      setCityQuery("");
-      setCityPickerOpen(false);
-    }
-  }, [requestType, canChooseRequester]);
-  const filteredCities = useMemo(() => {
-    const query = cityQuery.toLowerCase();
-    return cities.filter((city) => city.label.toLowerCase().includes(query));
-  }, [cities, cityQuery]);
-  const filteredRequesters = useMemo(() => {
-    const query = requesterQuery.toLowerCase();
-    return accountManagers.filter((manager) =>
-      manager.label.toLowerCase().includes(query)
-    );
-  }, [accountManagers, requesterQuery]);
-  const hasRequesterQuery = requesterQuery.trim().length > 0;
-  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
-  const steps = useMemo(() => {
-    if (canChooseRequester) {
-      return [
-        { id: "type", label: "Request Type" },
-        { id: "details", label: "Details & Dates" },
-        { id: "review", label: "Review & Assign" },
-      ];
-    }
+            description:
+          error instanceof Error ? error.message : "Please try again later.",
+            variant: "destructive",
+      });
+  setCities([]);
+} finally {
+  setLoadingCities(false);
+}
+  };
+loadCities();
+}, [supabase, user?.id, canChooseRequester, requesterId, toast]);
+useEffect(() => {
+  if (!canChooseRequester && user?.id) {
+    setRequesterId(user.id);
+  }
+}, [canChooseRequester, user]);
+useEffect(() => {
+  if (canChooseRequester) {
+    setCityId("");
+    setCityQuery("");
+    setCityPickerOpen(false);
+  }
+}, [requesterId, canChooseRequester]);
+useEffect(() => {
+  if (canChooseRequester && !requestType) {
+    setRequesterId("");
+    setCityId("");
+    setCityQuery("");
+    setCityPickerOpen(false);
+  }
+}, [requestType, canChooseRequester]);
+const filteredCities = useMemo(() => {
+  const query = cityQuery.toLowerCase();
+  return cities.filter((city) => city.label.toLowerCase().includes(query));
+}, [cities, cityQuery]);
+const filteredRequesters = useMemo(() => {
+  const query = requesterQuery.toLowerCase();
+  return accountManagers.filter((manager) =>
+    manager.label.toLowerCase().includes(query)
+  );
+}, [accountManagers, requesterQuery]);
+const hasRequesterQuery = requesterQuery.trim().length > 0;
+const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+const steps = useMemo(() => {
+  if (canChooseRequester) {
     return [
-      { id: "basics", label: "Basics" },
-      { id: "city", label: "City" },
-      { id: "summary", label: "Summary" },
+      { id: "type", label: "Request Type" },
+      { id: "details", label: "Details & Dates" },
+      { id: "review", label: "Review & Assign" },
     ];
-  }, [canChooseRequester]);
-  const selectedCity = cities.find((city) => city.id === cityId);
-  const selectedRequester = accountManagers.find((manager) => manager.id === requesterId);
-  const hasSelectedType = Boolean(requestType);
-  const currentStepId = steps[currentStep]?.id ?? "basics";
-  const isLastStep = currentStep === steps.length - 1;
-  const isStepValid = useCallback(
-    (stepId: string) => {
-      if (canChooseRequester) {
-        switch (stepId) {
-          case "type":
-            return Boolean(requestType && title);
-          case "details":
-            return true;
-          case "review":
-            return Boolean(cityId && requesterId);
-          default:
-            return true;
-        }
-      }
+  }
+  return [
+    { id: "basics", label: "Basics" },
+    { id: "city", label: "City" },
+    { id: "summary", label: "Summary" },
+  ];
+}, [canChooseRequester]);
+const selectedCity = cities.find((city) => city.id === cityId);
+const selectedRequester = accountManagers.find((manager) => manager.id === requesterId);
+const hasSelectedType = Boolean(requestType);
+const currentStepId = steps[currentStep]?.id ?? "basics";
+const isLastStep = currentStep === steps.length - 1;
+const isStepValid = useCallback(
+  (stepId: string) => {
+    if (canChooseRequester) {
       switch (stepId) {
-        case "basics":
-          return Boolean(title && requestType);
-        case "city":
-          return Boolean(cityId);
-        case "summary":
+        case "type":
+          return Boolean(requestType && title);
+        case "details":
           return true;
+        case "review":
+          return Boolean(cityId && requesterId);
         default:
           return true;
       }
-    },
-    [title, requestType, canChooseRequester, requesterId, cityId]
-  );
-  const currentStepValid = isStepValid(currentStepId);
-  const formReady = Boolean(
-    title &&
-      cityId &&
-      requestType &&
-      (!canChooseRequester || requesterId)
-  );
-  useEffect(() => {
-    if (currentStep > steps.length - 1) {
-      setCurrentStep(steps.length - 1);
     }
-  }, [steps.length, currentStep]);
-  useEffect(() => {
-    if (canChooseRequester && !hasSelectedType) {
-      setRequesterPickerOpen(false);
+    switch (stepId) {
+      case "basics":
+        return Boolean(title && requestType);
+      case "city":
+        return Boolean(cityId);
+      case "summary":
+        return true;
+      default:
+        return true;
     }
-  }, [canChooseRequester, hasSelectedType]);
-  useEffect(() => {
-    if (!justAdvanced) return;
-    const timer = setTimeout(() => setJustAdvanced(false), 300);
-    return () => clearTimeout(timer);
-  }, [justAdvanced]);
-  const handleNextStep = () => {
-    if (isLastStep || !currentStepValid) return;
-    setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
-    setJustAdvanced(true);
-  };
-  const handlePreviousStep = () => {
-    setCurrentStep((step) => Math.max(step - 1, 0));
-    setJustAdvanced(false);
-  };
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!isLastStep) {
-      handleNextStep();
-      return;
-    }
-    if (justAdvanced) {
-      return;
-    }
-    if (!supabase || !user) {
-      toast({
-        title: "You must be signed in",
-        description: "Sign in again and retry.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!cityId) {
-      toast({
-        title: "City required",
-        description: "Select one of your assigned cities.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!requestType) {
-      toast({
-        title: "Request type required",
-        description: "Select the appropriate request type.",
-        variant: "destructive",
-      });
-      return;
-    }
-    const effectiveRequesterId = canChooseRequester ? requesterId : user.id;
-    if (!effectiveRequesterId) {
-      toast({
-        title: "Requester missing",
-        description: "Select an Account Manager for this request.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const payload = {
-        title,
-        description,
-        request_type: requestType as RequestType,
-        city_id: cityId,
-        requester_id: effectiveRequesterId,
-        created_by: user.id,
-        priority: priority || null,
-        category: category || null,
-        volume: volume ? Number(volume) : null,
-        company: company || null,
-        need_answer_by: needAnswerBy || null,
-        delivery_date: deliveryDate || null,
-      };
-      const requiresAdminInsert =
-        isSuperAdmin && effectiveRequesterId !== user.id;
-      if (requiresAdminInsert) {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-        if (sessionError || !session) {
-          throw new Error("Unable to verify session for request creation.");
-        }
-        const response = await fetch("/api/admin/create-request", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-          const body = await response.json().catch(() => ({}));
-          throw new Error(body.error ?? response.statusText);
-        }
-      } else {
-        const { error } = await supabase.from("requests").insert(payload);
-        if (error) {
-          console.error("Supabase insert error", error);
-          if (error.code === "23503") {
-            throw new Error(
-              "The selected city is not assigned to that requester. Choose a valid city."
-            );
-          }
-          throw new Error(error.message);
-        }
+  },
+  [title, requestType, canChooseRequester, requesterId, cityId]
+);
+const currentStepValid = isStepValid(currentStepId);
+const formReady = Boolean(
+  title &&
+  cityId &&
+  requestType &&
+  (!canChooseRequester || requesterId)
+);
+useEffect(() => {
+  if (currentStep > steps.length - 1) {
+    setCurrentStep(steps.length - 1);
+  }
+}, [steps.length, currentStep]);
+useEffect(() => {
+  if (canChooseRequester && !hasSelectedType) {
+    setRequesterPickerOpen(false);
+  }
+}, [canChooseRequester, hasSelectedType]);
+useEffect(() => {
+  if (!justAdvanced) return;
+  const timer = setTimeout(() => setJustAdvanced(false), 300);
+  return () => clearTimeout(timer);
+}, [justAdvanced]);
+const handleNextStep = () => {
+  if (isLastStep || !currentStepValid) return;
+  setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
+  setJustAdvanced(true);
+};
+const handlePreviousStep = () => {
+  setCurrentStep((step) => Math.max(step - 1, 0));
+  setJustAdvanced(false);
+};
+const handleSubmit = async (event: React.FormEvent) => {
+  event.preventDefault();
+  if (!isLastStep) {
+    handleNextStep();
+    return;
+  }
+  if (justAdvanced) {
+    return;
+  }
+  if (!supabase || !user) {
+    toast({
+      title: "You must be signed in",
+      description: "Sign in again and retry.",
+      variant: "destructive",
+    });
+    return;
+  }
+  if (!cityId) {
+    toast({
+      title: "City required",
+      description: "Select one of your assigned cities.",
+      variant: "destructive",
+    });
+    return;
+  }
+  if (!requestType) {
+    toast({
+      title: "Request type required",
+      description: "Select the appropriate request type.",
+      variant: "destructive",
+    });
+    return;
+  }
+  const effectiveRequesterId = canChooseRequester ? requesterId : user.id;
+  if (!effectiveRequesterId) {
+    toast({
+      title: "Requester missing",
+      description: "Select an Account Manager for this request.",
+      variant: "destructive",
+    });
+    return;
+  }
+  setSubmitting(true);
+  try {
+    const payload = {
+      title,
+      description,
+      request_type: requestType as RequestType,
+      city_id: cityId,
+      requester_id: effectiveRequesterId,
+      created_by: user.id,
+      priority: priority || null,
+      category: category || null,
+      volume: volume ? Number(volume) : null,
+      company: company || null,
+      need_answer_by: needAnswerBy || null,
+      delivery_date: deliveryDate || null,
+    };
+    const requiresAdminInsert =
+      isSuperAdmin && effectiveRequesterId !== user.id;
+    if (requiresAdminInsert) {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error("Unable to verify session for request creation.");
       }
-      toast({
-        title: "Request created",
-        description: "Your request has been added to the queue.",
+      const response = await fetch("/api/admin/create-request", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
-      setTitle("");
-      setDescription("");
-      setPriority("");
-      setCategory("");
-      setVolume("");
-      setCompany("");
-      setNeedAnswerBy("");
-      setDeliveryDate("");
-      setCityId("");
-      setCityQuery("");
-      setRequestType("");
-      if (canChooseRequester) {
-        setRequesterId("");
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error ?? response.statusText);
       }
-      setCurrentStep(0);
-      onCreated();
-    } catch (error) {
-      console.error("Error creating request", error);
-      toast({
-        title: "Failed to create request",
-        description:
-          error instanceof Error ? error.message : "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
+    } else {
+      const { error } = await supabase.from("requests").insert(payload);
+      if (error) {
+        console.error("Supabase insert error", error);
+        if (error.code === "23503") {
+          throw new Error(
+            "The selected city is not assigned to that requester. Choose a valid city."
+          );
+        }
+        throw new Error(error.message);
+      }
     }
-  };
-  const SummaryCard = () => (
-    <div className="space-y-2">
-      <Label>Summary</Label>
-      <div className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-4 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Type</span>
-          <span className="font-medium">{requestType || "Not set"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Company</span>
-          <span className="font-medium">{company || "Not set"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">City</span>
-          <span className="font-medium">{selectedCity?.label ?? "Not set"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Volume</span>
-          <span className="font-medium">{volume || "Not set"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Need Answer By</span>
-          <span className="font-medium">{needAnswerBy || "Not set"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Delivery Date</span>
-          <span className="font-medium">
-            {deliveryDate || "No delivery date"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Request By</span>
-          <span className="font-medium">
-            {canChooseRequester
-              ? selectedRequester?.label ?? "Not set"
-              : selectedRequester?.label || user?.email || "Your account"}
-          </span>
-        </div>
+    toast({
+      title: "Request created",
+      description: "Your request has been added to the queue.",
+    });
+    setTitle("");
+    setDescription("");
+    setPriority("");
+    setCategory("");
+    setVolume("");
+    setCompany("");
+    setNeedAnswerBy("");
+    setDeliveryDate("");
+    setCityId("");
+    setCityQuery("");
+    setRequestType("");
+    if (canChooseRequester) {
+      setRequesterId("");
+    }
+    setCurrentStep(0);
+    onCreated();
+  } catch (error) {
+    console.error("Error creating request", error);
+    toast({
+      title: "Failed to create request",
+      description:
+        error instanceof Error ? error.message : "Please try again later.",
+      variant: "destructive",
+    });
+  } finally {
+    setSubmitting(false);
+  }
+};
+const SummaryCard = () => (
+  <div className="space-y-2">
+    <Label>Summary</Label>
+    <div className="space-y-2 rounded-lg border border-border/60 bg-background/60 p-4 text-sm">
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Type</span>
+        <span className="font-medium">{requestType || "Not set"}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Company</span>
+        <span className="font-medium">{company || "Not set"}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">City</span>
+        <span className="font-medium">{selectedCity?.label ?? "Not set"}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Volume</span>
+        <span className="font-medium">{volume || "Not set"}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Need Answer By</span>
+        <span className="font-medium">{needAnswerBy || "Not set"}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Delivery Date</span>
+        <span className="font-medium">
+          {deliveryDate || "No delivery date"}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">Request By</span>
+        <span className="font-medium">
+          {canChooseRequester
+            ? selectedRequester?.label ?? "Not set"
+            : selectedRequester?.label || user?.email || "Your account"}
+        </span>
       </div>
     </div>
-  );
+  </div>
+);
 
-  const RequesterSelector = () => (
-    <div className="space-y-2">
-      <Label>Requested By</Label>
-      <Popover
-        open={requesterPickerOpen}
-        onOpenChange={setRequesterPickerOpen}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            role="combobox"
-            disabled={!hasSelectedType || accountManagersLoading}
-          >
-            <span className="truncate">
-              {selectedRequester
-                ? selectedRequester.label
-                : hasSelectedType
-                  ? "Search Account Managers"
-                  : "Choose a request type first"}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
-          <Command>
-            <CommandInput
-              placeholder={
-                accountManagersLoading
-                  ? "Loading Account Managers..."
-                  : "Search Account Managers..."
-              }
-              value={requesterQuery}
-              onValueChange={(value) => setRequesterQuery(value)}
-              disabled={accountManagersLoading}
-            />
-            <CommandList>
-              {accountManagersLoading ? (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  Loading...
-                </div>
-              ) : hasRequesterQuery ? (
-                filteredRequesters.length ? (
-                  <CommandGroup>
-                    {filteredRequesters.map((option) => (
-                      <CommandItem
-                        key={option.id}
-                        onSelect={() => {
-                          setRequesterId(option.id);
-                          setRequesterQuery("");
-                          setRequesterPickerOpen(false);
-                        }}
-                      >
-                        {option.label}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                ) : (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">
-                    No Account Managers found.
-                  </div>
-                )
-              ) : (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  Start typing to search Account Managers.
-                </div>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-
-  const CitySelector = () => (
-    <div className="space-y-2">
-      <Label>City *</Label>
-      <Popover open={cityPickerOpen} onOpenChange={setCityPickerOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full justify-between"
-            role="combobox"
-            disabled={
-              loadingCities ||
-              (canChooseRequester && !requesterId) ||
-              (!loadingCities && cities.length === 0)
-            }
-          >
-            <span className="truncate">
-              {selectedCity
-                ? selectedCity.label
-                : canChooseRequester && !requesterId
-                  ? "Choose who requested this first"
-                  : loadingCities
-                    ? "Loading cities..."
-                    : cities.length
-                      ? "Select or search city"
-                      : "No cities available"}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-[min(320px,calc(100vw-2rem))] p-0"
-          align="start"
-          sideOffset={4}
+const RequesterSelector = () => (
+  <div className="space-y-2">
+    <Label>Requested By</Label>
+    <Popover
+      open={requesterPickerOpen}
+      onOpenChange={setRequesterPickerOpen}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full justify-between"
+          role="combobox"
+          disabled={!hasSelectedType || accountManagersLoading}
         >
-          <Command>
-            <CommandInput
-              placeholder={
-                loadingCities ? "Loading cities..." : "Start typing to search"
-              }
-              value={cityQuery}
-              onValueChange={(value) => setCityQuery(value)}
-              disabled={loadingCities}
-            />
-            <CommandList>
-              {loadingCities ? (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  Loading cities...
-                </div>
-              ) : (cityQuery ? filteredCities : cities).length ? (
+          <span className="truncate">
+            {selectedRequester
+              ? selectedRequester.label
+              : hasSelectedType
+                ? "Search Account Managers"
+                : "Choose a request type first"}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[320px] p-0" align="start">
+        <Command>
+          <CommandInput
+            placeholder={
+              accountManagersLoading
+                ? "Loading Account Managers..."
+                : "Search Account Managers..."
+            }
+            value={requesterQuery}
+            onValueChange={(value) => setRequesterQuery(value)}
+            disabled={accountManagersLoading}
+          />
+          <CommandList>
+            {accountManagersLoading ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                Loading...
+              </div>
+            ) : hasRequesterQuery ? (
+              filteredRequesters.length ? (
                 <CommandGroup>
-                  {(cityQuery ? filteredCities : cities).map((city) => (
+                  {filteredRequesters.map((option) => (
                     <CommandItem
-                      key={city.id}
+                      key={option.id}
                       onSelect={() => {
-                        setCityId(city.id);
-                        setCityQuery("");
-                        setCityPickerOpen(false);
+                        setRequesterId(option.id);
+                        setRequesterQuery("");
+                        setRequesterPickerOpen(false);
                       }}
                     >
-                      {city.label}
+                      {option.label}
                     </CommandItem>
                   ))}
                 </CommandGroup>
               ) : (
                 <div className="px-3 py-2 text-sm text-muted-foreground">
-                  {canChooseRequester && !requesterId
-                    ? "Choose who requested this to load their cities."
-                    : "No cities available."}
+                  No Account Managers found.
                 </div>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-      <p className="text-xs text-muted-foreground">
-        {selectedCity
-          ? `Selected: ${selectedCity.label}`
-          : canChooseRequester
-            ? requesterId
-              ? cities.length
-                ? "Choose from the cities assigned to this Account Manager."
-                : "This Account Manager has no assigned cities yet."
-              : "Choose who requested this to load their cities."
-            : cities.length
-              ? "Select one of your assigned cities."
-              : "No city assignments found for your account."}
-      </p>
-    </div>
-  );
+              )
+            ) : (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                Start typing to search Account Managers.
+              </div>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  </div>
+);
+
+const CitySelector = () => (
+  <div className="space-y-2">
+    <Label>City *</Label>
+    <Popover open={cityPickerOpen} onOpenChange={setCityPickerOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className="w-full justify-between"
+          role="combobox"
+          disabled={
+            loadingCities ||
+            (canChooseRequester && !requesterId) ||
+            (!loadingCities && cities.length === 0)
+          }
+        >
+          <span className="truncate">
+            {selectedCity
+              ? selectedCity.label
+              : canChooseRequester && !requesterId
+                ? "Choose who requested this first"
+                : loadingCities
+                  ? "Loading cities..."
+                  : cities.length
+                    ? "Select or search city"
+                    : "No cities available"}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[min(320px,calc(100vw-2rem))] p-0"
+        align="start"
+        sideOffset={4}
+      >
+        <Command>
+          <CommandInput
+            placeholder={
+              loadingCities ? "Loading cities..." : "Start typing to search"
+            }
+            value={cityQuery}
+            onValueChange={(value) => setCityQuery(value)}
+            disabled={loadingCities}
+          />
+          <CommandList>
+            {loadingCities ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                Loading cities...
+              </div>
+            ) : (cityQuery ? filteredCities : cities).length ? (
+              <CommandGroup>
+                {(cityQuery ? filteredCities : cities).map((city) => (
+                  <CommandItem
+                    key={city.id}
+                    onSelect={() => {
+                      setCityId(city.id);
+                      setCityQuery("");
+                      setCityPickerOpen(false);
+                    }}
+                  >
+                    {city.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ) : (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                {canChooseRequester && !requesterId
+                  ? "Choose who requested this to load their cities."
+                  : "No cities available."}
+              </div>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+    <p className="text-xs text-muted-foreground">
+      {selectedCity
+        ? `Selected: ${selectedCity.label}`
+        : canChooseRequester
+          ? requesterId
+            ? cities.length
+              ? "Choose from the cities assigned to this Account Manager."
+              : "This Account Manager has no assigned cities yet."
+            : "Choose who requested this to load their cities."
+          : cities.length
+            ? "Select one of your assigned cities."
+            : "No city assignments found for your account."}
+    </p>
+  </div>
+);
 
 
 
-  const renderStepContent = () => {
-    if (canChooseRequester) {
-      switch (currentStepId) {
-        case "type":
-          return (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Select
-                  value={requestType}
-                  onValueChange={(value: RequestType) => setRequestType(value)}
-                >
-                  <SelectTrigger id="requestType">
-                    <SelectValue placeholder="Select a Request Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {REQUEST_TYPES.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  placeholder="Give this request a clear title"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company">Company</Label>
-                <Input
-                  id="company"
-                  placeholder="Who is this request for?"
-                  value={company}
-                  onChange={(event) => setCompany(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="volume">Volume</Label>
-                <Input
-                  id="volume"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="Optional volume amount"
-                  value={volume}
-                  onChange={(event) => setVolume(event.target.value)}
-                />
-              </div>
-            </div>
-          );
-        case "details":
-          return (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="description">Details</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Share the context, requirements, or helpful links..."
-                  className="min-h-[140px]"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="needAnswerBy">Need Answer By</Label>
-                <Input
-                  id="needAnswerBy"
-                  type="date"
-                  min={today}
-                  value={needAnswerBy}
-                  onChange={(event) => setNeedAnswerBy(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="deliveryDate">Delivery Date</Label>
-                <Input
-                  id="deliveryDate"
-                  type="date"
-                  min={today}
-                  value={deliveryDate}
-                  onChange={(event) => setDeliveryDate(event.target.value)}
-                />
-              </div>
-            </div>
-          );
-        case "review":
-          return (
-            <div className="space-y-6">
-              <RequesterSelector />
-              <CitySelector />
-              <SummaryCard />
-            </div>
-          );
-        default:
-          return null;
-      }
-    }
+const renderStepContent = () => {
+  if (canChooseRequester) {
     switch (currentStepId) {
-      case "basics":
+      case "type":
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                placeholder="Give this request a clear title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="requestType">Request Type</Label>
               <Select
                 value={requestType}
                 onValueChange={(value: RequestType) => setRequestType(value)}
@@ -1215,6 +1081,16 @@ const CreateRequestForm = ({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                placeholder="Give this request a clear title"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="company">Company</Label>
@@ -1237,6 +1113,11 @@ const CreateRequestForm = ({
                 onChange={(event) => setVolume(event.target.value)}
               />
             </div>
+          </div>
+        );
+      case "details":
+        return (
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="description">Details</Label>
               <Textarea
@@ -1269,117 +1150,214 @@ const CreateRequestForm = ({
             </div>
           </div>
         );
-      case "city":
-        return <CitySelector />;
-      case "summary":
-      default:
+      case "review":
         return (
           <div className="space-y-6">
+            <RequesterSelector />
+            <CitySelector />
             <SummaryCard />
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Input
-                id="priority"
-                placeholder="e.g., High, Medium"
-                value={priority}
-                onChange={(event) => setPriority(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                placeholder="Optional grouping"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-              />
-            </div>
           </div>
         );
+      default:
+        return null;
     }
+  }
+  switch (currentStepId) {
+    case "basics":
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              placeholder="Give this request a clear title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="requestType">Request Type</Label>
+            <Select
+              value={requestType}
+              onValueChange={(value: RequestType) => setRequestType(value)}
+            >
+              <SelectTrigger id="requestType">
+                <SelectValue placeholder="Select a Request Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {REQUEST_TYPES.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company">Company</Label>
+            <Input
+              id="company"
+              placeholder="Who is this request for?"
+              value={company}
+              onChange={(event) => setCompany(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="volume">Volume</Label>
+            <Input
+              id="volume"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="Optional volume amount"
+              value={volume}
+              onChange={(event) => setVolume(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Details</Label>
+            <Textarea
+              id="description"
+              placeholder="Share the context, requirements, or helpful links..."
+              className="min-h-[140px]"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="needAnswerBy">Need Answer By</Label>
+            <Input
+              id="needAnswerBy"
+              type="date"
+              min={today}
+              value={needAnswerBy}
+              onChange={(event) => setNeedAnswerBy(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="deliveryDate">Delivery Date</Label>
+            <Input
+              id="deliveryDate"
+              type="date"
+              min={today}
+              value={deliveryDate}
+              onChange={(event) => setDeliveryDate(event.target.value)}
+            />
+          </div>
+        </div>
+      );
+    case "city":
+      return <CitySelector />;
+    case "summary":
+    default:
+      return (
+        <div className="space-y-6">
+          <SummaryCard />
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <Input
+              id="priority"
+              placeholder="e.g., High, Medium"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              placeholder="Optional grouping"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            />
+          </div>
+        </div>
+      );
+  }
 
-  };
-  return (
-    <div className="flex h-full flex-col gap-4">
-      <DialogHeader className="px-4 pt-4 text-center">
-        <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
-          New Request
-        </DialogTitle>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-center gap-[1px] text-[10px] font-semibold">
-            {steps.map((step, index) => {
-              const status =
-                index < currentStep
-                  ? "done"
-                  : index === currentStep
-                    ? "current"
-                    : "upcoming";
-              return (
-                <div key={`${step.id}-line`} className="flex items-center gap-1">
+};
+return (
+  <div className="flex h-full flex-col gap-4">
+    <DialogHeader className="px-4 pt-4 text-center">
+      <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
+        New Request
+      </DialogTitle>
+    </DialogHeader>
+    <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-center gap-[1px] text-[10px] font-semibold">
+          {steps.map((step, index) => {
+            const status =
+              index < currentStep
+                ? "done"
+                : index === currentStep
+                  ? "current"
+                  : "upcoming";
+            return (
+              <div key={`${step.id}-line`} className="flex items-center gap-1">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition",
+                    status === "current"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : status === "done"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
+                        : "border-border/60 text-muted-foreground"
+                  )}
+                >
                   <span
                     className={cn(
-                      "inline-flex items-center gap-2 rounded-full border px-2 py-0.5 text-[11px] font-semibold transition",
+                      "inline-flex h-5 w-5 items-center justify-center rounded-full",
                       status === "current"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : status === "done"
-                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
-                          : "border-border/60 text-muted-foreground"
+                        ? "bg-primary text-white"
+                        : "bg-transparent"
                     )}
                   >
-                    <span
-                      className={cn(
-                        "inline-flex h-5 w-5 items-center justify-center rounded-full",
-                        status === "current"
-                          ? "bg-primary text-white"
-                          : "bg-transparent"
-                      )}
-                    >
-                      {index + 1}
-                    </span>
-                    {status === "done" && (
-                      <span className="text-emerald-600">✓</span>
-                    )}
-                    {status === "current" && (
-                      <span className="uppercase tracking-[0.3em]">
-                        {step.label}
-                      </span>
-                    )}
+                    {index + 1}
                   </span>
-                  {index < steps.length - 1 && (
-                    <div className="h-px w-8 bg-border/40" />
+                  {status === "done" && (
+                    <span className="text-emerald-600">✓</span>
                   )}
-                </div>
-              );
-            })}
-          </div>
-          {renderStepContent()}
+                  {status === "current" && (
+                    <span className="uppercase tracking-[0.3em]">
+                      {step.label}
+                    </span>
+                  )}
+                </span>
+                {index < steps.length - 1 && (
+                  <div className="h-px w-8 bg-border/40" />
+                )}
+              </div>
+            );
+          })}
         </div>
-        <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-end">
-          {currentStep > 0 && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePreviousStep}
-              disabled={submitting}
-            >
-              Back
-            </Button>
-          )}
-          {isLastStep ? (
-            <Button type="submit" disabled={submitting || !formReady}>
-              {submitting ? "Creating..." : "Create Request"}
-            </Button>
-          ) : (
-            <Button type="button" onClick={handleNextStep} disabled={!currentStepValid}>
-              Next
-            </Button>
-          )}
-        </div>
-      </form>
-    </div>
-  );
+        {renderStepContent()}
+      </div>
+      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-end">
+        {currentStep > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePreviousStep}
+            disabled={submitting}
+          >
+            Back
+          </Button>
+        )}
+        {isLastStep ? (
+          <Button type="submit" disabled={submitting || !formReady}>
+            {submitting ? "Creating..." : "Create Request"}
+          </Button>
+        ) : (
+          <Button type="button" onClick={handleNextStep} disabled={!currentStepValid}>
+            Next
+          </Button>
+        )}
+      </div>
+    </form>
+  </div>
+);
 }
 type EditFormState = {
   title: string;
@@ -1694,18 +1672,18 @@ export default function RequestPage() {
       prev.map((request) =>
         request.id === editTarget.id
           ? {
-              ...request,
-              ...payload,
-              status: payload.status as Status,
-              request_type: payload.request_type as RequestType,
-              description: payload.description,
-              need_answer_by: payload.need_answer_by,
-              delivery_date: payload.delivery_date,
-              priority: payload.priority,
-              category: payload.category,
-              volume: payload.volume,
-              company: payload.company,
-            }
+            ...request,
+            ...payload,
+            status: payload.status as Status,
+            request_type: payload.request_type as RequestType,
+            description: payload.description,
+            need_answer_by: payload.need_answer_by,
+            delivery_date: payload.delivery_date,
+            priority: payload.priority,
+            category: payload.category,
+            volume: payload.volume,
+            company: payload.company,
+          }
           : request
       )
     );
@@ -1713,18 +1691,18 @@ export default function RequestPage() {
       setSelectedRequest((prev) =>
         prev
           ? {
-              ...prev,
-              ...payload,
-              status: payload.status as Status,
-              request_type: payload.request_type as RequestType,
-              description: payload.description,
-              need_answer_by: payload.need_answer_by,
-              delivery_date: payload.delivery_date,
-              priority: payload.priority,
-              category: payload.category,
-              volume: payload.volume,
-              company: payload.company,
-            }
+            ...prev,
+            ...payload,
+            status: payload.status as Status,
+            request_type: payload.request_type as RequestType,
+            description: payload.description,
+            need_answer_by: payload.need_answer_by,
+            delivery_date: payload.delivery_date,
+            priority: payload.priority,
+            category: payload.category,
+            volume: payload.volume,
+            company: payload.company,
+          }
           : prev
       );
     }
@@ -1746,188 +1724,49 @@ export default function RequestPage() {
         Requests
       </div>
       <DashboardLayout
-      title=""
-      actionButton={
-        <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <TooltipProvider>
-            <Tooltip>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full border-transparent hover:border-primary"
-                >
-                  <FilePlus className="h-4 w-4" />
-                  <span className="sr-only">New Request</span>
-                </Button>
-              </DialogTrigger>
-              <TooltipContent>
-                <p>New Request</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <DialogContent className="w-full sm:max-w-lg">
-            <CreateRequestForm
-              onCancel={() => setCreateDialogOpen(false)}
-              onCreated={handleRequestCreated}
-              accountManagers={managerDirectory}
-              accountManagersLoading={managerDirectoryLoading}
-            />
-          </DialogContent>
-        </Dialog>
-      }
-    >
-      <div
-        style={{ transform: "scale(0.95)", transformOrigin: "top center" }}
-        className="relative h-full w-full overflow-visible"
+        title=""
+        actionButton={
+          <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <TooltipProvider>
+              <Tooltip>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-full border-transparent hover:border-primary"
+                  >
+                    <FilePlus className="h-4 w-4" />
+                    <span className="sr-only">New Request</span>
+                  </Button>
+                </DialogTrigger>
+                <TooltipContent>
+                  <p>New Request</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <DialogContent className="w-full sm:max-w-lg">
+              <CreateRequestForm
+                onCancel={() => setCreateDialogOpen(false)}
+                onCreated={handleRequestCreated}
+                accountManagers={managerDirectory}
+                accountManagersLoading={managerDirectoryLoading}
+              />
+            </DialogContent>
+          </Dialog>
+        }
       >
-        <div className="h-12" />
-        {COLUMN_PREVIEW ? (
-          <div className="mx-auto w-full max-w-6xl pt-20">
-            {requestsLoading ? (
-              <div className="grid gap-4 grid-cols-4">
-                {KANBAN_COLUMNS.map((column) => (
-                  <div
-                    key={`loading-column-${column.key}`}
-                    className="space-y-4"
-                  >
-                    <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                      <span>{column.label}</span>
-                      <Skeleton className="h-4 w-6 rounded-full" />
-                    </div>
-                    <RequestCardSkeleton />
-                    <RequestCardSkeleton />
-                  </div>
-                ))}
-              </div>
-            ) : !hasRequests ? (
-              <div className="widget rounded-2xl border border-dashed bg-card/60 p-6 text-center text-muted-foreground">
-                {requests.length === 0
-                  ? "No requests have been submitted yet."
-                  : "No requests match your filters."}
-              </div>
-            ) : (
-              <div className="grid gap-4 grid-cols-4">
-                {groupedRequests.map(({ column, items }) => (
-                  <div
-                    key={`kanban-column-${column.key}`}
-                    className="space-y-4"
-                  >
-                    <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                      <span>{column.label}</span>
-                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-foreground">
-                        {items.length}
-                      </span>
-                    </div>
-                    {items.length ? (
-                      items.map((request) => {
-                        const editable = canEditRequest(request);
-                        return (
-                          <RequestCard
-                            key={`${column.key}-${request.id}`}
-                            request={request}
-                            onView={() => handleRequestClick(request)}
-                            onEdit={() => openEditDialog(request)}
-                            canEdit={editable}
-                          />
-                        );
-                      })
-                    ) : (
-                      <div className="widget rounded-2xl border border-dashed bg-card/20 p-4 text-center text-[11px] text-muted-foreground">
-                        No {column.label.toLowerCase()} requests
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : LIST_VIEW ? (
-          <div className="mx-auto w-full max-w-6xl pt-20">
-            <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">
-                    Requests Dashboard
-                  </p>
-                  <h2 className="text-2xl font-semibold text-white">
-                    List View
-                  </h2>
-                  <p className="text-sm text-white/70">
-                    Detailed list of every request with quick actions.
-                  </p>
-                </div>
-                <div className="text-xs uppercase tracking-[0.2em] text-white/60">
-                  Visible{" "}
-                  <span className="text-white">{filteredRequests.length}</span>
-                </div>
-              </div>
-              <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-                <div className="hidden grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,auto] gap-3 border-b border-white/10 px-4 py-3 text-[10px] uppercase tracking-[0.3em] text-white/70 md:grid">
-                  <span>Title</span>
-                  <span>Type</span>
-                  <span>Status</span>
-                  <span>City</span>
-                  <span>Age</span>
-                  <span>Delivery</span>
-                  <span>Requested By</span>
-                </div>
-                <div className="divide-y divide-white/10">
-                  {requestsLoading
-                    ? Array.from({ length: 6 }).map((_, index) => (
-                        <RequestListSkeleton key={`request-list-skeleton-${index}`} />
-                      ))
-                    : !hasRequests
-                      ? [
-                          <div
-                            key="list-empty"
-                            className="p-6 text-center text-sm text-muted-foreground"
-                          >
-                            {requests.length === 0
-                              ? "No requests have been submitted yet."
-                              : "No requests match your filters."}
-                          </div>,
-                        ]
-                      : filteredRequests.map((request) => {
-                          const editable = canEditRequest(request);
-                          return (
-                            <RequestListRow
-                              key={`list-${request.id}`}
-                              request={request}
-                              onView={() => handleRequestClick(request)}
-                              onEdit={() => openEditDialog(request)}
-                              canEdit={editable}
-                            />
-                          );
-                        })}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mx-auto w-full max-w-6xl pt-12">
-            <div className="rounded-[36px] bg-gradient-to-r from-sky-500/40 via-amber-400/40 to-emerald-400/40 p-[2px]">
-              <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/60">
-                      Requests Dashboard
-                  </p>
-                  <h2 className="text-2xl font-semibold text-white">Kanban Board</h2>
-                  <p className="text-sm text-white/70">
-                    Track every restaurant request from intake through launch.
-                  </p>
-                </div>
-                <div className="text-xs uppercase tracking-[0.2em] text-white/60">
-                  Visible{" "}
-                  <span className="text-white">{filteredRequests.length}</span>
-                </div>
-              </div>
+        <div
+          style={{ transform: "scale(0.95)", transformOrigin: "top center" }}
+          className="relative h-full w-full overflow-visible"
+        >
+          <div className="h-12" />
+          {COLUMN_PREVIEW ? (
+            <div className="mx-auto w-full max-w-6xl pt-20">
               {requestsLoading ? (
-                <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 grid-cols-4">
                   {KANBAN_COLUMNS.map((column) => (
                     <div
-                      key={`loading-kanban-${column.key}`}
+                      key={`loading-column-${column.key}`}
                       className="space-y-4"
                     >
                       <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
@@ -1939,252 +1778,391 @@ export default function RequestPage() {
                     </div>
                   ))}
                 </div>
-              ) : hasRequests ? (
-                <div className="mt-8">
-                  <RequestKanban
-                    groups={groupedRequests}
-                    onView={handleRequestClick}
-                    onEdit={openEditDialog}
-                    canEdit={canEditRequest}
-                  />
-                </div>
-              ) : (
-                <div className="mt-8 rounded-2xl border border-dashed border-white/20 bg-white/5 p-8 text-center text-sm text-white/70">
+              ) : !hasRequests ? (
+                <div className="widget rounded-2xl border border-dashed bg-card/60 p-6 text-center text-muted-foreground">
                   {requests.length === 0
                     ? "No requests have been submitted yet."
                     : "No requests match your filters."}
                 </div>
+              ) : (
+                <div className="grid gap-4 grid-cols-4">
+                  {groupedRequests.map(({ column, items }) => (
+                    <div
+                      key={`kanban-column-${column.key}`}
+                      className="space-y-4"
+                    >
+                      <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                        <span>{column.label}</span>
+                        <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-foreground">
+                          {items.length}
+                        </span>
+                      </div>
+                      {items.length ? (
+                        items.map((request) => {
+                          const editable = canEditRequest(request);
+                          return (
+                            <RequestCard
+                              key={`${column.key}-${request.id}`}
+                              request={request}
+                              onView={() => handleRequestClick(request)}
+                              onEdit={() => openEditDialog(request)}
+                              canEdit={editable}
+                            />
+                          );
+                        })
+                      ) : (
+                        <div className="widget rounded-2xl border border-dashed bg-card/20 p-4 text-center text-[11px] text-muted-foreground">
+                          No {column.label.toLowerCase()} requests
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
+            </div>
+          ) : LIST_VIEW ? (
+            <div className="mx-auto w-full max-w-6xl pt-20">
+              <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-white/60">
+                      Requests Dashboard
+                    </p>
+                    <h2 className="text-2xl font-semibold text-white">
+                      List View
+                    </h2>
+                    <p className="text-sm text-white/70">
+                      Detailed list of every request with quick actions.
+                    </p>
+                  </div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-white/60">
+                    Visible{" "}
+                    <span className="text-white">{filteredRequests.length}</span>
+                  </div>
+                </div>
+                <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  <div className="hidden grid-cols-[2fr,1fr,1fr,1fr,1fr,1fr,auto] gap-3 border-b border-white/10 px-4 py-3 text-[10px] uppercase tracking-[0.3em] text-white/70 md:grid">
+                    <span>Title</span>
+                    <span>Type</span>
+                    <span>Status</span>
+                    <span>City</span>
+                    <span>Age</span>
+                    <span>Delivery</span>
+                    <span>Requested By</span>
+                  </div>
+                  <div className="divide-y divide-white/10">
+                    {requestsLoading
+                      ? Array.from({ length: 6 }).map((_, index) => (
+                        <RequestListSkeleton key={`request-list-skeleton-${index}`} />
+                      ))
+                      : !hasRequests
+                        ? [
+                          <div
+                            key="list-empty"
+                            className="p-6 text-center text-sm text-muted-foreground"
+                          >
+                            {requests.length === 0
+                              ? "No requests have been submitted yet."
+                              : "No requests match your filters."}
+                          </div>,
+                        ]
+                        : filteredRequests.map((request) => {
+                          const editable = canEditRequest(request);
+                          return (
+                            <RequestListRow
+                              key={`list-${request.id}`}
+                              request={request}
+                              onView={() => handleRequestClick(request)}
+                              onEdit={() => openEditDialog(request)}
+                              canEdit={editable}
+                            />
+                          );
+                        })}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-      <Dialog open={isDetailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
-          <DialogTitle className="sr-only">Request Details</DialogTitle>
-          {selectedRequest && (
-            <div className="px-4 sm:px-6 pb-4">
-              <RequestDetailView request={selectedRequest} />
+          ) : (
+            <div className="mx-auto w-full max-w-6xl pt-12">
+              <div className="rounded-[36px] bg-gradient-to-r from-sky-500/40 via-amber-400/40 to-emerald-400/40 p-[2px]">
+                <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-white/60">
+                        Requests Dashboard
+                      </p>
+                      <h2 className="text-2xl font-semibold text-white">Kanban Board</h2>
+                      <p className="text-sm text-white/70">
+                        Track every restaurant request from intake through launch.
+                      </p>
+                    </div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-white/60">
+                      Visible{" "}
+                      <span className="text-white">{filteredRequests.length}</span>
+                    </div>
+                  </div>
+                  {requestsLoading ? (
+                    <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      {KANBAN_COLUMNS.map((column) => (
+                        <div
+                          key={`loading-kanban-${column.key}`}
+                          className="space-y-4"
+                        >
+                          <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                            <span>{column.label}</span>
+                            <Skeleton className="h-4 w-6 rounded-full" />
+                          </div>
+                          <RequestCardSkeleton />
+                          <RequestCardSkeleton />
+                        </div>
+                      ))}
+                    </div>
+                  ) : hasRequests ? (
+                    <div className="mt-8">
+                      <RequestKanban
+                        groups={groupedRequests}
+                        onView={handleRequestClick}
+                        onEdit={openEditDialog}
+                        canEdit={canEditRequest}
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-8 rounded-2xl border border-dashed border-white/20 bg-white/5 p-8 text-center text-sm text-white/70">
+                      {requests.length === 0
+                        ? "No requests have been submitted yet."
+                        : "No requests match your filters."}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={isEditDialogOpen}
-        onOpenChange={(open) => {
-          if (!open && !editSaving) {
-            setEditDialogOpen(false);
-            setEditTarget(null);
-          } else if (open) {
-            setEditDialogOpen(true);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
-          <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
-            Edit Request
-          </DialogTitle>
-          <form className="space-y-4 text-sm" onSubmit={handleEditSubmit}>
-            <div className="space-y-1.5">
-              <Label htmlFor="editTitle">Title</Label>
-              <Input
-                id="editTitle"
-                value={editForm.title}
-                onChange={(event) =>
-                  handleEditInputChange("title", event.target.value)
-                }
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="editRequestType">Request Type</Label>
-              <Select
-                value={editForm.requestType}
-                onValueChange={(value: RequestType) =>
-                  handleEditInputChange("requestType", value)
-                }
-              >
-                <SelectTrigger id="editRequestType">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {REQUEST_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Description</Label>
-              <Textarea
-                value={editForm.description}
-                onChange={(event) =>
-                  handleEditInputChange("description", event.target.value)
-                }
-                className="min-h-[120px]"
-                placeholder="Update request details..."
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+        </div>
+        <Dialog open={isDetailDialogOpen} onOpenChange={setDetailDialogOpen}>
+          <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+            <DialogTitle className="sr-only">Request Details</DialogTitle>
+            {selectedRequest && (
+              <div className="px-4 sm:px-6 pb-4">
+                <RequestDetailView request={selectedRequest} />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+        <Dialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            if (!open && !editSaving) {
+              setEditDialogOpen(false);
+              setEditTarget(null);
+            } else if (open) {
+              setEditDialogOpen(true);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-[12px] border border-white/30 bg-white/10 backdrop-blur-2xl shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+            <DialogTitle className="text-center text-lg font-semibold tracking-[0.3em] uppercase text-white/90">
+              Edit Request
+            </DialogTitle>
+            <form className="space-y-4 text-sm" onSubmit={handleEditSubmit}>
               <div className="space-y-1.5">
-                <Label>Status</Label>
+                <Label htmlFor="editTitle">Title</Label>
+                <Input
+                  id="editTitle"
+                  value={editForm.title}
+                  onChange={(event) =>
+                    handleEditInputChange("title", event.target.value)
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="editRequestType">Request Type</Label>
                 <Select
-                  value={editForm.status}
-                  onValueChange={(value: Status) =>
-                    handleEditInputChange("status", value)
+                  value={editForm.requestType}
+                  onValueChange={(value: RequestType) =>
+                    handleEditInputChange("requestType", value)
                   }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                  <SelectTrigger id="editRequestType">
+                    <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(statusConfig).map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
+                    {REQUEST_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Priority</Label>
-                <Input
-                  value={editForm.priority}
+                <Label>Description</Label>
+                <Textarea
+                  value={editForm.description}
                   onChange={(event) =>
-                    handleEditInputChange("priority", event.target.value)
+                    handleEditInputChange("description", event.target.value)
                   }
-                  placeholder="High, Medium..."
+                  className="min-h-[120px]"
+                  placeholder="Update request details..."
                 />
               </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Status</Label>
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(value: Status) =>
+                      handleEditInputChange("status", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(statusConfig).map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Priority</Label>
+                  <Input
+                    value={editForm.priority}
+                    onChange={(event) =>
+                      handleEditInputChange("priority", event.target.value)
+                    }
+                    placeholder="High, Medium..."
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Category</Label>
+                  <Input
+                    value={editForm.category}
+                    onChange={(event) =>
+                      handleEditInputChange("category", event.target.value)
+                    }
+                    placeholder="Optional grouping"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Volume</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={editForm.volume}
+                    onChange={(event) =>
+                      handleEditInputChange("volume", event.target.value)
+                    }
+                    placeholder="Volume"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Need Answer By</Label>
+                  <Input
+                    type="date"
+                    value={editForm.needAnswerBy}
+                    onChange={(event) =>
+                      handleEditInputChange("needAnswerBy", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Delivery Date</Label>
+                  <Input
+                    type="date"
+                    value={editForm.deliveryDate}
+                    onChange={(event) =>
+                      handleEditInputChange("deliveryDate", event.target.value)
+                    }
+                  />
+                </div>
+              </div>
               <div className="space-y-1.5">
-                <Label>Category</Label>
+                <Label>Company</Label>
                 <Input
-                  value={editForm.category}
+                  value={editForm.company}
                   onChange={(event) =>
-                    handleEditInputChange("category", event.target.value)
+                    handleEditInputChange("company", event.target.value)
                   }
-                  placeholder="Optional grouping"
+                  placeholder="Company name"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Volume</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={editForm.volume}
-                  onChange={(event) =>
-                    handleEditInputChange("volume", event.target.value)
-                  }
-                  placeholder="Volume"
-                />
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Need Answer By</Label>
-                <Input
-                  type="date"
-                  value={editForm.needAnswerBy}
-                  onChange={(event) =>
-                    handleEditInputChange("needAnswerBy", event.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Delivery Date</Label>
-                <Input
-                  type="date"
-                  value={editForm.deliveryDate}
-                  onChange={(event) =>
-                    handleEditInputChange("deliveryDate", event.target.value)
-                  }
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Company</Label>
-              <Input
-                value={editForm.company}
-                onChange={(event) =>
-                  handleEditInputChange("company", event.target.value)
-                }
-                placeholder="Company name"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  if (!editSaving) {
-                    setEditDialogOpen(false);
-                    setEditTarget(null);
-                  }
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editSaving || !editTarget}>
-                {editSaving ? "Saving..." : "Save changes"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <CommandDialog open={filterSpotlightOpen} onOpenChange={setFilterSpotlightOpen}>
-        <CommandInput
-          placeholder="Search requests by title, company, or city..."
-          value={spotlightQuery}
-          onValueChange={setSpotlightQuery}
-        />
-        <DialogTitle className="sr-only">Search Requests</DialogTitle>
-        <CommandList>
-          <CommandEmpty>
-            {spotlightQuery.trim().length === 0
-              ? "Start typing to search requests…"
-              : "No requests found."}
-          </CommandEmpty>
-          {spotlightResults.length > 0 && (
-            <CommandGroup heading="Matching Requests">
-              {spotlightResults.map((request) => (
-                <CommandItem
-                  key={`spotlight-${request.id}`}
-                  onSelect={() => {
-                    setFilterSpotlightOpen(false);
-                    setDetailDialogOpen(true);
-                    setSelectedRequest(request);
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    if (!editSaving) {
+                      setEditDialogOpen(false);
+                      setEditTarget(null);
+                    }
                   }}
-                  className="group flex flex-col gap-2 rounded-md border border-transparent px-4 py-3 text-left text-sm transition hover:border-primary/40 hover:bg-primary/5 data-[selected=true]:border-primary/40 data-[selected=true]:bg-primary/10 data-[selected=true]:shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
                 >
-                  <div className="flex w-full items-center justify-between gap-6">
-                    <span className="font-semibold text-foreground">
-                      {request.title}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-semibold uppercase tracking-[0.2em]",
-                        statusConfig[request.status].badgeClass
-                      )}
-                    >
-                      {request.status}
-                    </span>
-                  </div>
-                  <p className="line-clamp-2 text-left text-xs text-muted-foreground">
-                    {request.description?.trim() || "No details provided."}
-                  </p>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-        </CommandList>
-      </CommandDialog>
-    </DashboardLayout>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={editSaving || !editTarget}>
+                  {editSaving ? "Saving..." : "Save changes"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+        <CommandDialog open={filterSpotlightOpen} onOpenChange={setFilterSpotlightOpen}>
+          <CommandInput
+            placeholder="Search requests by title, company, or city..."
+            value={spotlightQuery}
+            onValueChange={setSpotlightQuery}
+          />
+          <DialogTitle className="sr-only">Search Requests</DialogTitle>
+          <CommandList>
+            <CommandEmpty>
+              {spotlightQuery.trim().length === 0
+                ? "Start typing to search requests…"
+                : "No requests found."}
+            </CommandEmpty>
+            {spotlightResults.length > 0 && (
+              <CommandGroup heading="Matching Requests">
+                {spotlightResults.map((request) => (
+                  <CommandItem
+                    key={`spotlight-${request.id}`}
+                    onSelect={() => {
+                      setFilterSpotlightOpen(false);
+                      setDetailDialogOpen(true);
+                      setSelectedRequest(request);
+                    }}
+                    className="group flex flex-col gap-2 rounded-md border border-transparent px-4 py-3 text-left text-sm transition hover:border-primary/40 hover:bg-primary/5 data-[selected=true]:border-primary/40 data-[selected=true]:bg-primary/10 data-[selected=true]:shadow-[0_0_0_1px_rgba(59,130,246,0.2)]"
+                  >
+                    <div className="flex w-full items-center justify-between gap-6">
+                      <span className="font-semibold text-foreground">
+                        {request.title}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-[10px] font-semibold uppercase tracking-[0.2em]",
+                          statusConfig[request.status].badgeClass
+                        )}
+                      >
+                        {request.status}
+                      </span>
+                    </div>
+                    <p className="line-clamp-2 text-left text-xs text-muted-foreground">
+                      {request.description?.trim() || "No details provided."}
+                    </p>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </CommandDialog>
+      </DashboardLayout>
     </>
   );
 }

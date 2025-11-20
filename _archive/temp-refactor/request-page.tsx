@@ -72,7 +72,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { DashboardLayout } from "@/components/dashboard-layout";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { SplashScreen } from "@/components/ui/splash-screen";
@@ -904,9 +904,9 @@ const CreateRequestForm = ({
   const currentStepValid = isStepValid(currentStepId);
   const formReady = Boolean(
     title &&
-      cityId &&
-      requestType &&
-      (!canChooseRequester || requesterId)
+    cityId &&
+    requestType &&
+    (!canChooseRequester || requesterId)
   );
   useEffect(() => {
     if (currentStep > steps.length - 1) {
@@ -1915,13 +1915,23 @@ const useRequestPageController = () => {
     }
     return requests
       .filter((request) => {
+        const assignedBdrs = requestBdrAssignments[request.id] ?? [];
+        const bdrMatch = assignedBdrs.some((assignment) => (
+          (assignment.display_name ?? "BDR")
+            .toLowerCase()
+            .includes(q)
+        ));
         return (
           request.title.toLowerCase().includes(q) ||
-          request.description?.toLowerCase().includes(q)
+          request.description?.toLowerCase().includes(q) ||
+          (request.company ?? "").toLowerCase().includes(q) ||
+          request.cityLabel.toLowerCase().includes(q) ||
+          request.requesterName.toLowerCase().includes(q) ||
+          bdrMatch
         );
       })
       .slice(0, 10);
-  }, [requests, spotlightQuery]);
+  }, [requests, spotlightQuery, requestBdrAssignments]);
   const groupedRequests = useMemo(() => {
     return KANBAN_COLUMNS.map((column) => ({
       column,
@@ -1995,18 +2005,18 @@ const useRequestPageController = () => {
       prev.map((request) =>
         request.id === editTarget.id
           ? {
-              ...request,
-              ...payload,
-              status: payload.status as Status,
-              request_type: payload.request_type as RequestType,
-              description: payload.description,
-              need_answer_by: payload.need_answer_by,
-              delivery_date: payload.delivery_date,
-              priority: payload.priority,
-              category: payload.category,
-              volume: payload.volume,
-              company: payload.company,
-            }
+            ...request,
+            ...payload,
+            status: payload.status as Status,
+            request_type: payload.request_type as RequestType,
+            description: payload.description,
+            need_answer_by: payload.need_answer_by,
+            delivery_date: payload.delivery_date,
+            priority: payload.priority,
+            category: payload.category,
+            volume: payload.volume,
+            company: payload.company,
+          }
           : request
       )
     );
@@ -2014,18 +2024,18 @@ const useRequestPageController = () => {
       setSelectedRequest((prev) =>
         prev
           ? {
-              ...prev,
-              ...payload,
-              status: payload.status as Status,
-              request_type: payload.request_type as RequestType,
-              description: payload.description,
-              need_answer_by: payload.need_answer_by,
-              delivery_date: payload.delivery_date,
-              priority: payload.priority,
-              category: payload.category,
-              volume: payload.volume,
-              company: payload.company,
-            }
+            ...prev,
+            ...payload,
+            status: payload.status as Status,
+            request_type: payload.request_type as RequestType,
+            description: payload.description,
+            need_answer_by: payload.need_answer_by,
+            delivery_date: payload.delivery_date,
+            priority: payload.priority,
+            category: payload.category,
+            volume: payload.volume,
+            company: payload.company,
+          }
           : prev
       );
     }
@@ -2100,7 +2110,7 @@ const useRequestPageController = () => {
       setAssignSelectedBdrs([]);
       setAssignDialogOpen(true);
     },
-  [isSuperAdmin]
+    [isSuperAdmin]
   );
   const assignSelectedBdrsToRequest = useCallback(async () => {
     if (!assignTargetRequest || !supabase || assignSelectedBdrs.length === 0) {
@@ -2147,8 +2157,8 @@ const useRequestPageController = () => {
         description:
           assignSelectedBdrs.length === 1
             ? `${assignTargetRequest.title} assigned to ${bdrDirectory.find(
-                (option) => option.id === assignSelectedBdrs[0]
-              )?.label ?? "BDR"}.`
+              (option) => option.id === assignSelectedBdrs[0]
+            )?.label ?? "BDR"}.`
             : `${assignSelectedBdrs.length} BDRs assigned to ${assignTargetRequest.title}.`,
       });
       setAssignDialogOpen(false);
@@ -2228,8 +2238,8 @@ const useRequestPageController = () => {
     const assignedIds = new Set(
       assignTargetRequest
         ? (requestBdrAssignments[assignTargetRequest.id] ?? []).map(
-            (assignment) => assignment.user_id
-          )
+          (assignment) => assignment.user_id
+        )
         : []
     );
     assignSelectedBdrs.forEach((id) => assignedIds.add(id));
@@ -2383,11 +2393,11 @@ const RequestPageLayout = ({
 
   const hasRequests = filteredRequests.length > 0;
 
-  return (    <>
-      <div className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]">
-        Requests
-      </div>
-      <DashboardLayout
+  return (<>
+    <div className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]">
+      Requests
+    </div>
+    <DashboardLayout
       title=""
       actionButton={
         <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -2419,10 +2429,10 @@ const RequestPageLayout = ({
         </Dialog>
       }
     >
-        <div
-          style={{ transform: "scale(0.9)", transformOrigin: "top center", paddingTop: "5%" }}
-          className="relative h-full overflow-visible"
-        >
+      <div
+        style={{ transform: "scale(0.9)", transformOrigin: "top center", paddingTop: "5%" }}
+        className="relative h-full overflow-visible"
+      >
         {COLUMN_PREVIEW ? (
           <div className="w-[80vw] px-6 mx-auto">
             {requestsLoading ? (
@@ -2583,98 +2593,98 @@ const RequestPageLayout = ({
                 <div className="divide-y divide-white/10">
                   {requestsLoading
                     ? Array.from({ length: 6 }).map((_, index) => (
-                        <RequestListSkeleton key={`request-list-skeleton-${index}`} />
-                      ))
+                      <RequestListSkeleton key={`request-list-skeleton-${index}`} />
+                    ))
                     : !hasRequests
                       ? [
-                          <div
-                            key="list-empty"
-                            className="p-6 text-center text-sm text-muted-foreground"
-                          >
-                            {requests.length === 0
-                              ? "No requests have been submitted yet."
-                              : "No requests match your filters."}
-                          </div>,
-                        ]
+                        <div
+                          key="list-empty"
+                          className="p-6 text-center text-sm text-muted-foreground"
+                        >
+                          {requests.length === 0
+                            ? "No requests have been submitted yet."
+                            : "No requests match your filters."}
+                        </div>,
+                      ]
                       : filteredRequests.map((request) => {
-                          const editable = canEditRequest(request);
-                          return (
-                            <RequestListRow
-                              key={`list-${request.id}`}
-                              request={request}
-                              onView={() => handleRequestClick(request)}
-                              onEdit={() => openEditDialog(request)}
-                              canEdit={editable}
-                            />
-                          );
-                        })}
+                        const editable = canEditRequest(request);
+                        return (
+                          <RequestListRow
+                            key={`list-${request.id}`}
+                            request={request}
+                            onView={() => handleRequestClick(request)}
+                            onEdit={() => openEditDialog(request)}
+                            canEdit={editable}
+                          />
+                        );
+                      })}
                 </div>
               </div>
             </div>
           </div>
         ) : (
           <div className="mx-auto w-full max-w-none pt-12">
-              <div className="rounded-[36px] bg-gradient-to-r from-sky-500/40 via-amber-400/40 to-emerald-400/40 p-[2px]">
-                <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur w-full">
+            <div className="rounded-[36px] bg-gradient-to-r from-sky-500/40 via-amber-400/40 to-emerald-400/40 p-[2px]">
+              <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_25px_60px_rgba(0,0,0,0.45)] backdrop-blur w-full">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-white/60">
                       Requests Dashboard
-                  </p>
-                  <h2 className="text-2xl font-semibold text-white">Kanban Board</h2>
-                  <p className="text-sm text-white/70">
-                    Track every restaurant request from intake through launch.
-                  </p>
-                </div>
-                <div className="text-xs uppercase tracking-[0.2em] text-white/60">
-                  Visible{" "}
-                  <span className="text-white">{filteredRequests.length}</span>
-                </div>
-              </div>
-              {requestsLoading ? (
-                <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                  {KANBAN_COLUMNS.map((column) => (
-                    <div
-                      key={`loading-kanban-${column.key}`}
-                      className="space-y-4"
-                    >
-                      <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
-                        <span>{column.label}</span>
-                        <Skeleton className="h-4 w-6 rounded-full" />
-                      </div>
-                      <RequestCardSkeleton />
-                      <RequestCardSkeleton />
-                    </div>
-                  ))}
-                </div>
-              ) : hasRequests ? (
-                  <div className="mt-8">
-              <RequestKanban
-                groups={groupedRequests}
-                onView={handleRequestClick}
-                onEdit={openEditDialog}
-                canEdit={canEditRequest}
-                enableDrag
-                draggingRequestId={draggingRequestId}
-                activeDropStatus={activeDropStatus}
-                onDropStatus={handleKanbanDrop}
-                onDragStart={handleCardDragStart}
-                onDragEnd={handleCardDragEnd}
-                onDragOverStatusChange={handleDragOverStatusChange}
-                movingRequestId={movingRequestId}
-                activeDropCardId={activeDropCardId}
-                assignmentLookup={requestBdrAssignments}
-                showAssignAction={isSuperAdmin}
-                onAssignBdr={openAssignDialogForRequest}
-              />
+                    </p>
+                    <h2 className="text-2xl font-semibold text-white">Kanban Board</h2>
+                    <p className="text-sm text-white/70">
+                      Track every restaurant request from intake through launch.
+                    </p>
                   </div>
-              ) : (
-                <div className="mt-8 rounded-2xl border border-dashed border-white/20 bg-white/5 p-8 text-center text-sm text-white/70">
-                  {requests.length === 0
-                    ? "No requests have been submitted yet."
-                    : "No requests match your filters."}
+                  <div className="text-xs uppercase tracking-[0.2em] text-white/60">
+                    Visible{" "}
+                    <span className="text-white">{filteredRequests.length}</span>
+                  </div>
                 </div>
-              )}
+                {requestsLoading ? (
+                  <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {KANBAN_COLUMNS.map((column) => (
+                      <div
+                        key={`loading-kanban-${column.key}`}
+                        className="space-y-4"
+                      >
+                        <div className="flex items-center justify-between px-1 text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                          <span>{column.label}</span>
+                          <Skeleton className="h-4 w-6 rounded-full" />
+                        </div>
+                        <RequestCardSkeleton />
+                        <RequestCardSkeleton />
+                      </div>
+                    ))}
+                  </div>
+                ) : hasRequests ? (
+                  <div className="mt-8">
+                    <RequestKanban
+                      groups={groupedRequests}
+                      onView={handleRequestClick}
+                      onEdit={openEditDialog}
+                      canEdit={canEditRequest}
+                      enableDrag
+                      draggingRequestId={draggingRequestId}
+                      activeDropStatus={activeDropStatus}
+                      onDropStatus={handleKanbanDrop}
+                      onDragStart={handleCardDragStart}
+                      onDragEnd={handleCardDragEnd}
+                      onDragOverStatusChange={handleDragOverStatusChange}
+                      movingRequestId={movingRequestId}
+                      activeDropCardId={activeDropCardId}
+                      assignmentLookup={requestBdrAssignments}
+                      showAssignAction={isSuperAdmin}
+                      onAssignBdr={openAssignDialogForRequest}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-8 rounded-2xl border border-dashed border-white/20 bg-white/5 p-8 text-center text-sm text-white/70">
+                    {requests.length === 0
+                      ? "No requests have been submitted yet."
+                      : "No requests match your filters."}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2879,7 +2889,7 @@ const RequestPageLayout = ({
                     {filteredBdrDirectory.length === 0 ? (
                       <CommandEmpty>
                         {bdrDirectory.length ===
-                        (requestBdrAssignments[assignTargetRequest.id]?.length ?? 0) +
+                          (requestBdrAssignments[assignTargetRequest.id]?.length ?? 0) +
                           assignSelectedBdrs.length
                           ? "All BDRs are selected."
                           : "No BDRs found."}
@@ -2978,7 +2988,7 @@ const RequestPageLayout = ({
       </Dialog>
       <CommandDialog open={filterSpotlightOpen} onOpenChange={setFilterSpotlightOpen}>
         <CommandInput
-          placeholder="Search requests by title, company, or city..."
+          placeholder="Search requests by title, company, city, requester, or BDR..."
           value={spotlightQuery}
           onValueChange={setSpotlightQuery}
         />
@@ -3017,6 +3027,14 @@ const RequestPageLayout = ({
                   <p className="line-clamp-2 text-left text-xs text-muted-foreground">
                     {request.description?.trim() || "No details provided."}
                   </p>
+                  {requestBdrAssignments[request.id]?.length ? (
+                    <p className="text-left text-[11px] text-muted-foreground">
+                      Assigned to{" "}
+                      {requestBdrAssignments[request.id]
+                        .map((assignment) => assignment.display_name ?? "BDR")
+                        .join(", ")}
+                    </p>
+                  ) : null}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -3024,7 +3042,7 @@ const RequestPageLayout = ({
         </CommandList>
       </CommandDialog>
     </DashboardLayout>
-    </>
+  </>
   );
 };
 

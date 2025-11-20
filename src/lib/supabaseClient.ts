@@ -48,6 +48,11 @@ let browserClient: SupabaseClient | null = null;
 export function getSupabaseClient() {
   if (!browserClient) {
     browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
+
+    // Attach to window for global access
+    if (typeof window !== 'undefined') {
+      (window as any).supabase = browserClient;
+    }
   }
 
   return browserClient;

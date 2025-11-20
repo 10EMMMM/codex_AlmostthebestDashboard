@@ -20,9 +20,7 @@ function getAdminClient() {
 export async function ensureSuperAdmin(): Promise<SetupResult> {
   try {
     const supabaseAdmin = getAdminClient();
-    const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-      query: SUPER_ADMIN_EMAIL,
-    });
+    const { data: userList, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     if (listError) {
       throw listError;
     }

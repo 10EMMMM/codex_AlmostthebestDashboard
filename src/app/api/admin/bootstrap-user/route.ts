@@ -31,7 +31,7 @@ export async function POST() {
   const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
   try {
-    const { data: existingList } = await supabaseAdmin.auth.admin.listUsers({ query: NORMAL_USER_EMAIL });
+    const { data: existingList } = await supabaseAdmin.auth.admin.listUsers();
     const existingUser = existingList?.users?.find((user) => user.email?.toLowerCase() === NORMAL_USER_EMAIL.toLowerCase());
 
     const targetUser =

@@ -3,6 +3,9 @@ CREATE TYPE request_status AS ENUM ('new', 'on progress', 'done', 'on hold');
 CREATE TYPE request_type AS ENUM ('RESTAURANT', 'EVENT', 'CUISINE');
 CREATE TYPE restaurant_status AS ENUM ('new', 'on progress', 'done', 'on hold');
 CREATE TYPE task_status AS ENUM ('todo', 'in_progress', 'blocked', 'done');
+CREATE TYPE message_channel AS ENUM ('email', 'sms', 'slack', 'webhook', 'in_app');
+CREATE TYPE feature_flag_scope AS ENUM ('global', 'city', 'team');
+CREATE TYPE feature_flag_target_type AS ENUM ('city', 'team', 'user');
 CREATE TABLE public.cities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -339,6 +342,76 @@ CREATE TABLE public.dashboard_settings (
   preferences jsonb DEFAULT '{}'::jsonb,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE public.message_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text NOT NULL UNIQUE,
+  name text NOT NULL,
+  description text,
+  event text NOT NULL,
+  channel message_channel NOT NULL DEFAULT 'email',
+  subject text,
+  body text NOT NULL,
+  payload_schema jsonb DEFAULT '{}'::jsonb,
+  default_recipients jsonb DEFAULT '{}'::jsonb,
+  is_active boolean NOT NULL DEFAULT true,
+  created_by uuid REFERENCES auth.users(id),
+  updated_by uuid REFERENCES auth.users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.notification_channels (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  channel message_channel NOT NULL,
+  transport_config jsonb NOT NULL DEFAULT '{}'::jsonb,
+  fallback_channel message_channel,
+  is_enabled boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.notification_channel_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel_id uuid NOT NULL REFERENCES public.notification_channels(id) ON DELETE CASCADE,
+  city_id uuid REFERENCES public.cities(id),
+  team_id uuid REFERENCES public.teams(id),
+  config jsonb DEFAULT '{}'::jsonb,
+  is_enabled boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.system_settings (
+  key text PRIMARY KEY,
+  value jsonb NOT NULL DEFAULT '{}'::jsonb,
+  description text,
+  updated_by uuid REFERENCES auth.users(id),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.feature_flags (
+  name text PRIMARY KEY,
+  description text,
+  is_enabled boolean NOT NULL DEFAULT false,
+  scope feature_flag_scope NOT NULL DEFAULT 'global',
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_by uuid REFERENCES auth.users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_by uuid REFERENCES auth.users(id),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.feature_flag_targets (
+  flag_name text NOT NULL REFERENCES public.feature_flags(name) ON DELETE CASCADE,
+  target_type feature_flag_target_type NOT NULL,
+  target_id uuid NOT NULL,
+  is_enabled boolean NOT NULL DEFAULT true,
+  updated_by uuid REFERENCES auth.users(id),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (flag_name, target_type, target_id)
+);
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.account_manager_cities ENABLE ROW LEVEL SECURITY;
@@ -357,3 +430,9 @@ ALTER TABLE public.restaurant_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.threads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.message_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_channels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_channel_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.feature_flags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.feature_flag_targets ENABLE ROW LEVEL SECURITY;

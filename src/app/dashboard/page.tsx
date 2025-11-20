@@ -46,12 +46,12 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, XAxis, Bar, BarChart, Line, LineChart as RechartsLineChart } from "recharts";
 import React, { useEffect, useMemo, useState } from 'react';
-import { DashboardLayout } from '@/components/dashboard-layout';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { SplashScreen } from '@/components/ui/splash-screen';
 
-const GreetingWidget = dynamic(() => import('@/components/greeting-widget').then(mod => mod.GreetingWidget), { ssr: false });
+const GreetingWidget = dynamic(() => import('@/components/features/dashboard/greeting-widget').then(mod => mod.GreetingWidget), { ssr: false });
 const Widget = dynamic(() => Promise.resolve(({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div
     className={cn(
@@ -127,13 +127,13 @@ const TimeWidget = dynamic(() => Promise.resolve(() => {
 
   if (!time) {
     return (
-       <Widget className="items-center justify-center text-center">
+      <Widget className="items-center justify-center text-center">
         <div className="flex justify-between items-center w-full mb-4">
-        <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-          <Clock className="w-5 h-5" />
-          <span>Current Time</span>
-        </h3>
-      </div>
+          <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+            <Clock className="w-5 h-5" />
+            <span>Current Time</span>
+          </h3>
+        </div>
         <div className="text-5xl sm:text-6xl font-extrabold">--:--:--</div>
         <div className="text-xl sm:text-2xl text-muted-foreground mt-2">Loading...</div>
       </Widget>
@@ -159,8 +159,8 @@ const TimeWidget = dynamic(() => Promise.resolve(() => {
       </span>
     </Widget>
   );
-      }
-    ),
+}
+),
   { ssr: false }
 );
 
@@ -254,130 +254,130 @@ const SalesReportWidget = dynamic(
         loading: boolean;
         error: string | null;
       }) => {
-  const [salesData, setSalesData] = useState<any[]>([]);
-  const [locationData, setLocationData] = useState<any[]>([]);
+        const [salesData, setSalesData] = useState<any[]>([]);
+        const [locationData, setLocationData] = useState<any[]>([]);
 
-  useEffect(() => {
-    const generateData = () => {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+        useEffect(() => {
+          const generateData = () => {
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      const colorClasses = [
-        { color: 'bg-muted/20', textColor: 'text-muted-foreground' }, // 0-9
-        { color: 'bg-sky-900/40', textColor: 'text-sky-300' }, // 10-19
-        { color: 'bg-sky-900/60', textColor: 'text-sky-200' }, // 20-29
-        { color: 'bg-sky-800/70', textColor: 'text-sky-100' }, // 30-39
-        { color: 'bg-sky-700/80', textColor: 'text-white' }, // 40-49
-        { color: 'bg-lime-400/30', textColor: 'text-lime-200' }, // 50-59
-        { color: 'bg-lime-400/50', textColor: 'text-lime-100' }, // 60-69
-        { color: 'bg-yellow-400/40', textColor: 'text-yellow-200' },// 70-79
-        { color: 'bg-yellow-400/60', textColor: 'text-yellow-100' },// 80-89
-        { color: 'bg-orange-500/70', textColor: 'text-orange-100' }, // >= 90
-      ];
+            const colorClasses = [
+              { color: 'bg-muted/20', textColor: 'text-muted-foreground' }, // 0-9
+              { color: 'bg-sky-900/40', textColor: 'text-sky-300' }, // 10-19
+              { color: 'bg-sky-900/60', textColor: 'text-sky-200' }, // 20-29
+              { color: 'bg-sky-800/70', textColor: 'text-sky-100' }, // 30-39
+              { color: 'bg-sky-700/80', textColor: 'text-white' }, // 40-49
+              { color: 'bg-lime-400/30', textColor: 'text-lime-200' }, // 50-59
+              { color: 'bg-lime-400/50', textColor: 'text-lime-100' }, // 60-69
+              { color: 'bg-yellow-400/40', textColor: 'text-yellow-200' },// 70-79
+              { color: 'bg-yellow-400/60', textColor: 'text-yellow-100' },// 80-89
+              { color: 'bg-orange-500/70', textColor: 'text-orange-100' }, // >= 90
+            ];
 
-      const getColor = (value: number) => {
-        if (value === 0) return colorClasses[0];
-        const index = Math.floor(value / 10);
-        return colorClasses[Math.min(index, colorClasses.length - 1)];
-      }
+            const getColor = (value: number) => {
+              if (value === 0) return colorClasses[0];
+              const index = Math.floor(value / 10);
+              return colorClasses[Math.min(index, colorClasses.length - 1)];
+            }
 
-      const data = Array.from({ length: daysInMonth }, (_, i) => {
-        const day = i + 1;
-        const randomValue = Math.floor(Math.random() * 100);
-        const { color, textColor } = getColor(randomValue);
-        return { value: day, color, textColor, randomValue };
-      });
+            const data = Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1;
+              const randomValue = Math.floor(Math.random() * 100);
+              const { color, textColor } = getColor(randomValue);
+              return { value: day, color, textColor, randomValue };
+            });
 
-      setSalesData(data);
+            setSalesData(data);
 
-      const locations = [
-          { name: "Los Angeles", value: 201192 },
-          { name: "New York", value: 192054 },
-          { name: "Canada", value: 166401 },
-          { name: "Dallas", value: 154321 },
-      ];
-      setLocationData(locations);
-    };
+            const locations = [
+              { name: "Los Angeles", value: 201192 },
+              { name: "New York", value: 192054 },
+              { name: "Canada", value: 166401 },
+              { name: "Dallas", value: 154321 },
+            ];
+            setLocationData(locations);
+          };
 
-    generateData();
-  }, []);
+          generateData();
+        }, []);
 
-  const requestHeadline =
-    loading || totalRequests === null
-      ? "…"
-      : totalRequests.toLocaleString();
-  const requestSub =
-    loading ? "Loading request totals…" : error ? "Unable to load requests." : "Total requests captured across all statuses.";
+        const requestHeadline =
+          loading || totalRequests === null
+            ? "…"
+            : totalRequests.toLocaleString();
+        const requestSub =
+          loading ? "Loading request totals…" : error ? "Unable to load requests." : "Total requests captured across all statuses.";
 
-  return (
-    <div className="space-y-0">
-      <Widget>
-        <header>
-          <h1 className="text-xl font-bold font-sans mb-4">Onboard Report</h1>
-        </header>
-        <main className="space-y-4 text-sm">
-          <section>
-            <div className="grid grid-cols-7 gap-1">
-              {salesData.map((item, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    'aspect-square flex items-center justify-center rounded-md text-xs',
-                    item.color,
-                    item.textColor
-                  )}
-                  title={`Value: ${item.randomValue}`}
-                >
-                  {item.value}
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="flex space-x-4">
-            <div className="w-1/2">
-              <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-                <TrendingUp className="text-green-500 w-4 h-4" />
-                <span className="text-xs font-medium">Yearly</span>
+        return (
+          <div className="space-y-0">
+            <Widget>
+              <header>
+                <h1 className="text-xl font-bold font-sans mb-4">Onboard Report</h1>
+              </header>
+              <main className="space-y-4 text-sm">
+                <section>
+                  <div className="grid grid-cols-7 gap-1">
+                    {salesData.map((item, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          'aspect-square flex items-center justify-center rounded-md text-xs',
+                          item.color,
+                          item.textColor
+                        )}
+                        title={`Value: ${item.randomValue}`}
+                      >
+                        {item.value}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <section className="flex space-x-4">
+                  <div className="w-1/2">
+                    <div className="flex items-center space-x-2 text-muted-foreground mb-1">
+                      <TrendingUp className="text-green-500 w-4 h-4" />
+                      <span className="text-xs font-medium">Yearly</span>
+                    </div>
+                    <p className="text-xl font-bold">$301,002</p>
+                  </div>
+                  <div className="w-1/2">
+                    <div className="flex items-center space-x-2 text-muted-foreground mb-1">
+                      <TrendingUp className="text-green-500 w-4 h-4" />
+                      <span className="text-xs font-medium">Monthly</span>
+                    </div>
+                    <p className="text-xl font-bold">$8,097</p>
+                  </div>
+                </section>
+                <section className="pt-2">
+                  <ul className="space-y-2">
+                    {locationData.map((location, index) => (
+                      <React.Fragment key={location.name}>
+                        <li className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground">{location.name}</span>
+                          <span className="font-medium">{location.value.toLocaleString()}</span>
+                        </li>
+                        {index < locationData.length - 1 && <hr className="border-border" />}
+                      </React.Fragment>
+                    ))}
+                  </ul>
+                </section>
+              </main>
+            </Widget>
+            <Widget className="text-center space-y-3">
+              <div className="flex justify-between items-center w-full">
+                <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+                  <Target className="w-4 h-4" />
+                  <span>Total Requests</span>
+                </h2>
               </div>
-              <p className="text-xl font-bold">$301,002</p>
-            </div>
-            <div className="w-1/2">
-              <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-                <TrendingUp className="text-green-500 w-4 h-4" />
-                <span className="text-xs font-medium">Monthly</span>
-              </div>
-              <p className="text-xl font-bold">$8,097</p>
-            </div>
-          </section>
-          <section className="pt-2">
-            <ul className="space-y-2">
-              {locationData.map((location, index) => (
-                <React.Fragment key={location.name}>
-                  <li className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">{location.name}</span>
-                    <span className="font-medium">{location.value.toLocaleString()}</span>
-                  </li>
-                  {index < locationData.length - 1 && <hr className="border-border" />}
-                </React.Fragment>
-              ))}
-            </ul>
-          </section>
-        </main>
-      </Widget>
-      <Widget className="text-center space-y-3">
-        <div className="flex justify-between items-center w-full">
-          <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-            <Target className="w-4 h-4" />
-            <span>Total Requests</span>
-          </h2>
-        </div>
-        <div className="text-5xl font-extrabold text-foreground">{requestHeadline}</div>
-        <p className="text-xs text-muted-foreground">{requestSub}</p>
-      </Widget>
-    </div>
-  );
+              <div className="text-5xl font-extrabold text-foreground">{requestHeadline}</div>
+              <p className="text-xs text-muted-foreground">{requestSub}</p>
+            </Widget>
+          </div>
+        );
       }
     ),
   { ssr: false }
@@ -492,7 +492,7 @@ export default function DashboardPage() {
       active = false;
     };
   }, [supabase]);
-const widgetStack = useMemo(() => {
+  const widgetStack = useMemo(() => {
     const stack: React.ReactNode[] = [
       <GreetingWidget key="greet" user={user} />,
       <FocusWidget

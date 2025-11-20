@@ -30,6 +30,13 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+} from "@/components/ui/command";
+import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
@@ -38,8 +45,9 @@ import {
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save, UtensilsCrossed, PartyPopper, ChefHat, AlignLeft, Building2, User } from "lucide-react";
+import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save, UtensilsCrossed, PartyPopper, ChefHat, AlignLeft, Building2, User, Check, ChevronsUpDown } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import { format } from "date-fns";
@@ -123,238 +131,230 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
     const isNew = daysOld === 0;
 
     return (
-        <div className="widget">
-            <Card
-                className="bg-card rounded-xl p-6 flex flex-col shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full border-0"
-                onClick={onClick}
-            >
-                <div className="space-y-4">
-                    {/* Header with badges and avatar */}
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span
-                                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}
-                                >
-                                    {request.request_type}
+        <Card
+            className="relative bg-card rounded-xl p-4 flex flex-col shadow-lg hover:shadow-xl transition-shadow cursor-pointer border-0"
+            onClick={onClick}
+        >
+            <div className="space-y-3">
+                {/* Header with badges and avatar */}
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span
+                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}
+                            >
+                                {request.request_type}
+                            </span>
+                            <span
+                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[request.status] || "bg-gray-500 text-white"}`}
+                            >
+                                {request.status}
+                            </span>
+                            {isNew && (
+                                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                                    New ✨
                                 </span>
-                                <span
-                                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[request.status] || "bg-gray-500 text-white"}`}
-                                >
-                                    {request.status}
-                                </span>
-                                {isNew && (
-                                    <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
-                                        New ✨
+                            )}
+                        </div>
+                        <h3 className="font-semibold text-xl line-clamp-2 mb-2">{request.title}</h3>
+                    </div>
+                    {/* BDR Avatar(s) */}
+                    <div className="flex flex-col items-center gap-1">
+                        {request.assigned_bdrs && request.assigned_bdrs.length > 0 ? (
+                            <>
+                                {request.assigned_bdrs.length === 1 ? (
+                                    // Single BDR
+                                    <>
+                                        <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                                            {request.assigned_bdrs[0].avatar ? (
+                                                <img
+                                                    src={request.assigned_bdrs[0].avatar}
+                                                    alt={request.assigned_bdrs[0].name}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                                    <UserCog className="h-6 w-6 text-primary" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-muted-foreground font-medium text-center">
+                                            {request.assigned_bdrs[0].name}
+                                        </span>
+                                    </>
+                                ) : (
+                                    // Multiple BDRs - Stacked avatars
+                                    <>
+                                        <div className="relative h-12 w-16">
+                                            {request.assigned_bdrs.slice(0, 2).map((bdr, idx) => (
+                                                <div
+                                                    key={bdr.id}
+                                                    className="absolute h-10 w-10 rounded-full border-2 border-background overflow-hidden"
+                                                    style={{
+                                                        left: `${idx * 24}px`,
+                                                        zIndex: 2 - idx,
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                    }}
+                                                >
+                                                    {bdr.avatar ? (
+                                                        <img
+                                                            src={bdr.avatar}
+                                                            alt={bdr.name}
+                                                            className="h-full w-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                                            <UserCog className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {request.assigned_bdrs.length > 2 && (
+                                                <div
+                                                    className="absolute h-10 w-10 rounded-full border-2 border-background bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground"
+                                                    style={{
+                                                        left: '48px',
+                                                        zIndex: 0,
+                                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                    }}
+                                                >
+                                                    +{request.assigned_bdrs.length - 2}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-xs text-primary font-semibold text-center bg-primary/10 px-2 py-0.5 rounded-full">
+                                            Team ({request.assigned_bdrs.length})
+                                        </span>
+                                    </>
+                                )}
+                            </>
+                        ) : request.assigned_bdr_avatar ? (
+                            // Fallback to single BDR fields (backward compatibility)
+                            <>
+                                <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                                    <img
+                                        src={request.assigned_bdr_avatar}
+                                        alt={request.assigned_bdr_name || "BDR"}
+                                        className="h-full w-full object-cover"
+                                    />
+                                </div>
+                                {request.assigned_bdr_name && (
+                                    <span className="text-xs text-muted-foreground font-medium text-center">
+                                        {request.assigned_bdr_name}
                                     </span>
                                 )}
-                            </div>
-                            <h3 className="font-semibold text-xl line-clamp-2 mb-2">{request.title}</h3>
-                        </div>
-                        {/* BDR Avatar(s) */}
-                        <div className="flex flex-col items-center gap-1">
-                            {request.assigned_bdrs && request.assigned_bdrs.length > 0 ? (
-                                <>
-                                    {request.assigned_bdrs.length === 1 ? (
-                                        // Single BDR
-                                        <>
-                                            <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
-                                                {request.assigned_bdrs[0].avatar ? (
-                                                    <img
-                                                        src={request.assigned_bdrs[0].avatar}
-                                                        alt={request.assigned_bdrs[0].name}
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="h-full w-full flex items-center justify-center bg-primary/20">
-                                                        <UserCog className="h-6 w-6 text-primary" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <span className="text-xs text-muted-foreground font-medium text-center">
-                                                {request.assigned_bdrs[0].name}
-                                            </span>
-                                        </>
-                                    ) : (
-                                        // Multiple BDRs - Stacked avatars
-                                        <>
-                                            <div className="relative h-12 w-16">
-                                                {request.assigned_bdrs.slice(0, 2).map((bdr, idx) => (
-                                                    <div
-                                                        key={bdr.id}
-                                                        className="absolute h-10 w-10 rounded-full border-2 border-background overflow-hidden"
-                                                        style={{
-                                                            left: `${idx * 24}px`,
-                                                            zIndex: 2 - idx,
-                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                        }}
-                                                    >
-                                                        {bdr.avatar ? (
-                                                            <img
-                                                                src={bdr.avatar}
-                                                                alt={bdr.name}
-                                                                className="h-full w-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="h-full w-full flex items-center justify-center bg-primary/20">
-                                                                <UserCog className="h-5 w-5 text-primary" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                {request.assigned_bdrs.length > 2 && (
-                                                    <div
-                                                        className="absolute h-10 w-10 rounded-full border-2 border-background bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground"
-                                                        style={{
-                                                            left: '48px',
-                                                            zIndex: 0,
-                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                        }}
-                                                    >
-                                                        +{request.assigned_bdrs.length - 2}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <span className="text-xs text-primary font-semibold text-center bg-primary/10 px-2 py-0.5 rounded-full">
-                                                Team ({request.assigned_bdrs.length})
-                                            </span>
-                                        </>
-                                    )}
-                                </>
-                            ) : request.assigned_bdr_avatar ? (
-                                // Fallback to single BDR fields (backward compatibility)
-                                <>
-                                    <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
-                                        <img
-                                            src={request.assigned_bdr_avatar}
-                                            alt={request.assigned_bdr_name || "BDR"}
-                                            className="h-full w-full object-cover"
-                                        />
-                                    </div>
-                                    {request.assigned_bdr_name && (
-                                        <span className="text-xs text-muted-foreground font-medium text-center">
-                                            {request.assigned_bdr_name}
-                                        </span>
-                                    )}
-                                </>
-                            ) : (
-                                // No BDR assigned
-                                <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center bg-muted">
-                                    <UserCog className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Description */}
-                    {request.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-                            {request.description}
-                        </p>
-                    )}
-
-                    {/* Details Grid */}
-                    <div className="grid grid-cols-1 text-sm">
-                        {/* Requested for/by and Company */}
-                        <div className="text-sm space-y-1">
-                            {request.company && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Building2 className="h-4 w-4 flex-shrink-0" />
-                                    <span>Company: {request.company}</span>
-                                </div>
-                            )}
-                            {request.requester_name && (
-                                <div className="flex items-center gap-2 text-foreground">
-                                    <User className="h-4 w-4 flex-shrink-0" />
-                                    <span>Requested for: {request.requester_name}</span>
-                                </div>
-                            )}
-                            {!request.requester_name && request.creator_name && (
-                                <div className="flex items-center gap-2 text-foreground">
-                                    <User className="h-4 w-4 flex-shrink-0" />
-                                    <span>Requested by: {request.creator_name}</span>
-                                </div>
-                            )}
-                            {request.city_name && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <MapPin className="h-4 w-4 flex-shrink-0" />
-                                    <span className="font-medium">
-                                        {request.city_name}
-                                        {request.city_state && `, ${request.city_state}`}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                            {request.volume !== undefined && request.volume !== null && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs">
-                                    <Package className="h-3.5 w-3.5 flex-shrink-0" />
-                                    <span className="font-medium">{request.volume}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="pt-4 border-t border-border text-xs space-y-2">
-                        {/* Date badges */}
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            {(() => {
-                                const now = new Date();
-                                const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
-                                const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
-                                const badgeColor = isOverdueForReply
-                                    ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                    : "bg-primary/10 text-primary";
-
-                                return (
-                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
-                                        <Calendar className="h-3.5 w-3.5" />
-                                        <span className="font-medium">
-                                            {isNew ? (
-                                                <span>Just created</span>
-                                            ) : (
-                                                `${daysOld}d old`
-                                            )}
-                                        </span>
-                                    </div>
-                                );
-                            })()}
-                            {request.need_answer_by && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
-                                    <Clock className="h-3.5 w-3.5" />
-                                    <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
-                                </div>
-                            )}
-                            {request.delivery_date && (() => {
-                                const now = new Date();
-                                const deliveryDate = new Date(request.delivery_date);
-                                const isOverdue = now > deliveryDate;
-                                const badgeColor = isOverdue
-                                    ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                    : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
-
-                                return (
-                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
-                                        <Truck className="h-3.5 w-3.5" />
-                                        <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-
-                        {request.created_on_behalf && request.requester_name && (
-                            <div className="flex items-center gap-2 text-primary">
-                                <UserCog className="h-3.5 w-3.5" />
-                                <span className="font-medium">Created by admin for {request.requester_name}</span>
+                            </>
+                        ) : (
+                            // No BDR assigned
+                            <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center bg-muted">
+                                <UserCog className="h-6 w-6 text-muted-foreground" />
                             </div>
                         )}
-
                     </div>
                 </div>
-            </Card>
-        </div>
+
+                {/* Description */}
+                {request.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                        {request.description}
+                    </p>
+                )}
+
+                {/* Details Grid - All Inline */}
+                <div className="text-sm space-y-1">
+                    {request.company && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <Building2 className="h-4 w-4 flex-shrink-0" />
+                            <span>{request.company}</span>
+                        </div>
+                    )}
+                    {request.requester_name && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <User className="h-4 w-4 flex-shrink-0" />
+                            <span>{request.requester_name}</span>
+                        </div>
+                    )}
+                    {!request.requester_name && request.creator_name && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <User className="h-4 w-4 flex-shrink-0" />
+                            <span>{request.creator_name}</span>
+                        </div>
+                    )}
+                    {request.city_name && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4 flex-shrink-0" />
+                            <span>
+                                {request.city_name}
+                                {request.city_state && `, ${request.city_state}`}
+                            </span>
+                        </div>
+                    )}
+                    {request.volume !== undefined && request.volume !== null && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <Package className="h-4 w-4 flex-shrink-0" />
+                            <span>{request.volume}</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="pt-4 border-t border-border text-xs space-y-2">
+                    {/* Date badges */}
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        {(() => {
+                            const now = new Date();
+                            const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
+                            const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
+                            const badgeColor = isOverdueForReply
+                                ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                : "bg-primary/10 text-primary";
+
+                            return (
+                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    <span className="font-medium">
+                                        {isNew ? (
+                                            <span>Just created</span>
+                                        ) : (
+                                            `${daysOld}d old`
+                                        )}
+                                    </span>
+                                </div>
+                            );
+                        })()}
+                        {request.need_answer_by && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
+                                <Clock className="h-3.5 w-3.5" />
+                                <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
+                            </div>
+                        )}
+                        {request.delivery_date && (() => {
+                            const now = new Date();
+                            const deliveryDate = new Date(request.delivery_date);
+                            const isOverdue = now > deliveryDate;
+                            const badgeColor = isOverdue
+                                ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+
+                            return (
+                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                    <Truck className="h-3.5 w-3.5" />
+                                    <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
+                                </div>
+                            );
+                        })()}
+                    </div>
+
+                    {request.created_on_behalf && request.requester_name && (
+                        <div className="flex items-center gap-2 text-primary">
+                            <UserCog className="h-3.5 w-3.5" />
+                            <span className="font-medium">Created by admin for {request.requester_name}</span>
+                        </div>
+                    )}
+
+                </div>
+            </div>
+        </Card>
     );
 }
 
@@ -408,6 +408,8 @@ export default function RequestPage() {
     const [showDetailSheet, setShowDetailSheet] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editFormData, setEditFormData] = useState({
+        selectedAM: "",
+        cityId: "",
         title: "",
         description: "",
         request_type: "",
@@ -417,6 +419,21 @@ export default function RequestPage() {
         company: "",
     });
     const [saving, setSaving] = useState(false);
+    const [cities, setCities] = useState<Array<{ id: string; name: string; state_code: string }>>([]);
+    const [citiesLoading, setCitiesLoading] = useState(false);
+    const [needAnswerByOpen, setNeedAnswerByOpen] = useState(false);
+    const [deliveryDateOpen, setDeliveryDateOpen] = useState(false);
+    const [accountManagers, setAccountManagers] = useState<Array<{ id: string; email: string; display_name: string; city_count: number }>>([]);
+    const [amSearchOpen, setAmSearchOpen] = useState(false);
+    const [amLoading, setAmLoading] = useState(false);
+
+    // BDR Assignment state
+    const [bdrs, setBdrs] = useState<Array<{ id: string; label: string }>>([]);
+    const [bdrSearchOpen, setBdrSearchOpen] = useState(false);
+    const [bdrLoading, setBdrLoading] = useState(false);
+    const [assigningBdr, setAssigningBdr] = useState(false);
+
+    const canEditForOthers = useFeatureFlag('proxy_request_creation');
 
     const loadRequests = async () => {
         try {
@@ -448,9 +465,149 @@ export default function RequestPage() {
         }
     };
 
+    const loadCities = async (userId: string) => {
+        if (!userId) return;
+
+        setCitiesLoading(true);
+        try {
+            const supabase = (window as any).supabase;
+            if (!supabase) {
+                console.error("Supabase client not initialized");
+                return;
+            }
+
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const response = await fetch(`/api/admin/user-cities?userId=${userId}`, {
+                headers: {
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+            });
+
+            if (!response.ok) {
+                console.error("Error fetching cities from API:", await response.text());
+                setCities([]);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (data.cities && data.cities.length > 0) {
+                setCities(data.cities);
+            } else {
+                setCities([]);
+            }
+        } catch (error) {
+            console.error("Error loading cities:", error);
+            setCities([]);
+        } finally {
+            setCitiesLoading(false);
+        }
+    };
+
+    const loadBdrs = async () => {
+        setBdrLoading(true);
+        try {
+            const supabase = (window as any).supabase;
+            if (!supabase) {
+                console.error("Supabase client not initialized");
+                return;
+            }
+
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const response = await fetch('/api/admin/bdrs', {
+                headers: {
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+            });
+
+            if (!response.ok) {
+                console.error("Error fetching BDRs from API:", await response.text());
+                setBdrs([]);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (data.bdrs && data.bdrs.length > 0) {
+                setBdrs(data.bdrs);
+            } else {
+                setBdrs([]);
+            }
+        } catch (error) {
+            console.error("Error loading BDRs:", error);
+            setBdrs([]);
+        } finally {
+            setBdrLoading(false);
+        }
+    };
+
+    const assignBdr = async (bdrId: string) => {
+        if (!selectedRequest) return;
+
+        setAssigningBdr(true);
+        try {
+            const supabase = (window as any).supabase;
+            if (!supabase) {
+                throw new Error("Supabase client not initialized");
+            }
+
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const response = await fetch(`/api/admin/assign-bdr`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    request_id: selectedRequest.id,
+                    bdr_id: bdrId,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to assign BDR');
+            }
+
+            const data = await response.json();
+
+            toast({
+                title: "Success",
+                description: "BDR assigned successfully",
+            });
+
+            setBdrSearchOpen(false);
+
+            // Reload the requests to get updated assignments
+            await loadRequests();
+
+            // If we have a selected request, reload its data
+            if (selectedRequest) {
+                const updatedRequest = requests.find(r => r.id === selectedRequest.id);
+                if (updatedRequest) {
+                    setSelectedRequest(updatedRequest);
+                }
+            }
+        } catch (error: any) {
+            console.error("Error assigning BDR:", error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to assign BDR",
+                variant: "destructive",
+            });
+        } finally {
+            setAssigningBdr(false);
+        }
+    };
+
     const handleRequestClick = (request: Request) => {
         setSelectedRequest(request);
         setEditFormData({
+            selectedAM: request.requester_id,
+            cityId: request.city_id,
             title: request.title,
             description: request.description || "",
             request_type: request.request_type,
@@ -492,6 +649,7 @@ export default function RequestPage() {
                         title: editFormData.title.trim(),
                         description: editFormData.description.trim() || null,
                         request_type: editFormData.request_type,
+                        city_id: editFormData.cityId,
                         volume: editFormData.volume ?? null,
                         need_answer_by: editFormData.need_answer_by
                             ? format(editFormData.need_answer_by, "yyyy-MM-dd")
@@ -533,6 +691,52 @@ export default function RequestPage() {
         setTimeout(() => setSelectedRequest(null), 300);
     };
 
+    // Load cities when entering edit mode
+    useEffect(() => {
+        if (isEditing && editFormData.selectedAM) {
+            loadCities(editFormData.selectedAM);
+        }
+    }, [isEditing, editFormData.selectedAM]);
+
+    // Load account managers when entering edit mode (for super admins)
+    useEffect(() => {
+        if (!canEditForOthers || !isEditing) return;
+
+        const loadAccountManagers = async () => {
+            setAmLoading(true);
+            try {
+                const supabase = (window as any).supabase;
+                if (!supabase) return;
+
+                const { data: { session } } = await supabase.auth.getSession();
+
+                const response = await fetch('/api/admin/account-managers', {
+                    headers: {
+                        Authorization: `Bearer ${session?.access_token}`,
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setAccountManagers(data.accountManagers || []);
+                }
+            } catch (error) {
+                console.error('Error loading account managers:', error);
+            } finally {
+                setAmLoading(false);
+            }
+        };
+
+        loadAccountManagers();
+    }, [canEditForOthers, isEditing]);
+
+    // Load BDRs when detail sheet opens
+    useEffect(() => {
+        if (showDetailSheet && selectedRequest) {
+            loadBdrs();
+        }
+    }, [showDetailSheet, selectedRequest]);
+
     useEffect(() => {
         if (user) {
             loadRequests();
@@ -551,10 +755,10 @@ export default function RequestPage() {
             <DashboardLayout title="">
 
                 {/* Viewport wrapper with scaling */}
-                <div className="relative w-full h-full">
+                <div className="relative w-full h-full z-10">
                     <div className="relative z-10 w-full h-full" style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
                         <div className="h-full overflow-y-auto pr-4" style={{ paddingTop: '5%' }}>
-                            <div className="mx-auto max-w-7xl">
+                            <div className="mx-auto max-w-[1600px] relative z-20">
                                 {/* Create Request Button */}
                                 <div className="mb-6">
                                     <Button onClick={() => setShowCreateModal(true)} size="lg">
@@ -563,54 +767,163 @@ export default function RequestPage() {
                                     </Button>
                                 </div>
 
-                                <div className="dashboard-grid">
+                                {/* Kanban Board - 4 Columns */}
+                                <div className="grid grid-cols-4 gap-4">
+                                    {/* Column 1: NEW */}
+                                    <div className="flex flex-col">
+                                        <div className="mb-4 pb-2 border-b-2 border-green-500">
+                                            <h2 className="text-lg font-bold text-green-600 dark:text-green-400">NEW</h2>
+                                            <p className="text-xs text-muted-foreground">
+                                                {loading ? '...' : requests.filter(r => r.status === 'new').length} requests
+                                            </p>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {loading ? (
+                                                [...Array(2)].map((_, i) => (
+                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
+                                                        <div className="space-y-4">
+                                                            <div className="flex gap-2 mb-3">
+                                                                <Skeleton className="h-6 w-24 rounded-full" />
+                                                                <Skeleton className="h-6 w-20 rounded-full" />
+                                                            </div>
+                                                            <Skeleton className="h-7 w-3/4" />
+                                                            <div className="space-y-2">
+                                                                <Skeleton className="h-4 w-full" />
+                                                                <Skeleton className="h-4 w-5/6" />
+                                                            </div>
+                                                        </div>
+                                                    </Card>
+                                                ))
+                                            ) : (
+                                                requests
+                                                    .filter(request => request.status === 'new')
+                                                    .map((request) => (
+                                                        <RequestCard
+                                                            key={request.id}
+                                                            request={request}
+                                                            onClick={() => handleRequestClick(request)}
+                                                        />
+                                                    ))
+                                            )}
+                                        </div>
+                                    </div>
 
-                                    {loading ? (
-                                        [...Array(6)].map((_, i) => (
-                                            <div key={i} className="widget">
-                                                <Card className="bg-card rounded-xl p-6 flex flex-col shadow-lg h-full border-0">
-                                                    <div className="space-y-4">
-                                                        {/* Header badges */}
-                                                        <div className="flex gap-2 mb-3">
-                                                            <Skeleton className="h-6 w-24 rounded-full" />
-                                                            <Skeleton className="h-6 w-20 rounded-full" />
-                                                        </div>
-                                                        {/* Title */}
-                                                        <Skeleton className="h-7 w-3/4" />
-                                                        {/* Description */}
-                                                        <div className="space-y-2">
-                                                            <Skeleton className="h-4 w-full" />
-                                                            <Skeleton className="h-4 w-5/6" />
-                                                            <Skeleton className="h-4 w-4/6" />
-                                                        </div>
-                                                        {/* Details */}
-                                                        <div className="space-y-3">
-                                                            <Skeleton className="h-4 w-32" />
-                                                            <div className="grid grid-cols-2 gap-3">
-                                                                <Skeleton className="h-4 w-24" />
-                                                                <Skeleton className="h-4 w-28" />
+                                    {/* Column 2: ONGOING */}
+                                    <div className="flex flex-col">
+                                        <div className="mb-4 pb-2 border-b-2 border-blue-500">
+                                            <h2 className="text-lg font-bold text-blue-600 dark:text-blue-400">ONGOING</h2>
+                                            <p className="text-xs text-muted-foreground">
+                                                {loading ? '...' : requests.filter(r => r.status === 'ongoing').length} requests
+                                            </p>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {loading ? (
+                                                [...Array(2)].map((_, i) => (
+                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
+                                                        <div className="space-y-4">
+                                                            <div className="flex gap-2 mb-3">
+                                                                <Skeleton className="h-6 w-24 rounded-full" />
+                                                                <Skeleton className="h-6 w-20 rounded-full" />
+                                                            </div>
+                                                            <Skeleton className="h-7 w-3/4" />
+                                                            <div className="space-y-2">
+                                                                <Skeleton className="h-4 w-full" />
+                                                                <Skeleton className="h-4 w-5/6" />
                                                             </div>
                                                         </div>
-                                                        {/* Footer */}
-                                                        <div className="pt-4 border-t border-border">
-                                                            <div className="flex items-center justify-between">
-                                                                <Skeleton className="h-3 w-24" />
-                                                                <Skeleton className="h-3 w-20" />
+                                                    </Card>
+                                                ))
+                                            ) : (
+                                                requests
+                                                    .filter(request => request.status === 'ongoing')
+                                                    .map((request) => (
+                                                        <RequestCard
+                                                            key={request.id}
+                                                            request={request}
+                                                            onClick={() => handleRequestClick(request)}
+                                                        />
+                                                    ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Column 3: ON HOLD */}
+                                    <div className="flex flex-col">
+                                        <div className="mb-4 pb-2 border-b-2 border-orange-500">
+                                            <h2 className="text-lg font-bold text-orange-600 dark:text-orange-400">ON HOLD</h2>
+                                            <p className="text-xs text-muted-foreground">
+                                                {loading ? '...' : requests.filter(r => r.status === 'on hold').length} requests
+                                            </p>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {loading ? (
+                                                [...Array(2)].map((_, i) => (
+                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
+                                                        <div className="space-y-4">
+                                                            <div className="flex gap-2 mb-3">
+                                                                <Skeleton className="h-6 w-24 rounded-full" />
+                                                                <Skeleton className="h-6 w-20 rounded-full" />
+                                                            </div>
+                                                            <Skeleton className="h-7 w-3/4" />
+                                                            <div className="space-y-2">
+                                                                <Skeleton className="h-4 w-full" />
+                                                                <Skeleton className="h-4 w-5/6" />
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </Card>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        requests.map((request) => (
-                                            <RequestCard
-                                                key={request.id}
-                                                request={request}
-                                                onClick={() => handleRequestClick(request)}
-                                            />
-                                        ))
-                                    )}
+                                                    </Card>
+                                                ))
+                                            ) : (
+                                                requests
+                                                    .filter(request => request.status === 'on hold')
+                                                    .map((request) => (
+                                                        <RequestCard
+                                                            key={request.id}
+                                                            request={request}
+                                                            onClick={() => handleRequestClick(request)}
+                                                        />
+                                                    ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Column 4: DONE */}
+                                    <div className="flex flex-col">
+                                        <div className="mb-4 pb-2 border-b-2 border-purple-500">
+                                            <h2 className="text-lg font-bold text-purple-600 dark:text-purple-400">DONE</h2>
+                                            <p className="text-xs text-muted-foreground">
+                                                {loading ? '...' : requests.filter(r => r.status === 'done').length} requests
+                                            </p>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {loading ? (
+                                                [...Array(2)].map((_, i) => (
+                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
+                                                        <div className="space-y-4">
+                                                            <div className="flex gap-2 mb-3">
+                                                                <Skeleton className="h-6 w-24 rounded-full" />
+                                                                <Skeleton className="h-6 w-20 rounded-full" />
+                                                            </div>
+                                                            <Skeleton className="h-7 w-3/4" />
+                                                            <div className="space-y-2">
+                                                                <Skeleton className="h-4 w-full" />
+                                                                <Skeleton className="h-4 w-5/6" />
+                                                            </div>
+                                                        </div>
+                                                    </Card>
+                                                ))
+                                            ) : (
+                                                requests
+                                                    .filter(request => request.status === 'done')
+                                                    .map((request) => (
+                                                        <RequestCard
+                                                            key={request.id}
+                                                            request={request}
+                                                            onClick={() => handleRequestClick(request)}
+                                                        />
+                                                    ))
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -633,11 +946,10 @@ export default function RequestPage() {
                                         <Button
                                             onClick={() => setIsEditing(true)}
                                             variant="outline"
-                                            size="sm"
+                                            size="icon"
                                             className="ml-4"
                                         >
-                                            <Edit2 className="h-4 w-4 mr-2" />
-                                            Edit
+                                            <Edit2 className="h-4 w-4" />
                                         </Button>
                                     )}
                                 </div>
@@ -668,15 +980,13 @@ export default function RequestPage() {
                                             </div>
                                         )}
 
-                                        {/* Details Section */}
-                                        <div className="space-y-4">
+                                        {/* Details Section - All Inline */}
+                                        <div className="space-y-2">
                                             {selectedRequest.company && (
-                                                <div>
-                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                                        <Building2 className="h-4 w-4" />
-                                                        Company
-                                                    </h4>
-                                                    <p className="text-sm text-muted-foreground">{selectedRequest.company}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="h-4 w-4" />
+                                                    <span className="text-sm font-semibold">Company:</span>
+                                                    <span className="text-sm text-muted-foreground">{selectedRequest.company}</span>
                                                 </div>
                                             )}
 
@@ -701,14 +1011,88 @@ export default function RequestPage() {
                                             )}
 
                                             {selectedRequest.volume !== undefined && selectedRequest.volume !== null && (
-                                                <div>
-                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                                        <Package className="h-4 w-4" />
-                                                        Volume
-                                                    </h4>
-                                                    <p className="text-sm text-muted-foreground">{selectedRequest.volume}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <Package className="h-4 w-4" />
+                                                    <span className="text-sm font-semibold">Volume:</span>
+                                                    <span className="text-sm text-muted-foreground">{selectedRequest.volume}</span>
                                                 </div>
                                             )}
+
+                                            {/* Assigned BDR Badges */}
+                                            <div className="flex items-start gap-2">
+                                                <UserCog className="h-4 w-4 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <span className="text-sm font-semibold block mb-1">Assigned BDRs:</span>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {selectedRequest.assigned_bdrs && selectedRequest.assigned_bdrs.length > 0 ? (
+                                                            selectedRequest.assigned_bdrs.map((bdr) => (
+                                                                <span key={bdr.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400">
+                                                                    {bdr.name}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-sm text-muted-foreground">Not assigned</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {/* Assign BDR Button */}
+                                                <Popover open={bdrSearchOpen} onOpenChange={setBdrSearchOpen}>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="h-7"
+                                                        >
+                                                            Add BDR
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-[300px] p-0">
+                                                        <Command>
+                                                            <CommandInput placeholder="Search BDR..." />
+                                                            {!bdrLoading && <CommandEmpty>No BDR found.</CommandEmpty>}
+                                                            <CommandGroup className="max-h-64 overflow-auto">
+                                                                {bdrLoading ? (
+                                                                    <div className="p-2 space-y-3">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Skeleton className="h-4 w-4 rounded-sm" />
+                                                                            <div className="flex-1 space-y-1">
+                                                                                <Skeleton className="h-4 w-32" />
+                                                                                <Skeleton className="h-3 w-24" />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Skeleton className="h-4 w-4 rounded-sm" />
+                                                                            <div className="flex-1 space-y-1">
+                                                                                <Skeleton className="h-4 w-36" />
+                                                                                <Skeleton className="h-3 w-28" />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    bdrs.map((bdr) => (
+                                                                        <CommandItem
+                                                                            key={bdr.id}
+                                                                            value={bdr.label}
+                                                                            onSelect={() => {
+                                                                                assignBdr(bdr.id);
+                                                                            }}
+                                                                            disabled={assigningBdr}
+                                                                        >
+                                                                            <Check
+                                                                                className={cn(
+                                                                                    "mr-2 h-4 w-4",
+                                                                                    selectedRequest.assigned_bdrs?.some(assignedBdr => assignedBdr.id === bdr.id) ? "opacity-100" : "opacity-0"
+                                                                                )}
+                                                                            />
+                                                                            <span className="font-medium">{bdr.label}</span>
+                                                                        </CommandItem>
+                                                                    ))
+                                                                )}
+                                                            </CommandGroup>
+                                                        </Command>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
                                         </div>
 
                                         {/* Footer Info with Badges */}
@@ -759,23 +1143,22 @@ export default function RequestPage() {
                                                         </div>
                                                     );
                                                 })()}
-                                                {selectedRequest.volume !== undefined && selectedRequest.volume !== null && (
-                                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs">
-                                                        <Package className="h-3.5 w-3.5" />
-                                                        <span className="font-medium">{selectedRequest.volume}</span>
-                                                    </div>
-                                                )}
                                             </div>
 
-                                            {/* Creator/Requester Info */}
+                                            {/* Creator Info - Inline */}
                                             <div className="text-sm text-muted-foreground space-y-1">
                                                 {selectedRequest.creator_name && (
-                                                    <p className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2">
                                                         <UserCog className="h-4 w-4" />
+                                                        <span className="font-medium text-foreground">Created by:</span>
                                                         <span className="font-medium text-foreground">{selectedRequest.creator_name}</span>
-                                                    </p>
+                                                    </div>
                                                 )}
-                                                <p>Created: <span className="font-medium">{format(new Date(selectedRequest.created_at), "MMM d, yyyy 'at' h:mm a")}</span></p>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4" />
+                                                    <span className="font-medium text-foreground">Created:</span>
+                                                    <span className="font-medium">{format(new Date(selectedRequest.created_at), "MMM d, yyyy 'at' h:mm a")}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </>
@@ -812,6 +1195,159 @@ export default function RequestPage() {
                                             </TooltipProvider>
                                         </div>
 
+                                        <Separator />
+
+                                        {/* Conditional: Show Account Manager & City for users with feature */}
+                                        {canEditForOthers ? (
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <User className="h-4 w-4 text-muted-foreground" />
+                                                            <Label>Requested By <span className="text-destructive">*</span></Label>
+                                                        </div>
+                                                        <Popover open={amSearchOpen} onOpenChange={setAmSearchOpen}>
+                                                            <PopoverTrigger asChild>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    role="combobox"
+                                                                    aria-expanded={amSearchOpen}
+                                                                    className="w-full justify-between"
+                                                                >
+                                                                    {accountManagers.find(am => am.id === editFormData.selectedAM)?.display_name || "Search Account Manager..."}
+                                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-[300px] p-0">
+                                                                <Command>
+                                                                    <CommandInput placeholder="Search account manager..." />
+                                                                    {!amLoading && <CommandEmpty>No account manager found.</CommandEmpty>}
+                                                                    <CommandGroup className="max-h-64 overflow-auto">
+                                                                        {amLoading ? (
+                                                                            <div className="p-2 space-y-3">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Skeleton className="h-4 w-4 rounded-sm" />
+                                                                                    <div className="flex-1 space-y-1">
+                                                                                        <Skeleton className="h-4 w-32" />
+                                                                                        <Skeleton className="h-3 w-16" />
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Skeleton className="h-4 w-4 rounded-sm" />
+                                                                                    <div className="flex-1 space-y-1">
+                                                                                        <Skeleton className="h-4 w-40" />
+                                                                                        <Skeleton className="h-3 w-20" />
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Skeleton className="h-4 w-4 rounded-sm" />
+                                                                                    <div className="flex-1 space-y-1">
+                                                                                        <Skeleton className="h-4 w-36" />
+                                                                                        <Skeleton className="h-3 w-14" />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ) : (
+                                                                            accountManagers.map((am) => (
+                                                                                <CommandItem
+                                                                                    key={am.id}
+                                                                                    value={am.display_name}
+                                                                                    onSelect={() => {
+                                                                                        setEditFormData({ ...editFormData, selectedAM: am.id, cityId: "" });
+                                                                                        setAmSearchOpen(false);
+                                                                                    }}
+                                                                                >
+                                                                                    <Check
+                                                                                        className={cn(
+                                                                                            "mr-2 h-4 w-4",
+                                                                                            editFormData.selectedAM === am.id ? "opacity-100" : "opacity-0"
+                                                                                        )}
+                                                                                    />
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="font-medium">{am.display_name}</span>
+                                                                                        <span className="text-xs text-muted-foreground">{am.city_count} cities</span>
+                                                                                    </div>
+                                                                                </CommandItem>
+                                                                            ))
+                                                                        )}
+                                                                    </CommandGroup>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        </Popover>
+                                                    </div>
+
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                            <Label>City <span className="text-destructive">*</span></Label>
+                                                        </div>
+                                                        <Select
+                                                            value={editFormData.cityId}
+                                                            onValueChange={(value) => setEditFormData({ ...editFormData, cityId: value })}
+                                                            disabled={!editFormData.selectedAM}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder={editFormData.selectedAM ? "Select city..." : "Select AM first..."} />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {citiesLoading ? (
+                                                                    <div className="p-2 space-y-2">
+                                                                        <Skeleton className="h-8 w-full" />
+                                                                        <Skeleton className="h-8 w-full" />
+                                                                        <Skeleton className="h-8 w-3/4" />
+                                                                    </div>
+                                                                ) : cities.length === 0 ? (
+                                                                    <div className="p-2 text-sm text-muted-foreground">
+                                                                        {editFormData.selectedAM ? "No cities assigned to this AM" : "Select an Account Manager first"}
+                                                                    </div>
+                                                                ) : (
+                                                                    cities.map((city) => (
+                                                                        <SelectItem key={city.id} value={city.id}>
+                                                                            {city.name}, {city.state_code}
+                                                                        </SelectItem>
+                                                                    ))
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // Regular users only see City (defaults to their assigned cities)
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                    <Label>City <span className="text-destructive">*</span></Label>
+                                                </div>
+                                                <Select value={editFormData.cityId} onValueChange={(value) => setEditFormData({ ...editFormData, cityId: value })}>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select city..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {citiesLoading ? (
+                                                            <div className="p-2 space-y-2">
+                                                                <Skeleton className="h-8 w-full" />
+                                                                <Skeleton className="h-8 w-full" />
+                                                                <Skeleton className="h-8 w-3/4" />
+                                                            </div>
+                                                        ) : cities.length === 0 ? (
+                                                            <div className="p-2 text-sm text-muted-foreground">
+                                                                No cities available
+                                                            </div>
+                                                        ) : (
+                                                            cities.map((city) => (
+                                                                <SelectItem key={city.id} value={city.id}>
+                                                                    {city.name}, {city.state_code}
+                                                                </SelectItem>
+                                                            ))
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+
+                                        <Separator />
+
                                         {/* Title */}
                                         <div className="space-y-3">
                                             <div className="flex items-center gap-2">
@@ -843,42 +1379,109 @@ export default function RequestPage() {
 
                                         <Separator />
 
-                                        {/* Volume and Dates Grid */}
+                                        {/* Company */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                <Label>Company <span className="text-muted-foreground">- Optional</span></Label>
+                                            </div>
+                                            <Input
+                                                value={editFormData.company || ""}
+                                                onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                                                placeholder="Enter company name"
+                                            />
+                                        </div>
+
+                                        {/* Volume */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <Package className="h-4 w-4 text-muted-foreground" />
+                                                <Label htmlFor="edit-volume">Volume <span className="text-muted-foreground">- Optional</span></Label>
+                                            </div>
+                                            <Input
+                                                id="edit-volume"
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                value={editFormData.volume ?? ""}
+                                                onChange={(e) => setEditFormData({
+                                                    ...editFormData,
+                                                    volume: e.target.value ? Number(e.target.value) : undefined
+                                                })}
+                                                placeholder="0"
+                                            />
+                                        </div>
+
+                                        {/* Dates in one row */}
                                         <div className="grid grid-cols-2 gap-4">
-                                            {/* Volume */}
+                                            {/* Need Answer By */}
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-2">
-                                                    <Package className="h-4 w-4 text-muted-foreground" />
-                                                    <Label htmlFor="edit-volume">Volume <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                                    <Label>Need Answer By <span className="text-muted-foreground">- Optional</span></Label>
                                                 </div>
-                                                <Input
-                                                    id="edit-volume"
-                                                    type="number"
-                                                    min="0"
-                                                    step="1"
-                                                    value={editFormData.volume ?? ""}
-                                                    onChange={(e) => setEditFormData({
-                                                        ...editFormData,
-                                                        volume: e.target.value ? Number(e.target.value) : undefined
-                                                    })}
-                                                    placeholder="0"
-                                                />
+                                                <Popover open={needAnswerByOpen} onOpenChange={setNeedAnswerByOpen}>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "w-full justify-start text-left font-normal",
+                                                                !editFormData.need_answer_by && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            <Clock className="mr-2 h-4 w-4" />
+                                                            {editFormData.need_answer_by ? format(editFormData.need_answer_by, "MMM d") : "Pick date"}
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <CalendarComponent
+                                                            mode="single"
+                                                            selected={editFormData.need_answer_by}
+                                                            onSelect={(date) => {
+                                                                setEditFormData({ ...editFormData, need_answer_by: date });
+                                                                setNeedAnswerByOpen(false);
+                                                            }}
+                                                            initialFocus
+                                                            disabled={(date) => date < new Date()}
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
                                             </div>
 
-                                            {/* Dates Stacked */}
-                                            <div className="space-y-4">
-                                                {/* Company */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                        <Label>Company <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                                                    </div>
-                                                    <Input
-                                                        value={editFormData.company || ""}
-                                                        onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
-                                                        placeholder="Enter company name"
-                                                    />
+                                            {/* Delivery Date */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Truck className="h-4 w-4 text-muted-foreground" />
+                                                    <Label>Delivery Date <span className="text-muted-foreground">- Optional</span></Label>
                                                 </div>
+                                                <Popover open={deliveryDateOpen} onOpenChange={setDeliveryDateOpen}>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "w-full justify-start text-left font-normal",
+                                                                !editFormData.delivery_date && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            <Truck className="mr-2 h-4 w-4" />
+                                                            {editFormData.delivery_date ? format(editFormData.delivery_date, "MMM d") : "Pick date"}
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <CalendarComponent
+                                                            mode="single"
+                                                            selected={editFormData.delivery_date}
+                                                            onSelect={(date) => {
+                                                                setEditFormData({ ...editFormData, delivery_date: date });
+                                                                setDeliveryDateOpen(false);
+                                                            }}
+                                                            initialFocus
+                                                            disabled={(date) => date < new Date()}
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
                                             </div>
                                         </div>
 

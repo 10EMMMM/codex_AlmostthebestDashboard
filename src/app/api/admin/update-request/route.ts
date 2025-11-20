@@ -8,6 +8,7 @@ type UpdatePayload = {
     description?: string | null;
     status?: string;
     request_type?: string;
+    city_id?: string;
     need_answer_by?: string | null;
     delivery_date?: string | null;
     priority?: string | null;
@@ -75,6 +76,31 @@ export async function POST(request: Request) {
         { error: "Forbidden: you cannot edit this request" },
         { status: 403 }
       );
+    }
+
+    // If city_id is being updated, validate user has access to the new city
+    if (payload.updates.city_id) {
+      const { data: cityAccess, error: cityError } = await supabaseAdmin
+        .from("account_manager_cities")
+        .select("city_id")
+        .eq("user_id", existing.requester_id)
+        .eq("city_id", payload.updates.city_id)
+        .maybeSingle();
+
+      if (cityError) {
+        console.error("Error checking city access:", cityError);
+        return NextResponse.json(
+          { error: "Error validating city access" },
+          { status: 500 }
+        );
+      }
+
+      if (!cityAccess) {
+        return NextResponse.json(
+          { error: "User does not have access to the selected city" },
+          { status: 403 }
+        );
+      }
     }
 
     const updates: Record<string, unknown> = {};

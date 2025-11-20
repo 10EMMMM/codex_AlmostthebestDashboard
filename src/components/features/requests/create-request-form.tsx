@@ -36,7 +36,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalendarIcon, MapPin, User, Check, ChevronsUpDown, UtensilsCrossed, PartyPopper, ChefHat, FileText, AlignLeft, Package, Clock, Truck } from "lucide-react";
+import { CalendarIcon, MapPin, User, Check, ChevronsUpDown, UtensilsCrossed, PartyPopper, ChefHat, FileText, AlignLeft, Package, Clock, Truck, Building2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +79,7 @@ type FormData = {
     volume?: number;
     need_answer_by?: Date;
     delivery_date?: Date;
+    company?: string;
 };
 
 export function CreateRequestForm({
@@ -97,6 +98,7 @@ export function CreateRequestForm({
         volume: undefined,
         need_answer_by: undefined,
         delivery_date: undefined,
+        company: undefined,
     });
 
     const [cities, setCities] = useState<City[]>([]);
@@ -269,6 +271,7 @@ export function CreateRequestForm({
                     volume: formData.volume,
                     need_answer_by: formData.need_answer_by ? format(formData.need_answer_by, "yyyy-MM-dd") : undefined,
                     delivery_date: formData.delivery_date ? format(formData.delivery_date, "yyyy-MM-dd") : undefined,
+                    company: formData.company?.trim() || undefined,
                     requested_by: canCreateForOthers && formData.selectedAM ? formData.selectedAM : undefined,
                 }),
             });
@@ -292,6 +295,7 @@ export function CreateRequestForm({
                 volume: undefined,
                 need_answer_by: undefined,
                 delivery_date: undefined,
+                company: undefined,
             });
 
             onCreated?.();
@@ -530,91 +534,105 @@ export function CreateRequestForm({
 
             <Separator />
 
+            {/* Company */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="company">Company <span className="text-muted-foreground">- Optional</span></Label>
+                </div>
+                <Input
+                    id="company"
+                    value={formData.company || ""}
+                    onChange={(e) => updateFormData("company", e.target.value)}
+                    placeholder="Enter company name"
+                />
+            </div>
+
+            {/* Volume */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="volume">Volume <span className="text-muted-foreground">- Optional</span></Label>
+                </div>
+                <Input
+                    id="volume"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={formData.volume ?? ""}
+                    onChange={(e) => updateFormData("volume", e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="0"
+                />
+            </div>
+
+            {/* Dates in one row */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="volume">Volume <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <Label>Need Answer By <span className="text-muted-foreground">- Optional</span></Label>
                     </div>
-                    <Input
-                        id="volume"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={formData.volume ?? ""}
-                        onChange={(e) => updateFormData("volume", e.target.value ? Number(e.target.value) : undefined)}
-                        placeholder="0"
-                    />
+                    <Popover open={needAnswerByOpen} onOpenChange={setNeedAnswerByOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !formData.need_answer_by && "text-muted-foreground"
+                                )}
+                            >
+                                <Clock className="mr-2 h-4 w-4" />
+                                {formData.need_answer_by ? format(formData.need_answer_by, "MMM d") : "Pick date"}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={formData.need_answer_by}
+                                onSelect={(date) => {
+                                    updateFormData("need_answer_by", date);
+                                    setNeedAnswerByOpen(false);
+                                }}
+                                initialFocus
+                                disabled={(date) => date < new Date()}
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
 
-                <div className="space-y-4">
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <Label>Need Answer By <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                        </div>
-                        <Popover open={needAnswerByOpen} onOpenChange={setNeedAnswerByOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !formData.need_answer_by && "text-muted-foreground"
-                                    )}
-                                >
-                                    <Clock className="mr-2 h-4 w-4" />
-                                    {formData.need_answer_by ? format(formData.need_answer_by, "MMM d") : "Pick date"}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={formData.need_answer_by}
-                                    onSelect={(date) => {
-                                        updateFormData("need_answer_by", date);
-                                        setNeedAnswerByOpen(false);
-                                    }}
-                                    initialFocus
-                                    disabled={(date) => date < new Date()}
-                                />
-                            </PopoverContent>
-                        </Popover>
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-muted-foreground" />
+                        <Label>Delivery Date <span className="text-muted-foreground">- Optional</span></Label>
                     </div>
-
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                            <Truck className="h-4 w-4 text-muted-foreground" />
-                            <Label>Delivery Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                        </div>
-                        <Popover open={deliveryDateOpen} onOpenChange={setDeliveryDateOpen}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !formData.delivery_date && "text-muted-foreground"
-                                    )}
-                                >
-                                    <Truck className="mr-2 h-4 w-4" />
-                                    {formData.delivery_date ? format(formData.delivery_date, "MMM d") : "Pick date"}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={formData.delivery_date}
-                                    onSelect={(date) => {
-                                        updateFormData("delivery_date", date);
-                                        setDeliveryDateOpen(false);
-                                    }}
-                                    initialFocus
-                                    disabled={(date) => date < new Date()}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
+                    <Popover open={deliveryDateOpen} onOpenChange={setDeliveryDateOpen}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !formData.delivery_date && "text-muted-foreground"
+                                )}
+                            >
+                                <Truck className="mr-2 h-4 w-4" />
+                                {formData.delivery_date ? format(formData.delivery_date, "MMM d") : "Pick date"}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={formData.delivery_date}
+                                onSelect={(date) => {
+                                    updateFormData("delivery_date", date);
+                                    setDeliveryDateOpen(false);
+                                }}
+                                initialFocus
+                                disabled={(date) => date < new Date()}
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
 

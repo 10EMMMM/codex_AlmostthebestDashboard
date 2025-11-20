@@ -18,7 +18,8 @@
    - [ ] AMs can manage their own city list (add/remove) without touching other users’ assignments.
 
 4. **Request Intake**
-   - [ ] Create request form uses `public.requests` columns (type, title, description, budget, deadline).
+   - [x] Create request form uses `public.requests` columns (type, title, description, budget, deadline).
+   - [x] Role-based access: Super admins can create requests on behalf of Account Managers; regular users create for themselves.
    - [ ] City dropdown limited to AM’s allowed cities; cascading lookup from `public.account_manager_cities`.
    - [ ] Trigger notification sender once form submits (no extra data required, just broadcast info).
 

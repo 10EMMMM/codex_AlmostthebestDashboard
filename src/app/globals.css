@@ -90,7 +90,7 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground overflow-hidden;
+    @apply bg-background text-foreground overflow-x-hidden overflow-y-auto;
   }
   .content-scale-wrapper {
     width: 100%;
@@ -147,6 +147,14 @@ body {
     margin-bottom: 1rem;
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .requests-grid .widget {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  @media (min-width: 1024px) {
+    .requests-grid {
+      column-count: 4;
+    }
   }
    @keyframes slide-in-from-right {
     from {

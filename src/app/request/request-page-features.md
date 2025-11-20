@@ -1,10 +1,10 @@
-## Request Page Feature Checklist
+﻿## Request Page Feature Checklist
 
-- **Request grid** – Loads `public.requests` and enriches them with requester display names and city labels, then renders them as cards with status badges, city, requester, created date, deadline, and truncated description.
+- **Request grid** – Loads `public.requests` and enriches them with requester names, companies, cities, volume, need-answer-by, and delivery dates before rendering cards with status badges and summaries.
 - **Filters toolbar** – Status, city, and requester filters (popover commands) slice the in-memory list client-side so users can quickly narrow the grid without re-fetching.
-- **Request detail dialog** – Clicking a card opens a dialog that surfaces the full metadata (title, requester, city, created/deadline dates, description, priority, category, budget, and status badge).
+- **Request detail dialog** – Clicking a card opens a dialog that surfaces the full metadata (title, requester, company, city, created/need-answer/delivery dates, description, priority, category, volume, and status badge).
 - **Account Manager directory (super admins only)** – Super admins can see the directory widget that calls `/api/admin/account-managers` using the current access token to surface all requester options for quick reference.
-- **New request dialog** – `CreateRequestForm` enforces core schema fields (title, request type, requester, city, description, priority, category, budget, deadline) and inserts directly into Supabase, showing toast feedback on success/failure.
+- **New request dialog** – `CreateRequestForm` enforces core schema fields (title, request type, requester, city, description, priority, category, company, volume, need-answer-by, delivery date) and inserts directly into Supabase with consistent toast feedback.
 - **Role-aware requester flow** – Super admins must select request type → requester → city; each step unlocks the next and requester/city pickers are comboboxes that stay hidden until prerequisites are met. Non super admins default to themselves and immediately see their allowed cities.
 - **City access logic** – Cities are loaded from `account_manager_cities` for account managers/super admins (per selected requester) and from all `cities` for other roles, and the search field only shows results after typing.
 - **Manager-aware city refresh** – Selecting a different requester resets the city selection and query so the options reflect the newly selected account manager’s territory.

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
-import { LoginForm } from '@/components/login-form';
+import { LoginForm } from '@/components/features/auth/login-form';
 import { useAuth } from '@/hooks/useAuth';
 import { SplashScreen } from '@/components/ui/splash-screen';
 import { getSupabaseClient } from '@/lib/supabaseClient';

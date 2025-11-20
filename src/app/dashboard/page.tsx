@@ -29,6 +29,7 @@ import {
   Leaf,
   TrendingUp,
   Clock,
+  Bell,
   LineChart as LucideLineChart, // Aliased LineChart
   Mail,
   ArrowUp,
@@ -45,12 +46,12 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { CartesianGrid, XAxis, Bar, BarChart, Line, LineChart as RechartsLineChart } from "recharts";
 import React, { useEffect, useMemo, useState } from 'react';
-import { DashboardLayout } from '@/components/dashboard-layout';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { SplashScreen } from '@/components/ui/splash-screen';
 
-const GreetingWidget = dynamic(() => import('@/components/greeting-widget').then(mod => mod.GreetingWidget), { ssr: false });
+const GreetingWidget = dynamic(() => import('@/components/features/dashboard/greeting-widget').then(mod => mod.GreetingWidget), { ssr: false });
 const Widget = dynamic(() => Promise.resolve(({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div
     className={cn(
@@ -126,13 +127,13 @@ const TimeWidget = dynamic(() => Promise.resolve(() => {
 
   if (!time) {
     return (
-       <Widget className="items-center justify-center text-center">
+      <Widget className="items-center justify-center text-center">
         <div className="flex justify-between items-center w-full mb-4">
-        <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-          <Clock className="w-5 h-5" />
-          <span>Current Time</span>
-        </h3>
-      </div>
+          <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+            <Clock className="w-5 h-5" />
+            <span>Current Time</span>
+          </h3>
+        </div>
         <div className="text-5xl sm:text-6xl font-extrabold">--:--:--</div>
         <div className="text-xl sm:text-2xl text-muted-foreground mt-2">Loading...</div>
       </Widget>
@@ -158,7 +159,10 @@ const TimeWidget = dynamic(() => Promise.resolve(() => {
       </span>
     </Widget>
   );
-}), { ssr: false });
+}
+),
+  { ssr: false }
+);
 
 const chartData = [
   { month: "January", tasks: 186 },
@@ -238,113 +242,146 @@ const LineChartWidget = dynamic(() => Promise.resolve(() => (
   </Widget>
 )), { ssr: false });
 
-const SalesReportWidget = dynamic(() => Promise.resolve(() => {
-  const [salesData, setSalesData] = useState<any[]>([]);
-  const [locationData, setLocationData] = useState<any[]>([]);
+const SalesReportWidget = dynamic(
+  () =>
+    Promise.resolve(
+      ({
+        totalRequests,
+        loading,
+        error,
+      }: {
+        totalRequests: number | null;
+        loading: boolean;
+        error: string | null;
+      }) => {
+        const [salesData, setSalesData] = useState<any[]>([]);
+        const [locationData, setLocationData] = useState<any[]>([]);
 
-  useEffect(() => {
-    const generateData = () => {
-      const date = new Date();
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
+        useEffect(() => {
+          const generateData = () => {
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      const colorClasses = [
-        { color: 'bg-muted/20', textColor: 'text-muted-foreground' }, // 0-9
-        { color: 'bg-sky-900/40', textColor: 'text-sky-300' }, // 10-19
-        { color: 'bg-sky-900/60', textColor: 'text-sky-200' }, // 20-29
-        { color: 'bg-sky-800/70', textColor: 'text-sky-100' }, // 30-39
-        { color: 'bg-sky-700/80', textColor: 'text-white' }, // 40-49
-        { color: 'bg-lime-400/30', textColor: 'text-lime-200' }, // 50-59
-        { color: 'bg-lime-400/50', textColor: 'text-lime-100' }, // 60-69
-        { color: 'bg-yellow-400/40', textColor: 'text-yellow-200' },// 70-79
-        { color: 'bg-yellow-400/60', textColor: 'text-yellow-100' },// 80-89
-        { color: 'bg-orange-500/70', textColor: 'text-orange-100' }, // >= 90
-      ];
+            const colorClasses = [
+              { color: 'bg-muted/20', textColor: 'text-muted-foreground' }, // 0-9
+              { color: 'bg-sky-900/40', textColor: 'text-sky-300' }, // 10-19
+              { color: 'bg-sky-900/60', textColor: 'text-sky-200' }, // 20-29
+              { color: 'bg-sky-800/70', textColor: 'text-sky-100' }, // 30-39
+              { color: 'bg-sky-700/80', textColor: 'text-white' }, // 40-49
+              { color: 'bg-lime-400/30', textColor: 'text-lime-200' }, // 50-59
+              { color: 'bg-lime-400/50', textColor: 'text-lime-100' }, // 60-69
+              { color: 'bg-yellow-400/40', textColor: 'text-yellow-200' },// 70-79
+              { color: 'bg-yellow-400/60', textColor: 'text-yellow-100' },// 80-89
+              { color: 'bg-orange-500/70', textColor: 'text-orange-100' }, // >= 90
+            ];
 
-      const getColor = (value: number) => {
-        if (value === 0) return colorClasses[0];
-        const index = Math.floor(value / 10);
-        return colorClasses[Math.min(index, colorClasses.length - 1)];
-      }
+            const getColor = (value: number) => {
+              if (value === 0) return colorClasses[0];
+              const index = Math.floor(value / 10);
+              return colorClasses[Math.min(index, colorClasses.length - 1)];
+            }
 
-      const data = Array.from({ length: daysInMonth }, (_, i) => {
-        const day = i + 1;
-        const randomValue = Math.floor(Math.random() * 100);
-        const { color, textColor } = getColor(randomValue);
-        return { value: day, color, textColor, randomValue };
-      });
+            const data = Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1;
+              const randomValue = Math.floor(Math.random() * 100);
+              const { color, textColor } = getColor(randomValue);
+              return { value: day, color, textColor, randomValue };
+            });
 
-      setSalesData(data);
+            setSalesData(data);
 
-      const locations = [
-          { name: "Los Angeles", value: 201192 },
-          { name: "New York", value: 192054 },
-          { name: "Canada", value: 166401 },
-          { name: "Dallas", value: 154321 },
-      ];
-      setLocationData(locations);
-    };
+            const locations = [
+              { name: "Los Angeles", value: 201192 },
+              { name: "New York", value: 192054 },
+              { name: "Canada", value: 166401 },
+              { name: "Dallas", value: 154321 },
+            ];
+            setLocationData(locations);
+          };
 
-    generateData();
-  }, []);
+          generateData();
+        }, []);
 
-  return (
-    <Widget>
-      <header>
-        <h1 className="text-xl font-bold font-sans mb-4">Onboard Report</h1>
-      </header>
-      <main className="space-y-4 text-sm">
-        <section>
-          <div className="grid grid-cols-7 gap-1">
-            {salesData.map((item, index) => (
-              <div
-                key={index}
-                className={cn(
-                  'aspect-square flex items-center justify-center rounded-md text-xs',
-                  item.color,
-                  item.textColor
-                )}
-                title={`Value: ${item.randomValue}`}
-              >
-                {item.value}
+        const requestHeadline =
+          loading || totalRequests === null
+            ? "…"
+            : totalRequests.toLocaleString();
+        const requestSub =
+          loading ? "Loading request totals…" : error ? "Unable to load requests." : "Total requests captured across all statuses.";
+
+        return (
+          <div className="space-y-0">
+            <Widget>
+              <header>
+                <h1 className="text-xl font-bold font-sans mb-4">Onboard Report</h1>
+              </header>
+              <main className="space-y-4 text-sm">
+                <section>
+                  <div className="grid grid-cols-7 gap-1">
+                    {salesData.map((item, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          'aspect-square flex items-center justify-center rounded-md text-xs',
+                          item.color,
+                          item.textColor
+                        )}
+                        title={`Value: ${item.randomValue}`}
+                      >
+                        {item.value}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <section className="flex space-x-4">
+                  <div className="w-1/2">
+                    <div className="flex items-center space-x-2 text-muted-foreground mb-1">
+                      <TrendingUp className="text-green-500 w-4 h-4" />
+                      <span className="text-xs font-medium">Yearly</span>
+                    </div>
+                    <p className="text-xl font-bold">$301,002</p>
+                  </div>
+                  <div className="w-1/2">
+                    <div className="flex items-center space-x-2 text-muted-foreground mb-1">
+                      <TrendingUp className="text-green-500 w-4 h-4" />
+                      <span className="text-xs font-medium">Monthly</span>
+                    </div>
+                    <p className="text-xl font-bold">$8,097</p>
+                  </div>
+                </section>
+                <section className="pt-2">
+                  <ul className="space-y-2">
+                    {locationData.map((location, index) => (
+                      <React.Fragment key={location.name}>
+                        <li className="flex justify-between items-center text-xs">
+                          <span className="text-muted-foreground">{location.name}</span>
+                          <span className="font-medium">{location.value.toLocaleString()}</span>
+                        </li>
+                        {index < locationData.length - 1 && <hr className="border-border" />}
+                      </React.Fragment>
+                    ))}
+                  </ul>
+                </section>
+              </main>
+            </Widget>
+            <Widget className="text-center space-y-3">
+              <div className="flex justify-between items-center w-full">
+                <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+                  <Target className="w-4 h-4" />
+                  <span>Total Requests</span>
+                </h2>
               </div>
-            ))}
+              <div className="text-5xl font-extrabold text-foreground">{requestHeadline}</div>
+              <p className="text-xs text-muted-foreground">{requestSub}</p>
+            </Widget>
           </div>
-        </section>
-        <section className="flex space-x-4">
-          <div className="w-1/2">
-            <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-              <TrendingUp className="text-green-500 w-4 h-4" />
-              <span className="text-xs font-medium">Yearly</span>
-            </div>
-            <p className="text-xl font-bold">$301,002</p>
-          </div>
-          <div className="w-1/2">
-            <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-              <TrendingUp className="text-green-500 w-4 h-4" />
-              <span className="text-xs font-medium">Monthly</span>
-            </div>
-            <p className="text-xl font-bold">$8,097</p>
-          </div>
-        </section>
-        <section className="pt-2">
-          <ul className="space-y-2">
-            {locationData.map((location, index) => (
-                <React.Fragment key={location.name}>
-                    <li className="flex justify-between items-center text-xs">
-                        <span className="text-muted-foreground">{location.name}</span>
-                        <span className="font-medium">{location.value.toLocaleString()}</span>
-                    </li>
-                    {index < locationData.length - 1 && <hr className="border-border" />}
-                </React.Fragment>
-            ))}
-          </ul>
-        </section>
-      </main>
-    </Widget>
-  );
-}), { ssr: false });
+        );
+      }
+    ),
+  { ssr: false }
+);
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -361,63 +398,11 @@ export default function DashboardPage() {
     loading: true,
     error: null,
   });
-  const [metrics, setMetrics] = useState<{
-    card: { width: number; height: number } | null;
-    inner: { width: number; height: number } | null;
-    grid: { width: number; height: number } | null;
-  }>({
-    card: null,
-    inner: null,
-    grid: null,
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const card = document.querySelector<HTMLElement>("[data-layout-card]");
-    const inner = document.querySelector<HTMLElement>("[data-layout-inner]");
-    const grid = gridElement;
-
-    if (!card && !inner && !grid) {
-      return;
-    }
-
-    const measure = (element: HTMLElement | null) => {
-      if (!element) return null;
-      const rect = element.getBoundingClientRect();
-      return {
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-      };
-    };
-
-    const update = () => {
-      setMetrics({
-        card: measure(card),
-        inner: measure(inner),
-        grid: measure(grid),
-      });
-    };
-
-    const observers = [card, inner, grid]
-      .filter((element): element is HTMLElement => Boolean(element))
-      .map((element) => {
-        const observer = new ResizeObserver(update);
-        observer.observe(element);
-        return observer;
-      });
-
-    window.addEventListener("resize", update);
-    update();
-
-    return () => {
-      observers.forEach((observer) => observer.disconnect());
-      window.removeEventListener("resize", update);
-    };
-  }, [gridElement]);
-
+  const [requestStats, setRequestStats] = useState<{
+    total: number | null;
+    loading: boolean;
+    error: string | null;
+  }>({ total: null, loading: true, error: null });
   useEffect(() => {
     let active = true;
     const loadOnboardStats = async () => {
@@ -475,10 +460,41 @@ export default function DashboardPage() {
       active = false;
     };
   }, [supabase]);
-
-  const hasMetrics = Object.values(metrics).some((value) => value !== null);
+  useEffect(() => {
+    if (!supabase) return;
+    let active = true;
+    const loadRequestStats = async () => {
+      try {
+        setRequestStats((prev) => ({ ...prev, loading: true, error: null }));
+        const { count, error } = await supabase
+          .from("requests")
+          .select("id", { count: "exact", head: true });
+        if (!active) return;
+        if (error) {
+          throw error;
+        }
+        setRequestStats({
+          total: count ?? 0,
+          loading: false,
+          error: null,
+        });
+      } catch (err: any) {
+        if (!active) return;
+        setRequestStats({
+          total: null,
+          loading: false,
+          error: err?.message || "Unable to load request totals.",
+        });
+      }
+    };
+    loadRequestStats();
+    return () => {
+      active = false;
+    };
+  }, [supabase]);
   const widgetStack = useMemo(() => {
     const stack: React.ReactNode[] = [
+      <GreetingWidget key="greet" user={user} />,
       <FocusWidget
         key="focus"
         total={onboardStats.total}
@@ -487,9 +503,14 @@ export default function DashboardPage() {
         error={onboardStats.error}
       />,
       <TimeWidget key="time" />,
-      <GreetingWidget key="greet" user={user} />,
+      <NotificationWidget key="notifications" userId={user?.id ?? null} supabase={supabase} />,
       <LineChartWidget key="line" />,
-      <SalesReportWidget key="sales" />,
+      <SalesReportWidget
+        key="sales"
+        totalRequests={requestStats.total}
+        loading={requestStats.loading}
+        error={requestStats.error}
+      />,
     ];
     return stack.filter(Boolean);
   }, [user, hasAdminAccess, onboardStats]);
@@ -508,11 +529,8 @@ export default function DashboardPage() {
       </div>
       <DashboardLayout title="">
         <div className="relative w-full h-full">
-          <div
-            className="relative z-10 w-full h-full pt-20"
-            style={{ transform: "scale(0.8)", transformOrigin: "top center" }}
-          >
-            <div className="h-full overflow-y-auto pr-4">
+          <div className="relative z-10 w-full h-full" style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
+            <div className="h-full overflow-y-auto pr-4" style={{ paddingTop: '5%' }}>
               <div
                 ref={setGridElement}
                 data-dashboard-grid
@@ -527,3 +545,86 @@ export default function DashboardPage() {
     </>
   );
 }
+const NotificationWidget = ({
+  userId,
+  supabase,
+}: {
+  userId: string | null;
+  supabase: ReturnType<typeof useAuth>["supabase"];
+}) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<
+    Array<{ id: string; title: string; created_at: string }>
+  >([]);
+
+  useEffect(() => {
+    let active = true;
+    if (!userId) {
+      setLoading(false);
+      setNotifications([]);
+      return;
+    }
+    const loadNotifications = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("id, title, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (!active) return;
+        if (error) throw error;
+        setNotifications(data ?? []);
+        setError(null);
+      } catch (err: any) {
+        if (!active) return;
+        setError(err?.message || "Unable to load notifications.");
+        setNotifications([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    loadNotifications();
+    return () => {
+      active = false;
+    };
+  }, [userId, supabase]);
+
+  return (
+    <Widget className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+          <Bell className="w-4 h-4" />
+          <span>Notifications</span>
+        </h3>
+      </div>
+      {loading ? (
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+          <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+          <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
+        </div>
+      ) : error ? (
+        <div className="text-sm text-destructive">{error}</div>
+      ) : notifications.length === 0 ? (
+        <div className="text-sm text-muted-foreground">No notifications yet.</div>
+      ) : (
+        <ul className="space-y-3 text-sm">
+          {notifications.map((notification) => (
+            <li
+              key={notification.id}
+              className="rounded-lg border border-white/10 bg-background/60 p-3 shadow-sm hover:border-primary/30 transition"
+            >
+              <p className="font-semibold text-foreground">{notification.title || "New notification"}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(notification.created_at).toLocaleString()}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Widget>
+  );
+};

@@ -47,7 +47,7 @@ export const GreetingWidget = ({ user }: { user: any }) => {
     return (
         <div
             className={cn(
-                "widget rounded-xl p-6 flex flex-col border shadow-lg",
+                "widget rounded-xl p-6 flex flex-col border shadow-lg col-span-full",
                 tone.container
             )}
         >

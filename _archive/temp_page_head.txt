@@ -1,0 +1,200 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  Calendar,
+  CheckCircle,
+  ClipboardList,
+  FilePlus,
+  MapPin,
+  PauseCircle,
+  Phone,
+  PlusCircle,
+  RefreshCw,
+  Target,
+  User,
+  UtensilsCrossed,
+} from "lucide-react";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { SplashScreen } from "@/components/ui/splash-screen";
+
+const RESTAURANT_STATUSES = ["new", "on progress", "on hold", "done"] as const;
+type RestaurantStatus = (typeof RESTAURANT_STATUSES)[number];
+
+const statusConfig: Record<
+  RestaurantStatus,
+  { badgeClass: string; label: string; icon: typeof PlusCircle }
+> = {
+  new: {
+    badgeClass: "bg-sky-900/30 border-sky-400/60 text-sky-50",
+    label: "New intake",
+    icon: PlusCircle,
+  },
+  "on progress": {
+    badgeClass: "bg-amber-900/30 border-amber-300/60 text-amber-100",
+    label: "Active onboarding",
+    icon: RefreshCw,
+  },
+  "on hold": {
+    badgeClass: "bg-slate-900/40 border-slate-500/60 text-slate-100",
+    label: "On hold",
+    icon: PauseCircle,
+  },
+  done: {
+    badgeClass: "bg-emerald-900/30 border-emerald-300/60 text-emerald-50",
+    label: "Completed",
+    icon: CheckCircle,
+  },
+};
+
+type RestaurantRecord = {
+  id: string;
+  name: string;
+  status: RestaurantStatus | null;
+  city_id: string | null;
+  primary_cuisine_id: string | null;
+  onboarding_stage: string | null;
+  description: string | null;
+  bdr_target_per_week: number | null;
+  created_at: string;
+};
+
+type RestaurantContactRecord = {
+  restaurant_id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  is_primary: boolean | null;
+};
+
+type RestaurantAssignmentRecord = {
+  restaurant_id: string;
+  user_id: string;
+};
+
+type CityOption = { id: string; label: string };
+type CuisineOption = { id: string; label: string };
+type BdrOption = { id: string; label: string };
+
+type EnrichedRestaurant = {
+  id: string;
+  name: string;
+  status: RestaurantStatus;
+  cityLabel: string;
+  cuisineLabel: string;
+  onboardingStage: string;
+  description: string;
+  createdAt: string;
+  bdrTarget: number;
+  contactName: string;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  assignedBdr?: string | null;
+};
+
+type FilterOption = { value: string; label: string };
+
+const FilterSelect = ({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+}) => (
+  <div className="flex flex-col gap-1">
+    <span className="text-[10px] uppercase tracking-[0.3em] text-white/45">
+      {label}
+    </span>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-[190px] rounded-full border-white/20 bg-white/10 text-white shadow">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="bg-background/95 backdrop-blur-xl">
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value} className="capitalize">
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
+type KanbanColumn = {
+  title: string;
+  accent: string;
+  items: {
+    title: string;
+    subtitle: string;
+    meta: string;
+  }[];
+};
+
+const kanbanDemoColumns: KanbanColumn[] = [
+  {
+    title: "Intake",
+    accent: "text-sky-300",
+    items: [
+      {
+        title: "Monarch Bistro",
+        subtitle: "Awaiting documents",
+        meta: "Chicago • 4 attachments",
+      },
+      {
+        title: "Pasta Nova",
+        subtitle: "Needs compliance form",
+        meta: "Atlanta • 2 tasks",
+      },
+    ],
+  },
+  {
+    title: "Onboarding",
+    accent: "text-amber-300",
+    items: [
+      {
+        title: "Sunset Tacos",
+        subtitle: "Menu shoot scheduled",
+        meta: "Austin • Due Friday",
+      },
+      {
+        title: "Velvet Sushi",

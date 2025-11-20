@@ -1,7 +1,7 @@
 
 'use client';
 
-import { DashboardLayout } from '@/components/dashboard-layout';
+import { DashboardLayout } from '@/components/layout/dashboard-layout';
 
 export default function MessagesPage() {
   return (

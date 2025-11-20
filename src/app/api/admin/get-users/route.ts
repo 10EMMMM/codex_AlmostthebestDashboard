@@ -72,6 +72,31 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: rolesError.message }, { status: 400 });
     }
 
+    const { data: onboardCounts, error: onboardError } = await supabaseAdmin
+      .from('restaurant_assignments')
+      .select('user_id, restaurant_id', { count: 'exact', head: false })
+      .eq('role', 'BDR');
+    if (onboardError) {
+      console.error('Supabase select restaurant_assignments error:', onboardError);
+      return NextResponse.json({ error: onboardError.message }, { status: 400 });
+    }
+    const onsByUser = new Map<string, number>();
+    (onboardCounts || []).forEach((row: any) => {
+      onsByUser.set(row.user_id, (onsByUser.get(row.user_id) ?? 0) + 1);
+    });
+
+    const { data: requestAssignCounts, error: requestAssignError } = await supabaseAdmin
+      .from('request_assignments')
+      .select('user_id, request_id', { count: 'exact', head: false });
+    if (requestAssignError) {
+      console.error('Supabase select request_assignments error:', requestAssignError);
+      return NextResponse.json({ error: requestAssignError.message }, { status: 400 });
+    }
+    const reqByUser = new Map<string, number>();
+    (requestAssignCounts || []).forEach((row: any) => {
+      reqByUser.set(row.user_id, (reqByUser.get(row.user_id) ?? 0) + 1);
+    });
+
     // 4. Combine the data
     const profilesMap = new Map((profiles || []).map((p) => [p.user_id, p]));
     const rolesMap = new Map<string, string[]>();
@@ -115,6 +140,8 @@ export async function GET(request: Request) {
         roles: userRoles,
         city_ids: assignment?.ids ?? [],
         city_names: assignment?.names ?? [],
+        onboards: onsByUser.get(authUser.id) ?? 0,
+        requestsAssigned: reqByUser.get(authUser.id) ?? 0,
       };
     });
 

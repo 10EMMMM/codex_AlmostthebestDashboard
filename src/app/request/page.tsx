@@ -1,1176 +1,429 @@
-﻿
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { CreateRequestForm } from "@/components/features/requests/create-request-form";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import {
-  Calendar,
-  CheckCircle,
-  ChevronsUpDown,
-  FilePlus,
-  MapPin,
-  PauseCircle,
-  PlusCircle,
-  RefreshCw,
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { cn } from "@/lib/utils";
-import { DashboardLayout } from "@/components/dashboard-layout";
-import { useToast } from "@/hooks/use-toast";
+import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
+import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
+import { format } from "date-fns";
 
-
-type Status = "new" | "on progress" | "done" | "on hold";
-type RequestType = "RESTAURANT" | "EVENT" | "CUISINE";
-
-type RequestRecord = {
-  id: string;
-  title: string;
-  description: string | null;
-  request_type: RequestType;
-  requester_id: string;
-  city_id: string;
-  status: Status | null;
-  priority: string | null;
-  category: string | null;
-  budget: number | null;
-  deadline: string | null;
-  created_at: string;
+type Request = {
+    id: string;
+    request_type: string;
+    title: string;
+    description?: string;
+    city_id: string;
+    city_name?: string;
+    city_state?: string;
+    deadline?: string;
+    status: string;
+    created_by: string;
+    requested_by: string;
+    created_on_behalf: boolean;
+    created_at: string;
+    creator_name?: string;
+    requester_name?: string;
+    assigned_bdr_id?: string;
+    assigned_bdr_name?: string;
+    assigned_bdr_avatar?: string;
+    assigned_bdrs?: Array<{
+        id: string;
+        name: string;
+        avatar?: string;
+    }>;
 };
 
-type EnrichedRequest = Omit<RequestRecord, "status"> & {
-  status: Status;
-  requesterName: string;
-  cityLabel: string;
+const REQUEST_TYPE_COLORS: Record<string, string> = {
+    RESTAURANT: "bg-emerald-500 text-white",
+    EVENT: "bg-blue-500 text-white",
+    CUISINE: "bg-purple-500 text-white",
 };
 
-type CityOption = { id: string; label: string };
-type RequesterOption = { id: string; label: string };
-
-const statusConfig: Record<
-  Status,
-  {
-    icon: typeof PlusCircle;
-    badgeClass: string;
-  }
-> = {
-  new: {
-    icon: PlusCircle,
-    badgeClass: "border-blue-500/50 text-blue-500",
-  },
-  "on progress": {
-    icon: RefreshCw,
-    badgeClass: "border-yellow-500/50 text-yellow-500",
-  },
-  done: {
-    icon: CheckCircle,
-    badgeClass: "border-green-500/50 text-green-500",
-  },
-  "on hold": {
-    icon: PauseCircle,
-    badgeClass: "border-gray-500/50 text-gray-500",
-  },
+const STATUS_COLORS: Record<string, string> = {
+    PENDING: "bg-yellow-500 text-yellow-950",
+    IN_PROGRESS: "bg-blue-500 text-white",
+    COMPLETED: "bg-green-500 text-white",
+    CANCELLED: "bg-gray-500 text-white",
 };
 
-const REQUEST_TYPES: { value: RequestType; label: string }[] = [
-  { value: "RESTAURANT", label: "Restaurant" },
-  { value: "EVENT", label: "Event" },
-  { value: "CUISINE", label: "Cuisine" },
-];
-
-const normalizeStatus = (value: string | null | undefined): Status => {
-  if (value && value in statusConfig) {
-    return value as Status;
-  }
-  return "new";
-};
-
-const formatDate = (value: string | null, detailed?: boolean) => {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString(
-    "en-US",
-    detailed
-      ? { year: "numeric", month: "long", day: "numeric" }
-      : undefined
-  );
-};
-const RequestCard = ({
-  request,
-  onClick,
-}: {
-  request: EnrichedRequest;
-  onClick: () => void;
-}) => {
-  const { icon: StatusIcon, badgeClass } = statusConfig[request.status];
-
-  return (
-    <div className="widget flex flex-col">
-      <Card
-        className="flex flex-1 cursor-pointer flex-col hover:border-primary"
-        onClick={onClick}
-      >
-        <CardHeader className="flex flex-row items-start justify-between p-4">
-          <div className="flex flex-col gap-1">
-            <CardTitle className="text-lg">{request.title}</CardTitle>
-            <div className="flex flex-col text-sm text-muted-foreground">
-              <span className="font-medium">{request.requesterName}</span>
-              <div className="flex items-center gap-1 text-xs">
-                <MapPin className="h-3 w-3" />
-                <span>{request.cityLabel}</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs">
-                <Calendar className="h-3 w-3" />
-                <span>Req. Date: {formatDate(request.created_at)}</span>
-              </div>
-              <div className="flex items-center gap-1 text-xs">
-                <Calendar className="h-3 w-3 text-destructive" />
-                <span>Deadline: {formatDate(request.deadline)}</span>
-              </div>
-            </div>
-          </div>
-          <Badge variant="outline" className={cn("capitalize", badgeClass)}>
-            <StatusIcon className="mr-1 h-3 w-3" />
-            {request.status}
-          </Badge>
-        </CardHeader>
-        <CardContent className="flex flex-1 flex-col p-4 pt-0">
-          <p className="text-sm text-muted-foreground line-clamp-3">
-            {request.description ?? "No description provided."}
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-const RequestDetailView = ({ request }: { request: EnrichedRequest }) => {
-  const { badgeClass } = statusConfig[request.status];
-
-  return (
-    <Card className="flex flex-1 flex-col">
-      <CardHeader className="flex flex-row items-start justify-between p-4">
-        <div className="flex flex-col gap-1">
-          <CardTitle className="text-lg">{request.title}</CardTitle>
-          <div className="flex flex-col text-sm text-muted-foreground">
-            <span className="font-medium">{request.requesterName}</span>
-            <div className="flex items-center gap-1 text-xs">
-              <MapPin className="h-3 w-3" />
-              <span>{request.cityLabel}</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs">
-              <Calendar className="h-3 w-3" />
-              <span>Req. Date: {formatDate(request.created_at, true)}</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs">
-              <Calendar className="h-3 w-3 text-destructive" />
-              <span>Deadline: {formatDate(request.deadline, true)}</span>
-            </div>
-          </div>
-        </div>
-        <Badge variant="outline" className={cn("capitalize", badgeClass)}>
-          {request.status}
-        </Badge>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col p-4 pt-0 text-sm text-muted-foreground">
-        <p>{request.description ?? "No description"}</p>
-        <div className="mt-4 space-y-2">
-          <p>
-            <span className="font-medium text-foreground">Type:</span> {request.request_type}
-          </p>
-          {request.priority && (
-            <p>
-              <span className="font-medium text-foreground">Priority:</span> {request.priority}
-            </p>
-          )}
-          {request.category && (
-            <p>
-              <span className="font-medium text-foreground">Category:</span> {request.category}
-            </p>
-          )}
-          {typeof request.budget === "number" && (
-            <p>
-              <span className="font-medium text-foreground">Budget:</span> ${request.budget.toLocaleString()}
-            </p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const FilterPopover = ({
-  triggerLabel,
-  value,
-  onValueChange,
-  items,
-  placeholder,
-}: {
-  triggerLabel: string;
-  value: string;
-  onValueChange: (value: string) => void;
-  items: string[];
-  placeholder: string;
-}) => {
-  const [open, setOpen] = useState(false);
-  const currentValue = value === "all" ? triggerLabel : value;
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="h-auto w-[150px] justify-between px-2 py-1 text-xs capitalize"
-        >
-          <span className="truncate">{currentValue}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-[200px] p-0"
-        style={{ transform: "scale(0.85)", transformOrigin: "top center" }}
-      >
-        <Command>
-          <CommandInput placeholder={placeholder} />
-          <CommandList>
-            <CommandGroup>
-              <CommandItem
-                onSelect={() => {
-                  onValueChange("all");
-                  setOpen(false);
-                }}
-              >
-                All
-              </CommandItem>
-              {items.map((item) => (
-                <CommandItem
-                  key={item}
-                  onSelect={() => {
-                    onValueChange(item);
-                    setOpen(false);
-                  }}
-                  className="capitalize"
-                >
-                  {item}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-};
-const CreateRequestForm = ({
-  onCancel,
-  onCreated,
-  accountManagers,
-  accountManagersLoading,
-}: {
-  onCancel: () => void;
-  onCreated: () => void;
-  accountManagers: RequesterOption[];
-  accountManagersLoading: boolean;
-}) => {
-  const { supabase, user, roles, isSuperAdmin } = useAuth();
-  const { toast } = useToast();
-  const [title, setTitle] = useState("");
-  const [requestType, setRequestType] = useState<RequestType | "">("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("");
-  const [category, setCategory] = useState("");
-  const [budget, setBudget] = useState("");
-  const [deadline, setDeadline] = useState("");
-  const [cityId, setCityId] = useState("");
-  const [cityQuery, setCityQuery] = useState("");
-  const [cities, setCities] = useState<CityOption[]>([]);
-  const [loadingCities, setLoadingCities] = useState(true);
-  const [requesterId, setRequesterId] = useState("");
-  const [requesterQuery, setRequesterQuery] = useState("");
-  const [requesterPickerOpen, setRequesterPickerOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const canChooseRequester = isSuperAdmin;
-  const isAccountManager = roles.includes("ACCOUNT_MANAGER");
-
-  useEffect(() => {
-    const loadCities = async () => {
-      if (!supabase) return;
-      const targetUserId = canChooseRequester ? requesterId : user?.id;
-
-      if (!targetUserId) {
-        setCities([]);
-        setCityId("");
-        setLoadingCities(false);
-        return;
-      }
-
-      setLoadingCities(true);
-      try {
-        if (canChooseRequester) {
-          const { data, error } = await supabase
-            .from("account_manager_cities")
-            .select("city_id, cities!inner(id, name, state_code)")
-            .eq("user_id", targetUserId);
-
-          if (error) throw error;
-
-          setCities(
-            data?.map((row) => ({
-              id: row.city_id,
-              label: `${row.cities.name}, ${row.cities.state_code}`,
-            })) ?? []
-          );
-
-          if (!data?.length) {
-            setCityId("");
-          }
-        } else if (isAccountManager) {
-          const { data, error } = await supabase
-            .from("account_manager_cities")
-            .select("city_id, cities!inner(id, name, state_code)")
-            .eq("user_id", targetUserId);
-
-          if (error) throw error;
-
-          setCities(
-            data?.map((row) => ({
-              id: row.city_id,
-              label: `${row.cities.name}, ${row.cities.state_code}`,
-            })) ?? []
-          );
-        } else {
-          const { data, error } = await supabase
-            .from("cities")
-            .select("id, name, state_code")
-            .order("name");
-
-          if (error) throw error;
-
-          setCities(
-            data?.map((city) => ({
-              id: city.id,
-              label: `${city.name}, ${city.state_code}`,
-            })) ?? []
-          );
-        }
-      } catch (error) {
-        console.error("Error loading cities", error);
-        toast({
-          title: "Unable to load cities",
-          description:
-            error instanceof Error ? error.message : "Please try again later.",
-          variant: "destructive",
-        });
-        setCities([]);
-      } finally {
-        setLoadingCities(false);
-      }
-    };
-
-    loadCities();
-  }, [supabase, user?.id, canChooseRequester, requesterId, isAccountManager, toast]);
-
-  useEffect(() => {
-    if (!canChooseRequester && user?.id) {
-      setRequesterId(user.id);
-    }
-  }, [canChooseRequester, user]);
-
-  useEffect(() => {
-    if (canChooseRequester) {
-      setCityId("");
-      setCityQuery("");
-    }
-  }, [requesterId, canChooseRequester]);
-
-  useEffect(() => {
-    if (canChooseRequester && !requestType) {
-      setRequesterId("");
-      setCityId("");
-      setCityQuery("");
-    }
-  }, [requestType, canChooseRequester]);
-
-  const filteredCities = useMemo(() => {
-    const query = cityQuery.toLowerCase();
-    return cities.filter((city) => city.label.toLowerCase().includes(query));
-  }, [cities, cityQuery]);
-
-  const filteredRequesters = useMemo(() => {
-    const query = requesterQuery.toLowerCase();
-    return accountManagers.filter((manager) =>
-      manager.label.toLowerCase().includes(query)
-    );
-  }, [accountManagers, requesterQuery]);
-
-  const hasRequesterQuery = requesterQuery.trim().length > 0;
-
-  const selectedCity = cities.find((city) => city.id === cityId);
-  const selectedRequester = accountManagers.find((manager) => manager.id === requesterId);
-  const hasSelectedType = Boolean(requestType);
-  const showRequesterField = !canChooseRequester || hasSelectedType;
-  const showCityField =
-    !canChooseRequester || (canChooseRequester && requesterId && hasSelectedType);
-
-  useEffect(() => {
-    if (!showRequesterField && canChooseRequester) {
-      setRequesterPickerOpen(false);
-    }
-  }, [showRequesterField, canChooseRequester]);
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!supabase || !user) {
-      toast({
-        title: "You must be signed in",
-        description: "Sign in again and retry.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!cityId) {
-      toast({
-        title: "City required",
-        description: "Select one of your assigned cities.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!requestType) {
-      toast({
-        title: "Request type required",
-        description: "Select the appropriate request type.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const effectiveRequesterId = canChooseRequester ? requesterId : user.id;
-    if (!effectiveRequesterId) {
-      toast({
-        title: "Requester missing",
-        description: "Select an Account Manager for this request.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const payload = {
-        title,
-        description,
-        request_type: requestType as RequestType,
-        city_id: cityId,
-        requester_id: effectiveRequesterId,
-        created_by: user.id,
-        priority: priority || null,
-        category: category || null,
-        budget: budget ? Number(budget) : null,
-        deadline: deadline || null,
-      };
-
-      const { error } = await supabase.from("requests").insert(payload);
-      if (error) throw error;
-
-      toast({
-        title: "Request created",
-        description: "Your request has been added to the queue.",
-      });
-      setTitle("");
-      setDescription("");
-      setPriority("");
-      setCategory("");
-      setBudget("");
-      setDeadline("");
-      setCityId("");
-      setCityQuery("");
-      setRequestType("");
-      if (canChooseRequester) {
-        setRequesterId("");
-      }
-      onCreated();
-    } catch (error) {
-      console.error("Error creating request", error);
-      toast({
-        title: "Failed to create request",
-        description:
-          error instanceof Error ? error.message : "Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex h-full flex-col">
-      <DialogHeader className="gap-2 border-b pb-4">
-        <DialogTitle>New Request</DialogTitle>
-        <DialogDescription className="text-sm text-muted-foreground">
-          Provide the key details so the team can triage and start working right
-          away. Fields marked with * are required.
-        </DialogDescription>
-      </DialogHeader>
-      <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
-        <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">Tips for a strong request</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>Use a short, action-oriented title.</li>
-            <li>Share context, links, and any constraints you already know.</li>
-            <li>Confirm the requester and city to route this correctly.</li>
-          </ul>
-        </div>
-
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Basics</p>
-              <p className="text-xs text-muted-foreground">
-                Start with the what and the type of request you are making.
-              </p>
-            </div>
-            <Badge variant="outline" className="text-[11px] uppercase tracking-wide">
-              Required
-            </Badge>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                placeholder="e.g., Add brunch recommendations for downtown"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="requestType">Request Type *</Label>
-              <Select
-                value={requestType}
-                onValueChange={(value: RequestType) => setRequestType(value)}
-              >
-                <SelectTrigger id="requestType">
-                  <SelectValue placeholder="Select a type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {REQUEST_TYPES.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {canChooseRequester && !hasSelectedType && (
-                <p className="text-xs text-muted-foreground">
-                  Choose a request type to continue.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Ownership & timing</p>
-              <p className="text-xs text-muted-foreground">
-                Tell us who asked for this and when it needs to be done.
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <Label>Requested By {canChooseRequester && <span className="text-destructive">*</span>}</Label>
-              {canChooseRequester ? (
-                showRequesterField ? (
-                  <Popover
-                    open={requesterPickerOpen}
-                    onOpenChange={setRequesterPickerOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between"
-                        role="combobox"
-                        disabled={accountManagersLoading}
-                      >
-                        <span className="truncate">
-                          {selectedRequester
-                            ? selectedRequester.label
-                            : "Search Account Managers"}
-                        </span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[320px] p-0" align="start">
-                      <Command>
-                        <CommandInput
-                          placeholder={
-                            accountManagersLoading
-                              ? "Loading Account Managers..."
-                              : "Search Account Managers..."
-                          }
-                          value={requesterQuery}
-                          onValueChange={(value) => setRequesterQuery(value)}
-                          disabled={accountManagersLoading}
-                        />
-                        <CommandList>
-                          {accountManagersLoading ? (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">
-                              Loading...
-                            </div>
-                          ) : hasRequesterQuery ? (
-                            filteredRequesters.length ? (
-                              <CommandGroup>
-                                {filteredRequesters.map((option) => (
-                                  <CommandItem
-                                    key={option.id}
-                                    onSelect={() => {
-                                      setRequesterId(option.id);
-                                      setRequesterQuery("");
-                                      setRequesterPickerOpen(false);
-                                    }}
-                                  >
-                                    {option.label}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            ) : (
-                              <div className="px-3 py-2 text-sm text-muted-foreground">
-                                No Account Managers found.
-                              </div>
-                            )
-                          ) : (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">
-                              Start typing to search Account Managers.
-                            </div>
-                          )}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                ) : (
-                  <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
-                    Select a request type before choosing who requested this.
-                  </div>
-                )
-              ) : (
-                <Input
-                  value={selectedRequester?.label || user?.email || "Your account"}
-                  readOnly
-                />
-              )}
-              <p className="text-xs text-muted-foreground">
-                We&apos;ll notify the requester once the request is updated.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="deadline">Deadline</Label>
-              <Input
-                id="deadline"
-                type="date"
-                value={deadline}
-                onChange={(event) => setDeadline(event.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                If you don&apos;t have a hard date, pick an estimate to set expectations.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Location & details</p>
-              <p className="text-xs text-muted-foreground">
-                Confirm the city and add context so the team can act quickly.
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <Label>City *</Label>
-              {showCityField ? (
-                <>
-                  <div className="rounded-lg border border-border/70 bg-background">
-                    <Command>
-                      <CommandInput
-                        placeholder={
-                          loadingCities
-                            ? "Loading cities..."
-                            : "Start typing to search"
-                        }
-                        value={cityQuery}
-                        onValueChange={(value) => setCityQuery(value)}
-                        disabled={loadingCities}
-                      />
-                      <CommandList>
-                        {!loadingCities && cityQuery && filteredCities.length > 0 && (
-                          <CommandGroup>
-                            {filteredCities.map((city) => (
-                              <CommandItem
-                                key={city.id}
-                                onSelect={() => {
-                                  setCityId(city.id);
-                                  setCityQuery("");
-                                }}
-                              >
-                                {city.label}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        )}
-                      </CommandList>
-                    </Command>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedCity
-                      ? `Selected: ${selectedCity.label}`
-                      : "Select one of your assigned cities."}
-                  </p>
-                </>
-              ) : (
-                <div className="rounded-md border border-dashed border-border/70 px-3 py-2 text-sm text-muted-foreground">
-                  Choose who requested this to load their assigned cities.
-                </div>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Details</Label>
-              <Textarea
-                id="description"
-                placeholder="Share the context, requirements, or helpful links..."
-                className="min-h-[140px]"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                The more specifics you share (budget, vibes, must-haves), the faster
-                we can deliver.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4 rounded-lg border p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold">Additional preferences</p>
-              <p className="text-xs text-muted-foreground">
-                Optional details that help the team prioritize and group work.
-              </p>
-            </div>
-            <Badge variant="outline" className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Optional
-            </Badge>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Input
-                id="priority"
-                placeholder="e.g., High, ASAP, Backlog"
-                value={priority}
-                onChange={(event) => setPriority(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                placeholder="Optional grouping"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="budget">Budget</Label>
-              <Input
-                id="budget"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="Optional budget amount"
-                value={budget}
-                onChange={(event) => setBudget(event.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 border-t p-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted-foreground">
-          You can edit or cancel requests later from the Requests dashboard.
-        </p>
-        <div className="flex justify-end gap-2 sm:justify-start">
-          <Button variant="outline" type="button" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={
-              submitting ||
-              !title ||
-              !cityId ||
-              !requestType ||
-              (canChooseRequester && !requesterId)
-            }
-          >
-            {submitting ? "Creating..." : "Create Request"}
-          </Button>
-        </div>
-      </div>
-    </form>
-  );
-};
-export default function RequestPage() {
-  const { supabase, isSuperAdmin, loading } = useAuth();
-  const { toast } = useToast();
-  const [isDetailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<EnrichedRequest | null>(null);
-  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
-  const [requests, setRequests] = useState<EnrichedRequest[]>([]);
-  const [requestsLoading, setRequestsLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    status: "all",
-    city: "all",
-    requester: "all",
-  });
-  const [managerDirectory, setManagerDirectory] = useState<RequesterOption[]>([]);
-  const [managerDirectoryLoading, setManagerDirectoryLoading] = useState(false);
-
-  const loadRequests = useCallback(async () => {
-    setRequestsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("requests")
-        .select(
-          "id, title, description, request_type, requester_id, city_id, status, priority, category, budget, deadline, created_at"
-        )
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const records = (data ?? []) as RequestRecord[];
-      if (!records.length) {
-        setRequests([]);
-        return;
-      }
-
-      const cityIds = Array.from(new Set(records.map((record) => record.city_id)));
-      const requesterIds = Array.from(new Set(records.map((record) => record.requester_id)));
-
-      const cityLookup: Record<string, string> = {};
-      if (cityIds.length) {
-        const { data: cityRows, error: cityError } = await supabase
-          .from("cities")
-          .select("id, name, state_code")
-          .in("id", cityIds);
-        if (cityError) throw cityError;
-        cityRows?.forEach((city) => {
-          cityLookup[city.id] = `${city.name}, ${city.state_code}`;
-        });
-      }
-
-      const requesterLookup: Record<string, string> = {};
-      if (requesterIds.length) {
-        const { data: profileRows, error: profileError } = await supabase
-          .from("profiles")
-          .select("user_id, display_name")
-          .in("user_id", requesterIds);
-        if (profileError) throw profileError;
-        profileRows?.forEach((profile) => {
-          requesterLookup[profile.user_id] = profile.display_name ?? "Account Manager";
-        });
-      }
-
-      const enriched: EnrichedRequest[] = records.map((record) => ({
-        ...record,
-        status: normalizeStatus(record.status),
-        cityLabel: cityLookup[record.city_id] ?? "Unassigned city",
-        requesterName: requesterLookup[record.requester_id] ?? "Account Manager",
-      }));
-
-      setRequests(enriched);
-    } catch (error) {
-      console.error("Error loading requests", error);
-      toast({
-        title: "Unable to load requests",
-        description:
-          error instanceof Error ? error.message : "Please try again later.",
-        variant: "destructive",
-      });
-      setRequests([]);
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, [supabase, toast]);
-
-  useEffect(() => {
-    loadRequests();
-  }, [loadRequests]);
-
-  const loadManagers = useCallback(async () => {
-    if (!isSuperAdmin) {
-      setManagerDirectory([]);
-      return;
-    }
-
-    setManagerDirectoryLoading(true);
-    try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        throw new Error("Unable to verify session for manager lookup.");
-      }
-
-      const response = await fetch("/api/admin/account-managers", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error ?? response.statusText);
-      }
-
-      const payload = await response.json();
-      setManagerDirectory(payload.managers ?? []);
-    } catch (error) {
-      console.error("Error loading Account Managers", error);
-      toast({
-        title: "Unable to load Account Managers",
-        description:
-          error instanceof Error ? error.message : "Please try again later.",
-        variant: "destructive",
-      });
-      setManagerDirectory([]);
-    } finally {
-      setManagerDirectoryLoading(false);
-    }
-  }, [isSuperAdmin, supabase, toast]);
-
-  useEffect(() => {
-    loadManagers();
-  }, [loadManagers]);
-
-  const filteredRequests = useMemo(() => {
-    return requests.filter((request) => {
-      const statusMatch =
-        filters.status === "all" || request.status === filters.status;
-      const cityMatch =
-        filters.city === "all" || request.cityLabel === filters.city;
-      const requesterMatch =
-        filters.requester === "all" || request.requesterName === filters.requester;
-      return statusMatch && cityMatch && requesterMatch;
-    });
-  }, [requests, filters]);
-
-  const uniqueStatuses = useMemo(() => Object.keys(statusConfig), []);
-  const uniqueCities = useMemo(
-    () => Array.from(new Set(requests.map((req) => req.cityLabel))).filter(Boolean),
-    [requests]
-  );
-  const uniqueRequesters = useMemo(
-    () => Array.from(new Set(requests.map((req) => req.requesterName))).filter(Boolean),
-    [requests]
-  );
-
-  const handleRequestClick = (request: EnrichedRequest) => {
-    setSelectedRequest(request);
-    setDetailDialogOpen(true);
-  };
-
-  const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleRequestCreated = () => {
-    setCreateDialogOpen(false);
-    loadRequests();
-  };
-
-  if (loading) {
-    return <SplashScreen loading />;
-  }
-
-  return (
-    <DashboardLayout
-      title="Requests"
-      actionButton={
-        <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <TooltipProvider>
-            <Tooltip>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-xl border-transparent hover:border-primary"
-                >
-                  <FilePlus className="h-4 w-4" />
-                  <span className="sr-only">New Request</span>
-                </Button>
-              </DialogTrigger>
-              <TooltipContent>
-                <p>New Request</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <DialogContent className="scale-80">
-            <CreateRequestForm
-              onCancel={() => setCreateDialogOpen(false)}
-              onCreated={handleRequestCreated}
-              accountManagers={managerDirectory}
-              accountManagersLoading={managerDirectoryLoading}
-            />
-          </DialogContent>
-        </Dialog>
-      }
-    >
-      <div
-        style={{ transform: "scale(0.8)", transformOrigin: "top center" }}
-        className="relative h-full w-full"
-      >
-        <div className="absolute left-1/2 top-0 z-10 w-full max-w-5xl -translate-x-1/2 px-4">
-          <div className="mb-4 flex items-center justify-center">
-            <div className="flex gap-2 rounded-full p-2 backdrop-blur-sm">
-              <FilterPopover
-                triggerLabel="Status"
-                value={filters.status}
-                onValueChange={(value) => handleFilterChange("status", value)}
-                items={uniqueStatuses}
-                placeholder="Filter status..."
-              />
-              <FilterPopover
-                triggerLabel="City"
-                value={filters.city}
-                onValueChange={(value) => handleFilterChange("city", value)}
-                items={uniqueCities}
-                placeholder="Filter city..."
-              />
-              <FilterPopover
-                triggerLabel="Requester"
-                value={filters.requester}
-                onValueChange={(value) => handleFilterChange("requester", value)}
-                items={uniqueRequesters}
-                placeholder="Filter requester..."
-              />
-            </div>
-          </div>
-        </div>
-        <div className="dashboard-grid mx-auto h-full max-w-5xl overflow-y-auto pt-20">
-          {isSuperAdmin && (
-            <div className="widget">
-              <Card className="flex h-full flex-col">
-                <CardHeader>
-                  <CardTitle className="text-base">Account Managers</CardTitle>
-                  <CardDescription>
-                    {managerDirectoryLoading
-                      ? "Loading directory..."
-                      : `${managerDirectory.length} total`}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto pt-0">
-                  {managerDirectoryLoading ? (
-                    <div className="py-4 text-sm text-muted-foreground">
-                      Fetching Account Managers...
-                    </div>
-                  ) : managerDirectory.length ? (
-                    <ul className="space-y-2 text-sm">
-                      {managerDirectory.map((manager) => (
-                        <li
-                          key={manager.id}
-                          className="rounded-md border border-border/60 px-3 py-2"
-                        >
-                          {manager.label}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="py-4 text-sm text-muted-foreground">
-                      No Account Managers found.
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-          {requestsLoading && (
-            <div className="widget">
-              <Card className="p-4 text-center text-sm text-muted-foreground">
-                Loading requests...
-              </Card>
-            </div>
-          )}
-          {!requestsLoading && !filteredRequests.length && (
-            <div className="widget">
-              <Card className="p-4 text-center text-sm text-muted-foreground">
-                {requests.length === 0
-                  ? "No requests have been submitted yet."
-                  : "No requests match your filters."}
-              </Card>
-            </div>
-          )}
-          {filteredRequests.map((request) => (
-            <RequestCard
-              key={request.id}
-              request={request}
-              onClick={() => handleRequestClick(request)}
-            />
-          ))}
-        </div>
-      </div>
-      <Dialog open={isDetailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-3xl scale-80">
-          <DialogTitle className="sr-only">Request Details</DialogTitle>
-          {selectedRequest && <RequestDetailView request={selectedRequest} />}
-        </DialogContent>
-      </Dialog>
-    </DashboardLayout>
-  );
+function getDaysOld(dateString: string): number {
+    const createdDate = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
 }
 
+function RequestCard({ request }: { request: Request }) {
+    const daysOld = getDaysOld(request.created_at);
+    const isNew = daysOld === 0;
+
+    return (
+        <div className="widget">
+            <Card
+                className="bg-card rounded-xl p-6 flex flex-col border shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full"
+                onClick={() => console.log("Request clicked:", request.id)}
+            >
+                <div className="space-y-4">
+                    {/* Header with badges and avatar */}
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span
+                                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}
+                                >
+                                    {request.request_type}
+                                </span>
+                                <span
+                                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[request.status] || "bg-gray-500 text-white"}`}
+                                >
+                                    {request.status}
+                                </span>
+                                {isNew && (
+                                    <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
+                                        New ✨
+                                    </span>
+                                )}
+                            </div>
+                            <h3 className="font-semibold text-xl line-clamp-2 mb-2">{request.title}</h3>
+                        </div>
+                        {/* BDR Avatar(s) */}
+                        <div className="flex flex-col items-center gap-1">
+                            {request.assigned_bdrs && request.assigned_bdrs.length > 0 ? (
+                                <>
+                                    {request.assigned_bdrs.length === 1 ? (
+                                        // Single BDR
+                                        <>
+                                            <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                                                {request.assigned_bdrs[0].avatar ? (
+                                                    <img
+                                                        src={request.assigned_bdrs[0].avatar}
+                                                        alt={request.assigned_bdrs[0].name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                                        <UserCog className="h-6 w-6 text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-muted-foreground font-medium text-center">
+                                                {request.assigned_bdrs[0].name}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        // Multiple BDRs - Stacked avatars
+                                        <>
+                                            <div className="relative h-12 w-16">
+                                                {request.assigned_bdrs.slice(0, 2).map((bdr, idx) => (
+                                                    <div
+                                                        key={bdr.id}
+                                                        className="absolute h-10 w-10 rounded-full border-2 border-background overflow-hidden"
+                                                        style={{
+                                                            left: `${idx * 24}px`,
+                                                            zIndex: 2 - idx,
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    >
+                                                        {bdr.avatar ? (
+                                                            <img
+                                                                src={bdr.avatar}
+                                                                alt={bdr.name}
+                                                                className="h-full w-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="h-full w-full flex items-center justify-center bg-primary/20">
+                                                                <UserCog className="h-5 w-5 text-primary" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                                {request.assigned_bdrs.length > 2 && (
+                                                    <div
+                                                        className="absolute h-10 w-10 rounded-full border-2 border-background bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground"
+                                                        style={{
+                                                            left: '48px',
+                                                            zIndex: 0,
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                        }}
+                                                    >
+                                                        +{request.assigned_bdrs.length - 2}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-primary font-semibold text-center bg-primary/10 px-2 py-0.5 rounded-full">
+                                                Team ({request.assigned_bdrs.length})
+                                            </span>
+                                        </>
+                                    )}
+                                </>
+                            ) : request.assigned_bdr_avatar ? (
+                                // Fallback to single BDR fields (backward compatibility)
+                                <>
+                                    <div className="h-12 w-12 rounded-full border-2 border-primary overflow-hidden">
+                                        <img
+                                            src={request.assigned_bdr_avatar}
+                                            alt={request.assigned_bdr_name || "BDR"}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                    {request.assigned_bdr_name && (
+                                        <span className="text-xs text-muted-foreground font-medium text-center">
+                                            {request.assigned_bdr_name}
+                                        </span>
+                                    )}
+                                </>
+                            ) : (
+                                // No BDR assigned
+                                <div className="h-12 w-12 rounded-full border-2 border-dashed border-muted-foreground/50 flex items-center justify-center bg-muted">
+                                    <UserCog className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Description */}
+                    {request.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                            {request.description}
+                        </p>
+                    )}
+
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                        {request.city_name && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <MapPin className="h-4 w-4 flex-shrink-0" />
+                                <span className="font-medium">
+                                    {request.city_name}
+                                    {request.city_state && `, ${request.city_state}`}
+                                </span>
+                            </div>
+                        )}
+
+                        {request.deadline && (
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Calendar className="h-4 w-4 flex-shrink-0" />
+                                <span>{format(new Date(request.deadline), "MMM d, yyyy")}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="pt-4 border-t border-border text-xs text-muted-foreground space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span>
+                                {isNew ? (
+                                    <span className="text-primary font-semibold">Just created</span>
+                                ) : (
+                                    `${daysOld} day${daysOld === 1 ? '' : 's'} old`
+                                )}
+                            </span>
+                            {request.creator_name && <span className="font-medium">by {request.creator_name}</span>}
+                        </div>
+                        {request.created_on_behalf && request.requester_name && (
+                            <div className="flex items-center gap-2 text-primary">
+                                <UserCog className="h-3.5 w-3.5" />
+                                <span className="font-medium">Created by admin for {request.requester_name}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Card>
+        </div>
+    );
+}
+
+const RequestListCard = dynamic(
+    () =>
+        Promise.resolve(
+            ({ requests, loading }: { requests: Request[]; loading: boolean }) => (
+                <div className="widget">
+                    <Card className="border border-white/15 p-6">
+                        <h3 className="text-lg font-semibold mb-4">All Requests ({requests.length})</h3>
+                        {loading ? (
+                            <div className="space-y-2">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="space-y-2 p-3 border border-white/10 rounded-lg">
+                                        <div className="flex gap-2">
+                                            <Skeleton className="h-5 w-20 rounded-full" />
+                                            <Skeleton className="h-5 w-16 rounded-full" />
+                                        </div>
+                                        <Skeleton className="h-5 w-2/3" />
+                                        <Skeleton className="h-3 w-full" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : requests.length === 0 ? (
+                            <div className="text-center py-8">
+                                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                                <p className="text-muted-foreground">No requests found</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Create your first request to get started
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                Click on a request card to view details
+                            </p>
+                        )}
+                    </Card>
+                </div>
+            )
+        ),
+    { ssr: false }
+);
+
+export default function RequestPage() {
+    const { user, loading: authLoading } = useAuth();
+    const { toast } = useToast();
+    const [requests, setRequests] = useState<Request[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+
+    const loadRequests = async () => {
+        try {
+            setLoading(true);
+            const supabase = (window as any).supabase;
+            if (!supabase) {
+                throw new Error("Supabase client not initialized");
+            }
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const response = await fetch("/api/requests", {
+                headers: {
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error("Failed to fetch requests");
+
+            const data = await response.json();
+            setRequests(data.requests || []);
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive",
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            loadRequests();
+        }
+    }, [user]);
+
+    if (authLoading) return <SplashScreen />;
+    if (!user) return <ErrorSplashScreen message="Please log in" actionText="Go to Login" onActionClick={() => window.location.href = '/'} />;
+
+    return (
+        <>
+            {/* Page wordmark */}
+            <div className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]">
+                Requests
+            </div>
+            <DashboardLayout title="">
+
+                {/* Viewport wrapper with scaling */}
+                <div className="relative w-full h-full">
+                    <div className="relative z-10 w-full h-full" style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
+                        <div className="h-full overflow-y-auto pr-4" style={{ paddingTop: '5%' }}>
+                            <div className="mx-auto max-w-5xl">
+                                {/* Create Request Button */}
+                                <div className="mb-6">
+                                    <Button onClick={() => setShowCreateModal(true)} size="lg">
+                                        <Plus className="mr-2 h-5 w-5" />
+                                        Create New Request
+                                    </Button>
+                                </div>
+
+                                <div className="dashboard-grid">
+
+                                    {loading ? (
+                                        [...Array(6)].map((_, i) => (
+                                            <div key={i} className="widget">
+                                                <Card className="bg-card rounded-xl p-6 flex flex-col border shadow-lg h-full">
+                                                    <div className="space-y-4">
+                                                        {/* Header badges */}
+                                                        <div className="flex gap-2 mb-3">
+                                                            <Skeleton className="h-6 w-24 rounded-full" />
+                                                            <Skeleton className="h-6 w-20 rounded-full" />
+                                                        </div>
+                                                        {/* Title */}
+                                                        <Skeleton className="h-7 w-3/4" />
+                                                        {/* Description */}
+                                                        <div className="space-y-2">
+                                                            <Skeleton className="h-4 w-full" />
+                                                            <Skeleton className="h-4 w-5/6" />
+                                                            <Skeleton className="h-4 w-4/6" />
+                                                        </div>
+                                                        {/* Details */}
+                                                        <div className="space-y-3">
+                                                            <Skeleton className="h-4 w-32" />
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                <Skeleton className="h-4 w-24" />
+                                                                <Skeleton className="h-4 w-28" />
+                                                            </div>
+                                                        </div>
+                                                        {/* Footer */}
+                                                        <div className="pt-4 border-t border-border">
+                                                            <div className="flex items-center justify-between">
+                                                                <Skeleton className="h-3 w-24" />
+                                                                <Skeleton className="h-3 w-20" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        requests.map((request) => <RequestCard key={request.id} request={request} />)
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Create Request Sheet */}
+                <Sheet open={showCreateModal} onOpenChange={setShowCreateModal}>
+                    <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+                        <SheetHeader>
+                            <SheetTitle>Create New Request</SheetTitle>
+                            <SheetDescription>
+                                Fill out the form below to create a new request
+                            </SheetDescription>
+                        </SheetHeader>
+                        <div className="mt-6">
+                            <CreateRequestForm
+                                onCancel={() => setShowCreateModal(false)}
+                                onCreated={() => {
+                                    setShowCreateModal(false);
+                                    loadRequests();
+                                }}
+                            />
+                        </div>
+                    </SheetContent>
+                </Sheet>
+            </DashboardLayout>
+        </>
+    );
+}

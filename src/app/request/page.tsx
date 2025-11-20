@@ -13,13 +13,30 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog } from "lucide-react";
+import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type Request = {
     id: string;
@@ -29,7 +46,9 @@ type Request = {
     city_id: string;
     city_name?: string;
     city_state?: string;
-    deadline?: string;
+    volume?: number;
+    need_answer_by?: string;
+    delivery_date?: string;
     status: string;
     created_by: string;
     requested_by: string;
@@ -68,7 +87,7 @@ function getDaysOld(dateString: string): number {
     return diffDays;
 }
 
-function RequestCard({ request }: { request: Request }) {
+function RequestCard({ request, onClick }: { request: Request; onClick: () => void }) {
     const daysOld = getDaysOld(request.created_at);
     const isNew = daysOld === 0;
 
@@ -76,7 +95,7 @@ function RequestCard({ request }: { request: Request }) {
         <div className="widget">
             <Card
                 className="bg-card rounded-xl p-6 flex flex-col border shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full"
-                onClick={() => console.log("Request clicked:", request.id)}
+                onClick={onClick}
             >
                 <div className="space-y-4">
                     {/* Header with badges and avatar */}
@@ -215,12 +234,28 @@ function RequestCard({ request }: { request: Request }) {
                             </div>
                         )}
 
-                        {request.deadline && (
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Calendar className="h-4 w-4 flex-shrink-0" />
-                                <span>{format(new Date(request.deadline), "MMM d, yyyy")}</span>
-                            </div>
-                        )}
+                        <div className="grid grid-cols-3 gap-2">
+                            {request.volume !== undefined && request.volume !== null && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Package className="h-4 w-4 flex-shrink-0" />
+                                    <span>{request.volume}</span>
+                                </div>
+                            )}
+
+                            {request.need_answer_by && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Clock className="h-4 w-4 flex-shrink-0" />
+                                    <span>{format(new Date(request.need_answer_by), "MMM d")}</span>
+                                </div>
+                            )}
+
+                            {request.delivery_date && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Truck className="h-4 w-4 flex-shrink-0" />
+                                    <span>{format(new Date(request.delivery_date), "MMM d")}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Footer */}
@@ -294,6 +329,18 @@ export default function RequestPage() {
     const [requests, setRequests] = useState<Request[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+    const [showDetailSheet, setShowDetailSheet] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        title: "",
+        description: "",
+        request_type: "",
+        volume: undefined as number | undefined,
+        need_answer_by: undefined as Date | undefined,
+        delivery_date: undefined as Date | undefined,
+    });
+    const [saving, setSaving] = useState(false);
 
     const loadRequests = async () => {
         try {
@@ -323,6 +370,88 @@ export default function RequestPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRequestClick = (request: Request) => {
+        setSelectedRequest(request);
+        setEditFormData({
+            title: request.title,
+            description: request.description || "",
+            request_type: request.request_type,
+            volume: request.volume,
+            need_answer_by: request.need_answer_by ? new Date(request.need_answer_by) : undefined,
+            delivery_date: request.delivery_date ? new Date(request.delivery_date) : undefined,
+        });
+        setIsEditing(false);
+        setShowDetailSheet(true);
+    };
+
+    const handleSave = async () => {
+        if (!selectedRequest) return;
+
+        if (!editFormData.title.trim()) {
+            toast({
+                title: "Validation Error",
+                description: "Title is required",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const supabase = (window as any).supabase;
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const response = await fetch("/api/admin/update-request", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    id: selectedRequest.id,
+                    title: editFormData.title.trim(),
+                    description: editFormData.description.trim(),
+                    request_type: editFormData.request_type,
+                    volume: editFormData.volume,
+                    need_answer_by: editFormData.need_answer_by
+                        ? format(editFormData.need_answer_by, "yyyy-MM-dd")
+                        : null,
+                    delivery_date: editFormData.delivery_date
+                        ? format(editFormData.delivery_date, "yyyy-MM-dd")
+                        : null,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to update request");
+            }
+
+            toast({
+                title: "Success",
+                description: "Request updated successfully",
+            });
+
+            setIsEditing(false);
+            loadRequests();
+            handleCloseDetailSheet();
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive",
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCloseDetailSheet = () => {
+        setShowDetailSheet(false);
+        setIsEditing(false);
+        // Small delay before clearing selected request to allow sheet animation
+        setTimeout(() => setSelectedRequest(null), 300);
     };
 
     useEffect(() => {
@@ -395,13 +524,278 @@ export default function RequestPage() {
                                             </div>
                                         ))
                                     ) : (
-                                        requests.map((request) => <RequestCard key={request.id} request={request} />)
+                                        requests.map((request) => (
+                                            <RequestCard
+                                                key={request.id}
+                                                request={request}
+                                                onClick={() => handleRequestClick(request)}
+                                            />
+                                        ))
                                     )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Request Detail Sheet */}
+                {selectedRequest && (
+                    <Sheet open={showDetailSheet} onOpenChange={handleCloseDetailSheet}>
+                        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+                            <SheetHeader>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex-1">
+                                        <SheetTitle className="text-2xl">{selectedRequest.title}</SheetTitle>
+                                        <SheetDescription className="mt-2">
+                                            {isEditing ? "Edit request details" : "View request details"}
+                                        </SheetDescription>
+                                    </div>
+                                    {!isEditing && (
+                                        <Button
+                                            onClick={() => setIsEditing(true)}
+                                            variant="outline"
+                                            size="sm"
+                                            className="ml-4"
+                                        >
+                                            <Edit2 className="h-4 w-4 mr-2" />
+                                            Edit
+                                        </Button>
+                                    )}
+                                </div>
+                            </SheetHeader>
+
+                            <div className="mt-6 space-y-6">
+                                {!isEditing ? (
+                                    // VIEW MODE
+                                    <>
+                                        {/* Type and Status Badges */}
+                                        <div className="flex gap-2">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQUEST_TYPE_COLORS[selectedRequest.request_type] || "bg-gray-500 text-white"}`}>
+                                                {selectedRequest.request_type}
+                                            </span>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[selectedRequest.status] || "bg-gray-500 text-white"}`}>
+                                                {selectedRequest.status}
+                                            </span>
+                                        </div>
+
+                                        {/* Description */}
+                                        {selectedRequest.description && (
+                                            <div>
+                                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                                    <FileText className="h-4 w-4" />
+                                                    Description
+                                                </h4>
+                                                <p className="text-sm text-muted-foreground">{selectedRequest.description}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Details Grid */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {selectedRequest.city_name && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                                        <MapPin className="h-4 w-4" />
+                                                        City
+                                                    </h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {selectedRequest.city_name}{selectedRequest.city_state && `, ${selectedRequest.city_state}`}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {selectedRequest.volume !== undefined && selectedRequest.volume !== null && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                                        <Package className="h-4 w-4" />
+                                                        Volume
+                                                    </h4>
+                                                    <p className="text-sm text-muted-foreground">{selectedRequest.volume}</p>
+                                                </div>
+                                            )}
+
+                                            {selectedRequest.need_answer_by && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                                        <Clock className="h-4 w-4" />
+                                                        Need Answer By
+                                                    </h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {format(new Date(selectedRequest.need_answer_by), "MMM d, yyyy")}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {selectedRequest.delivery_date && (
+                                                <div>
+                                                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                                                        <Truck className="h-4 w-4" />
+                                                        Delivery Date
+                                                    </h4>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {format(new Date(selectedRequest.delivery_date), "MMM d, yyyy")}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Footer Info */}
+                                        <div className="pt-4 border-t space-y-2 text-sm text-muted-foreground">
+                                            {selectedRequest.creator_name && (
+                                                <p>Created by: <span className="font-medium">{selectedRequest.creator_name}</span></p>
+                                            )}
+                                            <p>Created: <span className="font-medium">{format(new Date(selectedRequest.created_at), "MMM d, yyyy 'at' h:mm a")}</span></p>
+                                            {selectedRequest.created_on_behalf && selectedRequest.requester_name && (
+                                                <p className="text-primary">On behalf of: <span className="font-medium">{selectedRequest.requester_name}</span></p>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    // EDIT MODE
+                                    <div className="space-y-6">
+                                        {/* Title */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-title">Title *</Label>
+                                            <Input
+                                                id="edit-title"
+                                                value={editFormData.title}
+                                                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                                                placeholder="Enter request title"
+                                            />
+                                        </div>
+
+                                        {/* Description */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-description">Description</Label>
+                                            <Textarea
+                                                id="edit-description"
+                                                value={editFormData.description}
+                                                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                                placeholder="Enter description"
+                                                rows={4}
+                                            />
+                                        </div>
+
+                                        {/* Request Type */}
+                                        <div className="space-y-2">
+                                            <Label>Request Type *</Label>
+                                            <Select
+                                                value={editFormData.request_type}
+                                                onValueChange={(value) => setEditFormData({ ...editFormData, request_type: value })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="RESTAURANT">RESTAURANT</SelectItem>
+                                                    <SelectItem value="EVENT">EVENT</SelectItem>
+                                                    <SelectItem value="CUISINE">CUISINE</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        {/* Volume */}
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-volume">Volume</Label>
+                                            <Input
+                                                id="edit-volume"
+                                                type="number"
+                                                min="0"
+                                                value={editFormData.volume ?? ""}
+                                                onChange={(e) => setEditFormData({
+                                                    ...editFormData,
+                                                    volume: e.target.value ? Number(e.target.value) : undefined
+                                                })}
+                                                placeholder="0"
+                                            />
+                                        </div>
+
+                                        {/* Dates Grid */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* Need Answer By */}
+                                            <div className="space-y-2">
+                                                <Label>Need Answer By</Label>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "w-full justify-start text-left font-normal",
+                                                                !editFormData.need_answer_by && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            <Clock className="mr-2 h-4 w-4" />
+                                                            {editFormData.need_answer_by
+                                                                ? format(editFormData.need_answer_by, "MMM d, yyyy")
+                                                                : "Pick date"}
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <CalendarComponent
+                                                            mode="single"
+                                                            selected={editFormData.need_answer_by}
+                                                            onSelect={(date) => setEditFormData({ ...editFormData, need_answer_by: date })}
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+
+                                            {/* Delivery Date */}
+                                            <div className="space-y-2">
+                                                <Label>Delivery Date</Label>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            className={cn(
+                                                                "w-full justify-start text-left font-normal",
+                                                                !editFormData.delivery_date && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            <Truck className="mr-2 h-4 w-4" />
+                                                            {editFormData.delivery_date
+                                                                ? format(editFormData.delivery_date, "MMM d, yyyy")
+                                                                : "Pick date"}
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0" align="start">
+                                                        <CalendarComponent
+                                                            mode="single"
+                                                            selected={editFormData.delivery_date}
+                                                            onSelect={(date) => setEditFormData({ ...editFormData, delivery_date: date })}
+                                                            initialFocus
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="flex gap-2 pt-4">
+                                            <Button
+                                                onClick={() => setIsEditing(false)}
+                                                variant="outline"
+                                                className="flex-1"
+                                                disabled={saving}
+                                            >
+                                                <X className="h-4 w-4 mr-2" />
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                onClick={handleSave}
+                                                className="flex-1"
+                                                disabled={saving}
+                                            >
+                                                <Save className="h-4 w-4 mr-2" />
+                                                {saving ? "Saving..." : "Save Changes"}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </SheetContent>
+                    </Sheet>
+                )}
 
                 {/* Create Request Sheet */}
                 <Sheet open={showCreateModal} onOpenChange={setShowCreateModal}>

@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
     Select,
     SelectContent,
@@ -28,11 +29,17 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save } from "lucide-react";
+import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save, UtensilsCrossed, PartyPopper, ChefHat, AlignLeft } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import { format } from "date-fns";
@@ -78,6 +85,18 @@ const STATUS_COLORS: Record<string, string> = {
     COMPLETED: "bg-green-500 text-white",
     CANCELLED: "bg-gray-500 text-white",
 };
+
+const REQUEST_TYPE_CONFIG = {
+    RESTAURANT: {
+        icon: UtensilsCrossed,
+    },
+    EVENT: {
+        icon: PartyPopper,
+    },
+    CUISINE: {
+        icon: ChefHat,
+    },
+} as const;
 
 function getDaysOld(dateString: string): number {
     const createdDate = new Date(dateString);
@@ -234,25 +253,11 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
                             </div>
                         )}
 
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="flex flex-wrap gap-2">
                             {request.volume !== undefined && request.volume !== null && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Package className="h-4 w-4 flex-shrink-0" />
-                                    <span>{request.volume}</span>
-                                </div>
-                            )}
-
-                            {request.need_answer_by && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Clock className="h-4 w-4 flex-shrink-0" />
-                                    <span>{format(new Date(request.need_answer_by), "MMM d")}</span>
-                                </div>
-                            )}
-
-                            {request.delivery_date && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Truck className="h-4 w-4 flex-shrink-0" />
-                                    <span>{format(new Date(request.delivery_date), "MMM d")}</span>
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs">
+                                    <Package className="h-3.5 w-3.5 flex-shrink-0" />
+                                    <span className="font-medium">{request.volume}</span>
                                 </div>
                             )}
                         </div>
@@ -261,13 +266,50 @@ function RequestCard({ request, onClick }: { request: Request; onClick: () => vo
                     {/* Footer */}
                     <div className="pt-4 border-t border-border text-xs text-muted-foreground space-y-2">
                         <div className="flex items-center justify-between">
-                            <span>
-                                {isNew ? (
-                                    <span className="text-primary font-semibold">Just created</span>
-                                ) : (
-                                    `${daysOld} day${daysOld === 1 ? '' : 's'} old`
+                            <div className="flex items-center gap-2">
+                                {(() => {
+                                    const now = new Date();
+                                    const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
+                                    const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
+                                    const badgeColor = isOverdueForReply
+                                        ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                        : "bg-primary/10 text-primary";
+
+                                    return (
+                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                            <Calendar className="h-3.5 w-3.5" />
+                                            <span className="font-medium">
+                                                {isNew ? (
+                                                    <span>Just created</span>
+                                                ) : (
+                                                    `${daysOld}d old`
+                                                )}
+                                            </span>
+                                        </div>
+                                    );
+                                })()}
+                                {request.need_answer_by && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
+                                        <Clock className="h-3.5 w-3.5" />
+                                        <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
+                                    </div>
                                 )}
-                            </span>
+                                {request.delivery_date && (() => {
+                                    const now = new Date();
+                                    const deliveryDate = new Date(request.delivery_date);
+                                    const isOverdue = now > deliveryDate;
+                                    const badgeColor = isOverdue
+                                        ? "bg-red-500/10 text-red-700 dark:text-red-400"
+                                        : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+
+                                    return (
+                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                            <Truck className="h-3.5 w-3.5" />
+                                            <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
                             {request.creator_name && <span className="font-medium">by {request.creator_name}</span>}
                         </div>
                         {request.created_on_behalf && request.requester_name && (
@@ -410,17 +452,19 @@ export default function RequestPage() {
                     Authorization: `Bearer ${session?.access_token}`,
                 },
                 body: JSON.stringify({
-                    id: selectedRequest.id,
-                    title: editFormData.title.trim(),
-                    description: editFormData.description.trim(),
-                    request_type: editFormData.request_type,
-                    volume: editFormData.volume,
-                    need_answer_by: editFormData.need_answer_by
-                        ? format(editFormData.need_answer_by, "yyyy-MM-dd")
-                        : null,
-                    delivery_date: editFormData.delivery_date
-                        ? format(editFormData.delivery_date, "yyyy-MM-dd")
-                        : null,
+                    request_id: selectedRequest.id,
+                    updates: {
+                        title: editFormData.title.trim(),
+                        description: editFormData.description.trim() || null,
+                        request_type: editFormData.request_type,
+                        volume: editFormData.volume ?? null,
+                        need_answer_by: editFormData.need_answer_by
+                            ? format(editFormData.need_answer_by, "yyyy-MM-dd")
+                            : null,
+                        delivery_date: editFormData.delivery_date
+                            ? format(editFormData.delivery_date, "yyyy-MM-dd")
+                            : null,
+                    },
                 }),
             });
 
@@ -541,7 +585,7 @@ export default function RequestPage() {
                 {/* Request Detail Sheet */}
                 {selectedRequest && (
                     <Sheet open={showDetailSheet} onOpenChange={handleCloseDetailSheet}>
-                        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+                        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
                             <SheetHeader>
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1">
@@ -652,123 +696,160 @@ export default function RequestPage() {
                                 ) : (
                                     // EDIT MODE
                                     <div className="space-y-6">
+                                        {/* Request Type */}
+                                        <div className="space-y-3">
+                                            <Label>Request Type <span className="text-destructive">*</span></Label>
+                                            <TooltipProvider>
+                                                <div className="grid grid-cols-3 gap-3">
+                                                    {(["RESTAURANT", "EVENT", "CUISINE"] as const).map((type) => {
+                                                        const config = REQUEST_TYPE_CONFIG[type];
+                                                        const Icon = config.icon;
+                                                        return (
+                                                            <Tooltip key={type}>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant={editFormData.request_type === type ? "default" : "outline"}
+                                                                        onClick={() => setEditFormData({ ...editFormData, request_type: type })}
+                                                                        className="h-12 w-full flex items-center justify-center"
+                                                                    >
+                                                                        <Icon className="h-6 w-6" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>{type}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </TooltipProvider>
+                                        </div>
+
                                         {/* Title */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="edit-title">Title *</Label>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                                <Label htmlFor="edit-title">Title <span className="text-destructive">*</span></Label>
+                                            </div>
                                             <Input
                                                 id="edit-title"
                                                 value={editFormData.title}
                                                 onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                                                placeholder="Enter request title"
+                                                placeholder="Enter request title..."
                                             />
                                         </div>
 
                                         {/* Description */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="edit-description">Description</Label>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <AlignLeft className="h-4 w-4 text-muted-foreground" />
+                                                <Label htmlFor="edit-description">Description <span className="text-muted-foreground">(optional)</span></Label>
+                                            </div>
                                             <Textarea
                                                 id="edit-description"
                                                 value={editFormData.description}
                                                 onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                                                placeholder="Enter description"
-                                                rows={4}
+                                                placeholder="Provide additional details..."
+                                                rows={3}
                                             />
                                         </div>
 
-                                        {/* Request Type */}
-                                        <div className="space-y-2">
-                                            <Label>Request Type *</Label>
-                                            <Select
-                                                value={editFormData.request_type}
-                                                onValueChange={(value) => setEditFormData({ ...editFormData, request_type: value })}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select type" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="RESTAURANT">RESTAURANT</SelectItem>
-                                                    <SelectItem value="EVENT">EVENT</SelectItem>
-                                                    <SelectItem value="CUISINE">CUISINE</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                        <Separator />
 
-                                        {/* Volume */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="edit-volume">Volume</Label>
-                                            <Input
-                                                id="edit-volume"
-                                                type="number"
-                                                min="0"
-                                                value={editFormData.volume ?? ""}
-                                                onChange={(e) => setEditFormData({
-                                                    ...editFormData,
-                                                    volume: e.target.value ? Number(e.target.value) : undefined
-                                                })}
-                                                placeholder="0"
-                                            />
-                                        </div>
-
-                                        {/* Dates Grid */}
+                                        {/* Volume and Dates Grid */}
                                         <div className="grid grid-cols-2 gap-4">
-                                            {/* Need Answer By */}
-                                            <div className="space-y-2">
-                                                <Label>Need Answer By</Label>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "w-full justify-start text-left font-normal",
-                                                                !editFormData.need_answer_by && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            <Clock className="mr-2 h-4 w-4" />
-                                                            {editFormData.need_answer_by
-                                                                ? format(editFormData.need_answer_by, "MMM d, yyyy")
-                                                                : "Pick date"}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <CalendarComponent
-                                                            mode="single"
-                                                            selected={editFormData.need_answer_by}
-                                                            onSelect={(date) => setEditFormData({ ...editFormData, need_answer_by: date })}
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
+                                            {/* Volume */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                                    <Label htmlFor="edit-volume">Volume <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                                </div>
+                                                <Input
+                                                    id="edit-volume"
+                                                    type="number"
+                                                    min="0"
+                                                    step="1"
+                                                    value={editFormData.volume ?? ""}
+                                                    onChange={(e) => setEditFormData({
+                                                        ...editFormData,
+                                                        volume: e.target.value ? Number(e.target.value) : undefined
+                                                    })}
+                                                    placeholder="0"
+                                                />
                                             </div>
 
-                                            {/* Delivery Date */}
-                                            <div className="space-y-2">
-                                                <Label>Delivery Date</Label>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "w-full justify-start text-left font-normal",
-                                                                !editFormData.delivery_date && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            <Truck className="mr-2 h-4 w-4" />
-                                                            {editFormData.delivery_date
-                                                                ? format(editFormData.delivery_date, "MMM d, yyyy")
-                                                                : "Pick date"}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <CalendarComponent
-                                                            mode="single"
-                                                            selected={editFormData.delivery_date}
-                                                            onSelect={(date) => setEditFormData({ ...editFormData, delivery_date: date })}
-                                                            initialFocus
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
+                                            {/* Dates Stacked */}
+                                            <div className="space-y-4">
+                                                {/* Need Answer By */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Clock className="h-4 w-4 text-muted-foreground" />
+                                                        <Label>Need Answer By <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                                    </div>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "w-full justify-start text-left font-normal",
+                                                                    !editFormData.need_answer_by && "text-muted-foreground"
+                                                                )}
+                                                            >
+                                                                <Clock className="mr-2 h-4 w-4" />
+                                                                {editFormData.need_answer_by
+                                                                    ? format(editFormData.need_answer_by, "MMM d")
+                                                                    : "Pick date"}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <CalendarComponent
+                                                                mode="single"
+                                                                selected={editFormData.need_answer_by}
+                                                                onSelect={(date) => setEditFormData({ ...editFormData, need_answer_by: date })}
+                                                                initialFocus
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
+
+                                                {/* Delivery Date */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Truck className="h-4 w-4 text-muted-foreground" />
+                                                        <Label>Delivery Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                                                    </div>
+                                                    <Popover>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className={cn(
+                                                                    "w-full justify-start text-left font-normal",
+                                                                    !editFormData.delivery_date && "text-muted-foreground"
+                                                                )}
+                                                            >
+                                                                <Truck className="mr-2 h-4 w-4" />
+                                                                {editFormData.delivery_date
+                                                                    ? format(editFormData.delivery_date, "MMM d")
+                                                                    : "Pick date"}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-auto p-0" align="start">
+                                                            <CalendarComponent
+                                                                mode="single"
+                                                                selected={editFormData.delivery_date}
+                                                                onSelect={(date) => setEditFormData({ ...editFormData, delivery_date: date })}
+                                                                initialFocus
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
                                             </div>
                                         </div>
+
+                                        <Separator />
 
                                         {/* Action Buttons */}
                                         <div className="flex gap-2 pt-4">

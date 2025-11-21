@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { useComments } from "@/hooks/useComments";
 import { CommentInput } from "./CommentInput";
 import { CommentItem } from "./CommentItem";
+import type { Request } from "./types";
 import { MessageSquare, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface CommentsSectionProps {
-    requestId: string;
+    request: Request;
 }
 
-export function CommentsSection({ requestId }: CommentsSectionProps) {
+export function CommentsSection({ request }: CommentsSectionProps) {
+    const requestId = request.id;
     const [currentUserId, setCurrentUserId] = useState<string>("");
     const {
         comments,
@@ -22,6 +24,12 @@ export function CommentsSection({ requestId }: CommentsSectionProps) {
         deleteComment,
         addReaction,
     } = useComments(requestId);
+
+    // Calculate allowed mentions (involved users)
+    const allowedMentions = [
+        ...(request.assigned_bdrs || []).map(bdr => bdr.id),
+        request.requester_id
+    ].filter(Boolean); // Remove null/undefined
 
     // Get current user ID
     useEffect(() => {
@@ -38,6 +46,8 @@ export function CommentsSection({ requestId }: CommentsSectionProps) {
         getCurrentUser();
     }, []);
 
+    const [isInputVisible, setIsInputVisible] = useState(false);
+
     // Handle new comment
     const handleNewComment = async (content: string, mentions: string[]) => {
         await createComment({
@@ -45,6 +55,7 @@ export function CommentsSection({ requestId }: CommentsSectionProps) {
             content,
             mentions,
         });
+        setIsInputVisible(false);
     };
 
     // Handle reply
@@ -83,25 +94,40 @@ export function CommentsSection({ requestId }: CommentsSectionProps) {
     return (
         <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-gray-500" />
-                <h3 className="text-lg font-semibold">
-                    Comments & Notes
-                </h3>
-                <span className="text-sm text-gray-500">
-                    ({comments.length})
-                </span>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-gray-500" />
+                    <h3 className="text-lg font-semibold">
+                        Comments & Notes
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                        ({comments.length})
+                    </span>
+                </div>
+                {!isInputVisible && (
+                    <button
+                        onClick={() => setIsInputVisible(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        + Add Comment
+                    </button>
+                )}
             </div>
 
             <Separator />
 
             {/* New comment input */}
-            <div>
-                <CommentInput
-                    onSubmit={handleNewComment}
-                    placeholder="Add a comment or note..."
-                />
-            </div>
+            {isInputVisible && (
+                <div className="mb-4">
+                    <CommentInput
+                        onSubmit={handleNewComment}
+                        placeholder="Add a comment or note..."
+                        allowedMentions={allowedMentions}
+                        onCancel={() => setIsInputVisible(false)}
+                        autoFocus
+                    />
+                </div>
+            )}
 
             {/* Comments list */}
             {comments.length === 0 ? (
@@ -120,6 +146,7 @@ export function CommentsSection({ requestId }: CommentsSectionProps) {
                             onEdit={handleEdit}
                             onDelete={handleDelete}
                             onReaction={handleReaction}
+                            allowedMentions={allowedMentions}
                         />
                     ))}
                 </div>

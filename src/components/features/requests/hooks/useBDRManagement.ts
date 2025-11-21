@@ -94,6 +94,7 @@ export function useBDRManagement() {
             toast({
                 title: "Success",
                 description: "BDR assigned successfully",
+                variant: "success",
             });
 
             if (onSuccess) onSuccess();
@@ -139,6 +140,7 @@ export function useBDRManagement() {
             toast({
                 title: "Success",
                 description: "BDR unassigned successfully",
+                variant: "success",
             });
 
             if (onSuccess) onSuccess();
@@ -221,6 +223,7 @@ export function useBDRManagement() {
             toast({
                 title: "Success",
                 description: description,
+                variant: "success",
             });
 
             if (onSuccess) onSuccess();

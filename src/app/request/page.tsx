@@ -17,6 +17,12 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +32,7 @@ import { useRequestDetail } from "@/hooks/useRequestDetail";
 import { useBDRManagement } from "@/components/features/requests/hooks/useBDRManagement";
 import { useCities } from "@/hooks/useCities";
 import { useAccountManagers } from "@/hooks/useAccountManagers";
-import { Plus, UserCog, Edit2 } from "lucide-react";
+import { Plus, UserCog, Edit2, RefreshCw, MoreHorizontal } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import type { Request, RequestFilters } from "@/components/features/requests/types";
@@ -125,6 +131,7 @@ export default function RequestPage() {
             toast({
                 title: "Status Updated",
                 description: `Request status changed to ${newStatus}`,
+                variant: "success",
             });
 
             setStatusDialogOpen(false);
@@ -306,22 +313,28 @@ export default function RequestPage() {
                                     </div>
                                     {!isEditing && (
                                         <div className="flex gap-2 ml-4">
-                                            <Button
-                                                onClick={() => setBdrSearchOpen(true)}
-                                                variant="outline"
-                                                size="sm"
-                                            >
-                                                <UserCog className="h-4 w-4 mr-2" />
-                                                Assign BDR
-                                            </Button>
-                                            <Button
-                                                onClick={() => setIsEditing(true)}
-                                                variant="outline"
-                                                size="sm"
-                                            >
-                                                <Edit2 className="h-4 w-4 mr-2" />
-                                                Edit
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="outline" size="sm">
+                                                        <MoreHorizontal className="h-4 w-4 mr-2" />
+                                                        Actions
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => setStatusDialogOpen(true)}>
+                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                        Change Status
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setBdrSearchOpen(true)}>
+                                                        <UserCog className="h-4 w-4 mr-2" />
+                                                        Assign BDR
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                                                        <Edit2 className="h-4 w-4 mr-2" />
+                                                        Edit Request
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     )}
                                 </div>
@@ -344,7 +357,6 @@ export default function RequestPage() {
                                 ) : (
                                     <RequestDetailView
                                         request={selectedRequest}
-                                        onStatusUpdateClick={() => setStatusDialogOpen(true)}
                                         onRefresh={loadRequests}
                                         onClose={handleCloseDetailSheet}
                                     />

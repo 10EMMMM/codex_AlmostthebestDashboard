@@ -93,7 +93,7 @@ export function BDRAssignmentDialog({
                             value={searchQuery}
                             onValueChange={setSearchQuery}
                         />
-                        <CommandEmpty>No BDR found.</CommandEmpty>
+                        {searchQuery.length > 0 && <CommandEmpty>No BDR found.</CommandEmpty>}
                         <CommandGroup className="overflow-y-auto max-h-[300px]">
                             {bdrLoading ? (
                                 <div className="p-4 space-y-3">

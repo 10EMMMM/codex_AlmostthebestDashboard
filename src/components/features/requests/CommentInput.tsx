@@ -13,6 +13,7 @@ interface CommentInputProps {
     initialValue?: string;
     onCancel?: () => void;
     autoFocus?: boolean;
+    allowedMentions?: string[]; // List of user IDs allowed to be mentioned
 }
 
 export function CommentInput({
@@ -21,6 +22,7 @@ export function CommentInput({
     initialValue = "",
     onCancel,
     autoFocus = false,
+    allowedMentions,
 }: CommentInputProps) {
     const [content, setContent] = useState(initialValue);
     const [submitting, setSubmitting] = useState(false);
@@ -72,7 +74,10 @@ export function CommentInput({
     };
 
     // Get filtered team members for mention autocomplete
-    const filteredMembers = showMentions ? searchMembers(mentionQuery) : [];
+    const allMembers = showMentions ? searchMembers(mentionQuery) : [];
+    const filteredMembers = allowedMentions
+        ? allMembers.filter(member => allowedMentions.includes(member.id))
+        : allMembers;
 
     // Handle mention selection
     const selectMention = (member: TeamMember) => {
@@ -175,8 +180,8 @@ export function CommentInput({
                                 key={member.id}
                                 onClick={() => selectMention(member)}
                                 className={`w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${index === selectedMentionIndex
-                                        ? "bg-gray-100 dark:bg-gray-700"
-                                        : ""
+                                    ? "bg-gray-100 dark:bg-gray-700"
+                                    : ""
                                     }`}
                             >
                                 {member.avatar ? (

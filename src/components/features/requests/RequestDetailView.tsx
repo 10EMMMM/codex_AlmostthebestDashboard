@@ -14,12 +14,11 @@ import { toast } from "sonner";
 
 interface RequestDetailViewProps {
     request: Request;
-    onStatusUpdateClick?: () => void;
     onRefresh?: () => Promise<void>;
     onClose?: () => void;
 }
 
-export function RequestDetailView({ request, onStatusUpdateClick, onRefresh, onClose }: RequestDetailViewProps) {
+export function RequestDetailView({ request, onRefresh, onClose }: RequestDetailViewProps) {
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
     const { updateBdrAssignments, assigningBdr, bdrs, bdrLoading, loadBdrs } = useBDRManagement();
 
@@ -52,24 +51,13 @@ export function RequestDetailView({ request, onStatusUpdateClick, onRefresh, onC
     return (
         <>
             {/* Type and Status Badges */}
-            <div className="flex gap-2 items-center flex-wrap">
+            <div className="flex gap-2 items-center flex-wrap mb-6">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}>
                     {request.request_type}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[request.status] || "bg-gray-500 text-white"}`}>
                     {request.status}
                 </span>
-                {onStatusUpdateClick && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={onStatusUpdateClick}
-                        className="h-7 text-xs gap-1"
-                    >
-                        <RefreshCw className="h-3 w-3" />
-                        Change Status
-                    </Button>
-                )}
             </div>
 
             {/* Description */}
@@ -175,7 +163,7 @@ export function RequestDetailView({ request, onStatusUpdateClick, onRefresh, onC
 
             {/* Comments Section */}
             <Separator className="my-6" />
-            <CommentsSection requestId={request.id} />
+            <CommentsSection request={request} />
 
             {/* BDR Assignment Dialog */}
             <BDRAssignmentDialog

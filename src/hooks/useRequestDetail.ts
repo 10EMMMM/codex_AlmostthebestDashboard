@@ -92,6 +92,7 @@ export function useRequestDetail(onRequestsChange: () => Promise<void>) {
             toast({
                 title: "Success",
                 description: "Request updated successfully",
+                variant: "success",
             });
 
             setIsEditing(false);

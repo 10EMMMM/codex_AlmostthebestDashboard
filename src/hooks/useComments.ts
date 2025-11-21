@@ -79,7 +79,12 @@ export function useComments(requestId: string) {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${session.access_token}`,
                 },
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    requestId: data.request_id,
+                    content: data.content,
+                    parentCommentId: data.parent_comment_id,
+                    mentions: data.mentions,
+                }),
             });
 
             if (!response.ok) {
@@ -120,6 +125,7 @@ export function useComments(requestId: string) {
             toast({
                 title: "Success",
                 description: "Comment added successfully",
+                variant: "success",
             });
 
             return result.comment;
@@ -172,6 +178,7 @@ export function useComments(requestId: string) {
             toast({
                 title: "Success",
                 description: "Comment updated successfully",
+                variant: "success",
             });
         } catch (error: any) {
             console.error("Error updating comment:", error);
@@ -233,6 +240,7 @@ export function useComments(requestId: string) {
             toast({
                 title: "Success",
                 description: "Comment deleted successfully",
+                variant: "success",
             });
         } catch (error: any) {
             console.error("Error deleting comment:", error);

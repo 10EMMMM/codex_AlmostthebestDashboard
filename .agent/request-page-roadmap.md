@@ -62,7 +62,7 @@
   - [ ] Bulk delete/archive
   - [ ] Select all/deselect all
 
-- [x] **Comments & Notes** ✅ COMPLETE (Pending Migration)
+- [x] **Comments & Notes** ✅ COMPLETE
   - [x] Add internal notes to requests
   - [x] Comment threads with replies (3 levels deep)
   - [x] @mentions for team members with autocomplete
@@ -71,8 +71,13 @@
   - [x] Emoji reactions (👍, ❤️, 🎉, 👀, 🚀, 😄)
   - [x] Real-time updates via Supabase subscriptions
   - [x] Role-based visibility (super_admin, assigned BDR, feature flag)
-  - [ ] Run database migration (manual step required)
+  - [x] Run database migration
   - [ ] Notification system for mentions (future enhancement)
+
+- [x] **Multi-Select BDR Assignment** ✅ COMPLETE
+  - [x] Assign multiple BDRs to a single request
+  - [x] Search/Filter BDRs in assignment dialog
+  - [x] Real-time updates on assignment
 
 - [ ] **Request Templates**
   - [ ] Create request from template

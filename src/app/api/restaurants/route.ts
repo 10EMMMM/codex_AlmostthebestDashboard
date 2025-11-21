@@ -117,6 +117,18 @@ export async function GET(request: Request) {
                 bdr_target_per_week: restaurant.bdr_target_per_week,
                 created_at: restaurant.created_at,
                 updated_at: restaurant.updated_at,
+                // Yelp-style fields
+                price_range: restaurant.price_range,
+                yelp_url: restaurant.yelp_url,
+                average_rating: restaurant.average_rating,
+                total_reviews: restaurant.total_reviews,
+                primary_photo_url: restaurant.primary_photo_url,
+                // Operational details
+                discount_percentage: restaurant.discount_percentage,
+                offers_box_meals: restaurant.offers_box_meals,
+                offers_trays: restaurant.offers_trays,
+                earliest_pickup_time: restaurant.earliest_pickup_time,
+                // Relationships
                 primary_contact: contact ? {
                     full_name: contact.full_name,
                     email: contact.email,

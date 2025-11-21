@@ -15,10 +15,23 @@ export interface Restaurant {
     created_at: string;
     updated_at?: string;
     deleted_at?: string;
+    // Yelp-style fields
+    price_range?: 1 | 2 | 3 | 4;
+    yelp_url?: string;
+    average_rating?: number;
+    total_reviews?: number;
+    primary_photo_url?: string;
+    // Operational details
+    discount_percentage?: number;
+    offers_box_meals?: boolean;
+    offers_trays?: boolean;
+    earliest_pickup_time?: string;
     // Enriched fields
     assigned_bdrs?: BDR[];
     primary_contact?: RestaurantContact;
     comments_count?: number;
+    photos?: RestaurantPhoto[];
+    reviews?: RestaurantReview[];
 }
 
 export type RestaurantStatus = "new" | "on progress" | "on hold" | "done";
@@ -46,6 +59,31 @@ export interface BDR {
     name: string;
     label?: string;
     avatar?: string;
+}
+
+export interface RestaurantPhoto {
+    id: string;
+    restaurant_id: string;
+    url: string;
+    caption?: string;
+    category?: 'food' | 'interior' | 'exterior' | 'menu' | 'drink' | 'other';
+    uploaded_by?: string;
+    is_primary: boolean;
+    display_order: number;
+    created_at: string;
+}
+
+export interface RestaurantReview {
+    id: string;
+    restaurant_id: string;
+    user_id?: string;
+    rating: 1 | 2 | 3 | 4 | 5;
+    review_text?: string;
+    source: 'internal' | 'yelp' | 'google';
+    external_review_id?: string;
+    reviewer_name?: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface Cuisine {

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 interface CreateRestaurantModalProps {
@@ -31,10 +33,14 @@ interface FormValues {
     cityId: string;
     cuisineId: string;
     description: string;
-    contactName: string;
-    contactEmail: string;
-    contactPhone: string;
     bdrUserId: string;
+    priceRange: string;
+    yelpUrl: string;
+    primaryPhotoUrl: string;
+    discountPercentage: string;
+    offersBoxMeals: boolean;
+    offersTrays: boolean;
+    earliestPickupTime: string;
 }
 
 const OPTIONAL_VALUE = "__optional__";
@@ -46,22 +52,26 @@ export function CreateRestaurantModal({
     supabase,
 }: CreateRestaurantModalProps) {
     const { toast } = useToast();
+    const { isSuperAdmin } = useAuth();
     const [submitting, setSubmitting] = useState(false);
     const [cityOptions, setCityOptions] = useState<Array<{ id: string; label: string }>>([]);
     const [cuisineOptions, setCuisineOptions] = useState<Array<{ id: string; label: string }>>([]);
     const [bdrOptions, setBdrOptions] = useState<Array<{ id: string; label: string }>>([]);
     const [cityOptionsLoading, setCityOptionsLoading] = useState(true);
-    const [canAssignBdr, setCanAssignBdr] = useState(false);
 
     const [formValues, setFormValues] = useState<FormValues>({
         name: "",
         cityId: "",
         cuisineId: "",
         description: "",
-        contactName: "",
-        contactEmail: "",
-        contactPhone: "",
         bdrUserId: "",
+        priceRange: "",
+        yelpUrl: "",
+        primaryPhotoUrl: "",
+        discountPercentage: "",
+        offersBoxMeals: false,
+        offersTrays: false,
+        earliestPickupTime: "",
     });
 
     const handleChange = (field: keyof FormValues, value: string) => {
@@ -74,29 +84,44 @@ export function CreateRestaurantModal({
             cityId: "",
             cuisineId: "",
             description: "",
-            contactName: "",
-            contactEmail: "",
-            contactPhone: "",
             bdrUserId: "",
+            priceRange: "",
+            yelpUrl: "",
+            primaryPhotoUrl: "",
+            discountPercentage: "",
+            offersBoxMeals: false,
+            offersTrays: false,
+            earliestPickupTime: "",
         });
     };
 
     // Load options when modal opens
     useEffect(() => {
-        if (!open) return;
+        console.log('🔍 DEBUG - useEffect triggered. open:', open, 'isSuperAdmin:', isSuperAdmin);
+
+        if (!open) {
+            console.log('🔍 DEBUG - Modal not open, skipping load');
+            return;
+        }
 
         const loadOptions = async () => {
+            console.log('🔍 DEBUG - loadOptions() started');
             try {
-                // Get current user
-                const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-                if (!user) return;
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError) {
+                    console.error('🔍 DEBUG - Error getting user:', userError);
+                    return;
+                }
+                if (!user) {
+                    console.log('🔍 DEBUG - No user found');
+                    return;
+                }
 
-                const isSuperAdmin = user.app_metadata?.is_super_admin === true;
-                setCanAssignBdr(isSuperAdmin);
+                console.log('🔍 DEBUG - User email:', user.email);
+                console.log('🔍 DEBUG - Using isSuperAdmin from useAuth:', isSuperAdmin);
 
                 // Load cities
+                console.log('🔍 DEBUG - Loading cities...');
                 setCityOptionsLoading(true);
                 let citiesQuery = supabase
                     .from("cities")
@@ -104,7 +129,6 @@ export function CreateRestaurantModal({
                     .order("name");
 
                 if (!isSuperAdmin) {
-                    // For non-super admins, only show their assigned cities
                     const { data: userCities } = await supabase
                         .from("user_city_coverage")
                         .select("city_id")
@@ -116,11 +140,16 @@ export function CreateRestaurantModal({
                     } else {
                         setCityOptions([]);
                         setCityOptionsLoading(false);
+                        console.log('🔍 DEBUG - No city coverage for non-super-admin');
                         return;
                     }
                 }
 
-                const { data: cities } = await citiesQuery;
+                const { data: cities, error: citiesError } = await citiesQuery;
+                if (citiesError) {
+                    console.error('🔍 DEBUG - Error loading cities:', citiesError);
+                }
+                console.log('🔍 DEBUG - Cities loaded:', cities?.length || 0);
                 setCityOptions(
                     cities?.map((c: any) => ({
                         id: c.id,
@@ -130,11 +159,16 @@ export function CreateRestaurantModal({
                 setCityOptionsLoading(false);
 
                 // Load cuisines
-                const { data: cuisines } = await supabase
+                console.log('🔍 DEBUG - Loading cuisines...');
+                const { data: cuisines, error: cuisinesError } = await supabase
                     .from("cuisines")
                     .select("id, name")
                     .order("name");
 
+                if (cuisinesError) {
+                    console.error('🔍 DEBUG - Error loading cuisines:', cuisinesError);
+                }
+                console.log('🔍 DEBUG - Cuisines loaded:', cuisines?.length || 0);
                 setCuisineOptions(
                     cuisines?.map((c: any) => ({
                         id: c.id,
@@ -142,21 +176,35 @@ export function CreateRestaurantModal({
                     })) || []
                 );
 
+                console.log('🔍 DEBUG - About to check isSuperAdmin:', isSuperAdmin);
+
                 // Load BDRs if super admin
                 if (isSuperAdmin) {
-                    const { data: bdrRoles } = await supabase
+                    console.log('🔍 DEBUG - Loading BDRs for super admin');
+                    const { data: bdrRoles, error: bdrRolesError } = await supabase
                         .from("user_roles")
                         .select("user_id")
                         .eq("role", "BDR");
 
+                    if (bdrRolesError) {
+                        console.error('🔍 DEBUG - Error loading BDR roles:', bdrRolesError);
+                    }
+                    console.log('🔍 DEBUG - BDR roles found:', bdrRoles);
+
                     const bdrUserIds = bdrRoles?.map((r: any) => r.user_id) || [];
+                    console.log('🔍 DEBUG - BDR user IDs:', bdrUserIds);
 
                     if (bdrUserIds.length > 0) {
-                        const { data: profiles } = await supabase
+                        const { data: profiles, error: profilesError } = await supabase
                             .from("profiles")
                             .select("user_id, display_name")
                             .in("user_id", bdrUserIds)
                             .order("display_name");
+
+                        if (profilesError) {
+                            console.error('🔍 DEBUG - Error loading BDR profiles:', profilesError);
+                        }
+                        console.log('🔍 DEBUG - BDR profiles found:', profiles);
 
                         setBdrOptions(
                             profiles?.map((p: any) => ({
@@ -164,15 +212,22 @@ export function CreateRestaurantModal({
                                 label: p.display_name || "Unknown",
                             })) || []
                         );
+                    } else {
+                        console.log('🔍 DEBUG - No BDR user IDs found, setting empty array');
+                        setBdrOptions([]);
                     }
+                } else {
+                    console.log('🔍 DEBUG - Not super admin, skipping BDR load');
                 }
+
+                console.log('🔍 DEBUG - loadOptions() completed successfully');
             } catch (error) {
-                console.error("Error loading options:", error);
+                console.error("🔍 DEBUG - Error in loadOptions:", error);
             }
         };
 
         loadOptions();
-    }, [open, supabase]);
+    }, [open, supabase, isSuperAdmin]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -202,6 +257,13 @@ export function CreateRestaurantModal({
                     city_id: formValues.cityId,
                     primary_cuisine_id: formValues.cuisineId || null,
                     description: formValues.description || null,
+                    price_range: formValues.priceRange ? parseInt(formValues.priceRange) : null,
+                    yelp_url: formValues.yelpUrl || null,
+                    primary_photo_url: formValues.primaryPhotoUrl || null,
+                    discount_percentage: formValues.discountPercentage ? parseFloat(formValues.discountPercentage) : null,
+                    offers_box_meals: formValues.offersBoxMeals,
+                    offers_trays: formValues.offersTrays,
+                    earliest_pickup_time: formValues.earliestPickupTime || null,
                 })
                 .select("id")
                 .single();
@@ -209,25 +271,7 @@ export function CreateRestaurantModal({
             if (error) throw error;
             const restaurantId = data?.id;
 
-            if (
-                restaurantId &&
-                (formValues.contactName ||
-                    formValues.contactEmail ||
-                    formValues.contactPhone)
-            ) {
-                const { error: contactError } = await supabase
-                    .from("restaurant_contacts")
-                    .insert({
-                        restaurant_id: restaurantId,
-                        full_name: formValues.contactName || "Primary Contact",
-                        email: formValues.contactEmail || null,
-                        phone: formValues.contactPhone || null,
-                        is_primary: true,
-                    });
-                if (contactError) throw contactError;
-            }
-
-            if (restaurantId && canAssignBdr && formValues.bdrUserId) {
+            if (restaurantId && isSuperAdmin && formValues.bdrUserId) {
                 const { error: assignmentError } = await supabase
                     .from("restaurant_assignments")
                     .upsert({
@@ -256,12 +300,15 @@ export function CreateRestaurantModal({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <DialogHeader>
-                        <DialogTitle>New Restaurant Onboarding</DialogTitle>
-                    </DialogHeader>
+        <Sheet open={open} onOpenChange={onOpenChange}>
+            <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+                <SheetHeader>
+                    <SheetTitle>New Restaurant Onboarding</SheetTitle>
+                    <SheetDescription>
+                        Fill in the details to add a new restaurant
+                    </SheetDescription>
+                </SheetHeader>
+                <form onSubmit={handleSubmit} className="space-y-6 mt-6">
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
@@ -322,7 +369,7 @@ export function CreateRestaurantModal({
                                 </SelectContent>
                             </Select>
                         </div>
-                        {canAssignBdr && (
+                        {isSuperAdmin && (
                             <div className="space-y-2">
                                 <Label>Assign BDR (Optional)</Label>
                                 <Select
@@ -359,47 +406,119 @@ export function CreateRestaurantModal({
                     </div>
 
                     <div className="border-t pt-4">
-                        <h4 className="font-medium mb-3">Primary Contact (Optional)</h4>
-                        <div className="grid gap-4 md:grid-cols-3">
+                        <h4 className="font-medium mb-3">Restaurant Details (Optional)</h4>
+                        <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-2">
-                                <Label htmlFor="contact-name">Full Name</Label>
-                                <Input
-                                    id="contact-name"
-                                    value={formValues.contactName}
-                                    onChange={(event) =>
-                                        handleChange("contactName", event.target.value)
+                                <Label>Price Range</Label>
+                                <Select
+                                    value={formValues.priceRange || OPTIONAL_VALUE}
+                                    onValueChange={(value) =>
+                                        handleChange("priceRange", value === OPTIONAL_VALUE ? "" : value)
                                     }
-                                    placeholder="John Doe"
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select price range" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value={OPTIONAL_VALUE}>Not set</SelectItem>
+                                        <SelectItem value="1">$ (Inexpensive)</SelectItem>
+                                        <SelectItem value="2">$$ (Moderate)</SelectItem>
+                                        <SelectItem value="3">$$$ (Pricey)</SelectItem>
+                                        <SelectItem value="4">$$$$ (Ultra High-End)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="discount">Discount %</Label>
+                                <Input
+                                    id="discount"
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    value={formValues.discountPercentage}
+                                    onChange={(event) =>
+                                        handleChange("discountPercentage", event.target.value)
+                                    }
+                                    placeholder="e.g. 15"
                                 />
                             </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="contact-email">Email</Label>
+                                <Label htmlFor="yelp-url">Yelp URL</Label>
                                 <Input
-                                    id="contact-email"
-                                    type="email"
-                                    value={formValues.contactEmail}
-                                    onChange={(event) =>
-                                        handleChange("contactEmail", event.target.value)
-                                    }
-                                    placeholder="john@example.com"
+                                    id="yelp-url"
+                                    value={formValues.yelpUrl}
+                                    onChange={(event) => handleChange("yelpUrl", event.target.value)}
+                                    placeholder="https://www.yelp.com/biz/..."
                                 />
                             </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="contact-phone">Phone</Label>
+                                <Label htmlFor="photo-url">Primary Photo URL</Label>
                                 <Input
-                                    id="contact-phone"
-                                    type="tel"
-                                    value={formValues.contactPhone}
+                                    id="photo-url"
+                                    value={formValues.primaryPhotoUrl}
                                     onChange={(event) =>
-                                        handleChange("contactPhone", event.target.value)
+                                        handleChange("primaryPhotoUrl", event.target.value)
                                     }
-                                    placeholder="(555) 123-4567"
+                                    placeholder="https://..."
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="pickup-time">Earliest Pickup Time</Label>
+                                <Input
+                                    id="pickup-time"
+                                    type="time"
+                                    value={formValues.earliestPickupTime}
+                                    onChange={(event) =>
+                                        handleChange("earliestPickupTime", event.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="offers-box-meals"
+                                    checked={formValues.offersBoxMeals}
+                                    onChange={(event) =>
+                                        setFormValues((prev) => ({
+                                            ...prev,
+                                            offersBoxMeals: event.target.checked,
+                                        }))
+                                    }
+                                    className="h-4 w-4 rounded border-gray-300"
+                                />
+                                <Label htmlFor="offers-box-meals" className="font-normal">
+                                    Offers Box Meals
+                                </Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    id="offers-trays"
+                                    checked={formValues.offersTrays}
+                                    onChange={(event) =>
+                                        setFormValues((prev) => ({
+                                            ...prev,
+                                            offersTrays: event.target.checked,
+                                        }))
+                                    }
+                                    className="h-4 w-4 rounded border-gray-300"
+                                />
+                                <Label htmlFor="offers-trays" className="font-normal">
+                                    Offers Trays
+                                </Label>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex justify-end gap-3 pt-4 border-t">
                         <Button
                             type="button"
                             variant="outline"
@@ -409,12 +528,18 @@ export function CreateRestaurantModal({
                             Cancel
                         </Button>
                         <Button type="submit" disabled={submitting}>
-                            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Create Restaurant
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Creating...
+                                </>
+                            ) : (
+                                "Create Restaurant"
+                            )}
                         </Button>
                     </div>
                 </form>
-            </DialogContent>
-        </Dialog>
+            </SheetContent>
+        </Sheet>
     );
 }

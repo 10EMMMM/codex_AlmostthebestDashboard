@@ -54,7 +54,56 @@ export function RestaurantDetailView({ restaurant, onRefresh, onClose }: Restaur
                         {restaurant.onboarding_stage}
                     </span>
                 )}
+                {restaurant.price_range && (
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-700 dark:text-green-400">
+                        {'$'.repeat(restaurant.price_range)}
+                    </span>
+                )}
             </div>
+
+            {/* Primary Photo */}
+            {restaurant.primary_photo_url && (
+                <div className="mb-6">
+                    <img
+                        src={restaurant.primary_photo_url}
+                        alt={restaurant.name}
+                        className="w-full h-48 object-cover rounded-lg"
+                    />
+                </div>
+            )}
+
+            {/* Yelp Rating & Link */}
+            {(restaurant.average_rating || restaurant.yelp_url) && (
+                <div className="flex items-center gap-4 mb-6 flex-wrap">
+                    {/* Rating */}
+                    {restaurant.average_rating && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-yellow-500">★</span>
+                            <span className="font-semibold">{restaurant.average_rating.toFixed(1)}</span>
+                            {restaurant.total_reviews && (
+                                <span className="text-sm text-muted-foreground">
+                                    ({restaurant.total_reviews} {restaurant.total_reviews === 1 ? 'review' : 'reviews'})
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Yelp Link */}
+                    {restaurant.yelp_url && (
+                        <a
+                            href={restaurant.yelp_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                        >
+                            View on Yelp
+                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                        </a>
+                    )}
+                </div>
+            )}
 
             {/* Description */}
             {restaurant.description && (
@@ -86,6 +135,48 @@ export function RestaurantDetailView({ restaurant, onRefresh, onClose }: Restaur
                         <UtensilsCrossed className="h-4 w-4" />
                         <span className="text-sm font-semibold">Cuisine:</span>
                         <span className="text-sm text-muted-foreground">{restaurant.cuisine_name}</span>
+                    </div>
+                )}
+
+                {/* Operational Details */}
+                {(restaurant.discount_percentage || restaurant.earliest_pickup_time || restaurant.offers_box_meals || restaurant.offers_trays) && (
+                    <div className="pt-2 border-t border-border/50">
+                        <h4 className="text-sm font-semibold mb-2">Operational Details</h4>
+                        <div className="space-y-1">
+                            {restaurant.discount_percentage && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold">Discount:</span>
+                                    <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                                        {restaurant.discount_percentage}% off
+                                    </span>
+                                </div>
+                            )}
+                            {restaurant.earliest_pickup_time && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold">Earliest Pickup:</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {restaurant.earliest_pickup_time}
+                                    </span>
+                                </div>
+                            )}
+                            {(restaurant.offers_box_meals || restaurant.offers_trays) && (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-semibold">Offers:</span>
+                                    <div className="flex gap-2">
+                                        {restaurant.offers_box_meals && (
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400">
+                                                Box Meals
+                                            </span>
+                                        )}
+                                        {restaurant.offers_trays && (
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-400">
+                                                Trays/Catering
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 

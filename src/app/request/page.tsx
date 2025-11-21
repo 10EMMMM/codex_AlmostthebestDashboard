@@ -318,13 +318,25 @@ export default function RequestPage() {
 
                 {/* Create Request Modal */}
                 {showCreateModal && (
-                    <CreateRequestForm
-                        onCancel={() => setShowCreateModal(false)}
-                        onCreated={() => {
-                            loadRequests();
-                            setShowCreateModal(false);
-                        }}
-                    />
+                    <Sheet open={showCreateModal} onOpenChange={setShowCreateModal}>
+                        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+                            <SheetHeader>
+                                <SheetTitle>Create New Request</SheetTitle>
+                                <SheetDescription>
+                                    Fill in the details to create a new request
+                                </SheetDescription>
+                            </SheetHeader>
+                            <div className="mt-6">
+                                <CreateRequestForm
+                                    onCancel={() => setShowCreateModal(false)}
+                                    onCreated={() => {
+                                        loadRequests();
+                                        setShowCreateModal(false);
+                                    }}
+                                />
+                            </div>
+                        </SheetContent>
+                    </Sheet>
                 )}
             </DashboardLayout>
         </>

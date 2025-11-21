@@ -262,20 +262,13 @@ export function FilterBar({
 
     return (
         <div className="space-y-4">
-            {/* Filter Controls - Compact Inline */}
-            <div className="flex flex-wrap gap-3 items-center">
-                {/* Create Request Button */}
-                {onCreateRequest && (
-                    <Button onClick={onCreateRequest} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        New Request
-                    </Button>
-                )}
-
-                {/* Search Input */}
-                <div className="relative flex-1 min-w-[250px] max-w-md">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* Top Row: Search and Actions */}
+            <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search */}
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
+                        type="text"
                         placeholder="Search by title, company, or requester..."
                         value={searchInput}
                         onChange={(e) => handleSearchChange(e.target.value)}
@@ -283,152 +276,155 @@ export function FilterBar({
                     />
                     {searchInput && (
                         <button
-                            onClick={() => handleSearchChange('')}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            onClick={() => handleSearchChange("")}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         >
                             <X className="h-4 w-4" />
                         </button>
                     )}
                 </div>
 
-                {/* Type Filter */}
-                <Select
-                    value={activeFilters.types.length === 1 ? activeFilters.types[0] : "all"}
-                    onValueChange={(value) => {
-                        if (value === "all") {
-                            onFilterChange({ ...activeFilters, types: [] });
-                        } else {
-                            toggleType(value);
-                        }
-                    }}
-                >
-                    <SelectTrigger className="w-[160px]">
-                        <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4" />
-                            <SelectValue placeholder="Type" />
-                        </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        {REQUEST_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                                {type}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                {/* Actions */}
+                <div className="flex gap-2">
+                    {/* Selection Mode Toggle */}
+                    {onSelectionModeChange && (
+                        <Button
+                            variant={selectionMode ? "default" : "outline"}
+                            size="default"
+                            onClick={() => onSelectionModeChange(!selectionMode)}
+                        >
+                            <CheckSquare className="h-4 w-4 mr-2" />
+                            Select
+                        </Button>
+                    )}
 
-                {/* Status Filter */}
-                <Select
-                    value={activeFilters.statuses.length === 1 ? activeFilters.statuses[0] : "all"}
-                    onValueChange={(value) => {
-                        if (value === "all") {
-                            onFilterChange({ ...activeFilters, statuses: [] });
-                        } else {
-                            toggleStatus(value);
-                        }
-                    }}
-                >
-                    <SelectTrigger className="w-[160px]">
-                        <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4" />
-                            <SelectValue placeholder="Status" />
-                        </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        {STATUS_OPTIONS.map((status) => (
-                            <SelectItem key={status.value} value={status.value}>
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${status.color}`} />
-                                    {status.label}
-                                </div>
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-
-                {/* Sort Control */}
-                <div className="flex items-center gap-1">
-                    <Select
-                        value={activeFilters.sortBy}
-                        onValueChange={(value: any) => {
-                            onFilterChange({ ...activeFilters, sortBy: value });
-                        }}
-                    >
-                        <SelectTrigger className="w-[180px]">
-                            <div className="flex items-center gap-2">
-                                <ArrowUpDown className="h-4 w-4" />
-                                <SelectValue placeholder="Sort by" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="created_at">Created Date</SelectItem>
-                            <SelectItem value="updated_at">Updated Date</SelectItem>
-                            <SelectItem value="title">Title</SelectItem>
-                            <SelectItem value="company">Company</SelectItem>
-                            <SelectItem value="volume">Volume</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    {/* Sort Direction Toggle */}
+                    {/* Generate Report */}
                     <Button
                         variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            onFilterChange({
-                                ...activeFilters,
-                                sortDirection: activeFilters.sortDirection === 'asc' ? 'desc' : 'asc'
-                            });
-                        }}
-                        className="px-2"
-                        title={activeFilters.sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+                        size="default"
+                        onClick={handleGenerateReport}
+                        disabled={generatingReport}
+                        title="Generate report preview"
                     >
-                        {activeFilters.sortDirection === 'asc' ? (
-                            <ArrowUp className="h-4 w-4" />
+                        {generatingReport ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         ) : (
-                            <ArrowDown className="h-4 w-4" />
+                            <FileText className="h-4 w-4 mr-2" />
                         )}
+                        Report
                     </Button>
+
+                    {/* Create Request */}
+                    {onCreateRequest && (
+                        <Button onClick={onCreateRequest} size="default">
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Request
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Filter Row: Status, Type, Sort */}
+            <div className="flex flex-wrap items-center gap-4">
+                {/* Status Filters */}
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">Status:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                        {STATUS_OPTIONS.map((status) => {
+                            const isActive = activeFilters.statuses.includes(status.value);
+                            return (
+                                <Badge
+                                    key={status.value}
+                                    variant={isActive ? "default" : "outline"}
+                                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => toggleStatus(status.value)}
+                                >
+                                    <div className={`w-2 h-2 rounded-full ${status.color} mr-1.5`} />
+                                    {status.label}
+                                </Badge>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {/* Generate Report Button */}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerateReport}
-                    disabled={generatingReport}
-                    className="gap-2"
-                    title="Generate report preview"
-                >
-                    {generatingReport ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <FileText className="h-4 w-4" />
-                    )}
-                    Report
-                </Button>
-
-                {/* Selection Mode Toggle */}
-                {onSelectionModeChange && (
-                    <Button
-                        variant={selectionMode ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => onSelectionModeChange(!selectionMode)}
-                        className="gap-2"
+                {/* Type Filter */}
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">Type:</span>
+                    <Select
+                        value={activeFilters.types.length === 1 ? activeFilters.types[0] : "all"}
+                        onValueChange={(value) => {
+                            if (value === "all") {
+                                onFilterChange({ ...activeFilters, types: [] });
+                            } else {
+                                toggleType(value);
+                            }
+                        }}
                     >
-                        <CheckSquare className="h-4 w-4" />
-                        {selectionMode ? "Exit Selection" : "Select"}
-                    </Button>
-                )}
+                        <SelectTrigger className="w-[160px]">
+                            <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            {REQUEST_TYPES.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                    {type}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-                {/* Clear Filters Button */}
+                {/* Sort */}
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">Sort:</span>
+                    <div className="flex items-center gap-1">
+                        <Select
+                            value={activeFilters.sortBy}
+                            onValueChange={(value: any) => {
+                                onFilterChange({ ...activeFilters, sortBy: value });
+                            }}
+                        >
+                            <SelectTrigger className="w-[160px]">
+                                <SelectValue placeholder="Sort by" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="created_at">Created Date</SelectItem>
+                                <SelectItem value="updated_at">Updated Date</SelectItem>
+                                <SelectItem value="title">Title</SelectItem>
+                                <SelectItem value="company">Company</SelectItem>
+                                <SelectItem value="volume">Volume</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Sort Direction Toggle */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                onFilterChange({
+                                    ...activeFilters,
+                                    sortDirection: activeFilters.sortDirection === 'asc' ? 'desc' : 'asc'
+                                });
+                            }}
+                            className="px-2"
+                            title={activeFilters.sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+                        >
+                            {activeFilters.sortDirection === 'asc' ? (
+                                <ArrowUp className="h-4 w-4" />
+                            ) : (
+                                <ArrowDown className="h-4 w-4" />
+                            )}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Clear All */}
                 {hasActiveFilters && (
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={clearAllFilters}
-                        className="gap-1 text-muted-foreground hover:text-foreground"
+                        className="gap-1 text-muted-foreground hover:text-foreground ml-auto"
                     >
                         <X className="h-4 w-4" />
                         Clear All

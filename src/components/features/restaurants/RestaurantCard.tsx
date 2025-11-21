@@ -61,7 +61,7 @@ export function RestaurantCard({
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
                             <span
-                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusConfig.color}`}
+                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusConfig.badgeClass}`}
                             >
                                 {statusConfig.label}
                             </span>
@@ -74,6 +74,25 @@ export function RestaurantCard({
                         <h3 className="font-semibold text-xl line-clamp-2 mb-2">
                             {restaurant.name}
                         </h3>
+                        {/* Yelp-style info */}
+                        <div className="flex items-center gap-3 flex-wrap">
+                            {restaurant.price_range && (
+                                <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                    {'$'.repeat(restaurant.price_range)}
+                                </span>
+                            )}
+                            {restaurant.average_rating && (
+                                <div className="flex items-center gap-1">
+                                    <span className="text-yellow-500 text-sm">★</span>
+                                    <span className="text-sm font-medium">{restaurant.average_rating.toFixed(1)}</span>
+                                    {restaurant.total_reviews && (
+                                        <span className="text-xs text-muted-foreground">
+                                            ({restaurant.total_reviews})
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
                     {/* Comment Notification */}
                     {(restaurant.comments_count || 0) > 0 && (

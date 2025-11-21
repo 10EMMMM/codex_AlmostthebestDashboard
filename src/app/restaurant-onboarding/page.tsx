@@ -28,10 +28,7 @@ import { Edit2, MoreHorizontal, RefreshCw } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import type { Restaurant, RestaurantFilters } from "@/components/features/restaurants/types";
-import { createClient } from "@supabase/supabase-js";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export default function RestaurantOnboardingPage() {
   const { user, loading: authLoading } = useAuth();
@@ -59,8 +56,8 @@ export default function RestaurantOnboardingPage() {
   // Custom hooks
   const { restaurants, loading, loadRestaurants, filteredRestaurants } = useRestaurants(filters);
 
-  // Supabase client
-  const [supabase] = useState(() => createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+  // Supabase client - use authenticated browser client
+  const [supabase] = useState(() => getSupabaseClient());
 
   // Load restaurants on mount
   useEffect(() => {

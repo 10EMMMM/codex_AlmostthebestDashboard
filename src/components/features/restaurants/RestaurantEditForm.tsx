@@ -46,6 +46,13 @@ export function RestaurantEditForm({
         description: restaurant.description || "",
         onboardingStage: restaurant.onboarding_stage || "",
         bdrTargetPerWeek: restaurant.bdr_target_per_week?.toString() || "4",
+        priceRange: restaurant.price_range?.toString() || "",
+        yelpUrl: restaurant.yelp_url || "",
+        primaryPhotoUrl: restaurant.primary_photo_url || "",
+        discountPercentage: restaurant.discount_percentage?.toString() || "",
+        offersBoxMeals: restaurant.offers_box_meals || false,
+        offersTrays: restaurant.offers_trays || false,
+        earliestPickupTime: restaurant.earliest_pickup_time || "",
     });
 
     const handleChange = (field: string, value: string) => {
@@ -122,6 +129,13 @@ export function RestaurantEditForm({
                     description: formValues.description || null,
                     onboarding_stage: formValues.onboardingStage || null,
                     bdr_target_per_week: parseInt(formValues.bdrTargetPerWeek) || 4,
+                    price_range: formValues.priceRange ? parseInt(formValues.priceRange) : null,
+                    yelp_url: formValues.yelpUrl || null,
+                    primary_photo_url: formValues.primaryPhotoUrl || null,
+                    discount_percentage: formValues.discountPercentage ? parseFloat(formValues.discountPercentage) : null,
+                    offers_box_meals: formValues.offersBoxMeals,
+                    offers_trays: formValues.offersTrays,
+                    earliest_pickup_time: formValues.earliestPickupTime || null,
                     updated_at: new Date().toISOString(),
                 })
                 .eq("id", restaurant.id);
@@ -239,6 +253,97 @@ export function RestaurantEditForm({
                         value={formValues.bdrTargetPerWeek}
                         onChange={(e) => handleChange("bdrTargetPerWeek", e.target.value)}
                     />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="price-range">Price Range</Label>
+                    <Select
+                        value={formValues.priceRange || OPTIONAL_VALUE}
+                        onValueChange={(value) =>
+                            handleChange("priceRange", value === OPTIONAL_VALUE ? "" : value)
+                        }
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select price range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={OPTIONAL_VALUE}>Not set</SelectItem>
+                            <SelectItem value="1">$ (Inexpensive)</SelectItem>
+                            <SelectItem value="2">$$ (Moderate)</SelectItem>
+                            <SelectItem value="3">$$$ (Pricey)</SelectItem>
+                            <SelectItem value="4">$$$$ (Ultra High-End)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="yelp-url">Yelp URL</Label>
+                    <Input
+                        id="yelp-url"
+                        type="url"
+                        value={formValues.yelpUrl}
+                        onChange={(e) => handleChange("yelpUrl", e.target.value)}
+                        placeholder="https://www.yelp.com/biz/..."
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="primary-photo">Primary Photo URL</Label>
+                    <Input
+                        id="primary-photo"
+                        type="url"
+                        value={formValues.primaryPhotoUrl}
+                        onChange={(e) => handleChange("primaryPhotoUrl", e.target.value)}
+                        placeholder="https://example.com/photo.jpg"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="discount">Discount Percentage</Label>
+                    <Input
+                        id="discount"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={formValues.discountPercentage}
+                        onChange={(e) => handleChange("discountPercentage", e.target.value)}
+                        placeholder="e.g., 10.5"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="earliest-pickup">Earliest Pickup Time</Label>
+                    <Input
+                        id="earliest-pickup"
+                        type="time"
+                        value={formValues.earliestPickupTime}
+                        onChange={(e) => handleChange("earliestPickupTime", e.target.value)}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={formValues.offersBoxMeals}
+                            onChange={(e) => setFormValues(prev => ({ ...prev, offersBoxMeals: e.target.checked }))}
+                            className="h-4 w-4 rounded border-gray-300"
+                        />
+                        Offers Box Meals
+                    </Label>
+                </div>
+
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={formValues.offersTrays}
+                            onChange={(e) => setFormValues(prev => ({ ...prev, offersTrays: e.target.checked }))}
+                            className="h-4 w-4 rounded border-gray-300"
+                        />
+                        Offers Trays/Catering
+                    </Label>
                 </div>
             </div>
 

@@ -3,7 +3,7 @@
 export interface Request {
     id: string;
     title: string;
-    description: string | null;
+    description?: string;
     request_type: string;
     status: string;
     city_id: string;
@@ -12,13 +12,14 @@ export interface Request {
     requester_id: string;
     requester_name?: string;
     creator_name?: string;
-    company?: string | null;
-    volume?: number | null;
-    need_answer_by?: string | null;
-    delivery_date?: string | null;
+    company?: string;
+    volume?: number;
+    need_answer_by?: string;
+    delivery_date?: string;
     created_at: string;
     created_on_behalf?: boolean;
     assigned_bdrs?: BDR[];
+    assigned_bdr_id?: string;
     assigned_bdr_avatar?: string;
     assigned_bdr_name?: string;
 }

@@ -22,6 +22,7 @@ export interface Request {
     assigned_bdr_id?: string;
     assigned_bdr_avatar?: string;
     assigned_bdr_name?: string;
+    comments_count?: number;
 }
 
 export interface BDR {

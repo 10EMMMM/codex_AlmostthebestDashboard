@@ -31,15 +31,47 @@ export async function GET(request: NextRequest) {
         }
 
         const token = authHeader.replace('Bearer ', '');
-        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-            global: {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            },
-        });
 
-        // Fetch comments with user info, mentions, and reactions
+        // Use Service Role to bypass RLS for fetching, but verify user first
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+        // 1. Verify User
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+        if (userError || !user) {
+            return NextResponse.json(
+                { error: 'Invalid authentication' },
+                { status: 401 }
+            );
+        }
+
+        const userId = user.id;
+
+        // 2. Check Permissions Manually
+        // Fetch request details and user roles in parallel
+        const [requestResponse, rolesResponse, assignmentResponse] = await Promise.all([
+            supabase.from('requests').select('created_by, requester_id').eq('id', requestId).single(),
+            supabase.from('user_roles').select('role').eq('user_id', userId),
+            supabase.from('request_assignments').select('role').eq('request_id', requestId).eq('user_id', userId)
+        ]);
+
+        const reqData = requestResponse.data;
+        const userRoles = rolesResponse.data?.map(r => r.role) || [];
+        const assignments = assignmentResponse.data?.map(a => a.role) || [];
+
+        const isCreator = reqData?.created_by === userId;
+        const isRequester = reqData?.requester_id === userId;
+        const isAdmin = userRoles.includes('ADMIN') || userRoles.includes('super_admin');
+        const isAssignedBDR = assignments.includes('BDR');
+
+        // Allow if: Admin, Assigned BDR, Creator, or Requester
+        if (!isAdmin && !isAssignedBDR && !isCreator && !isRequester) {
+            // Return empty list instead of error to avoid UI breakage, or 403?
+            // UI expects an array. If we return 403, it might show error.
+            // Returning empty array is safer for "no access to comments".
+            return NextResponse.json({ comments: [] });
+        }
+
+        // 3. Fetch Comments (Bypassing RLS)
         const { data: comments, error: commentsError } = await supabase
             .from('request_comments')
             .select(`
@@ -388,29 +420,61 @@ export async function DELETE(request: NextRequest) {
         }
 
         const token = authHeader.replace('Bearer ', '');
-        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-            global: {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            },
-        });
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-        // Soft delete by setting deleted_at
+        // 1. Verify User (Optional but good practice)
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+        if (userError || !user) {
+            return NextResponse.json(
+                { error: 'Invalid authentication' },
+                { status: 401 }
+            );
+        }
+
+        const timestamp = new Date().toISOString();
+
+        // 2. Recursive Soft Delete Function
+        // We need to find all descendants and delete them.
+        // Since Supabase doesn't support recursive CTEs in the JS client easily for updates,
+        // we'll do a fetch-then-update approach or a stored procedure.
+        // A stored procedure is best, but let's try a robust JS approach for now.
+
+        // Helper to get all descendant IDs
+        const getDescendantIds = async (parentId: string): Promise<string[]> => {
+            const { data: children } = await supabase
+                .from('request_comments')
+                .select('id')
+                .eq('parent_comment_id', parentId)
+                .is('deleted_at', null); // Only fetch active children
+
+            if (!children || children.length === 0) return [];
+
+            let ids = children.map(c => c.id);
+            for (const child of children) {
+                const grandChildren = await getDescendantIds(child.id);
+                ids = [...ids, ...grandChildren];
+            }
+            return ids;
+        };
+
+        const idsToDelete = await getDescendantIds(commentId);
+        idsToDelete.push(commentId); // Add the target comment itself
+
+        // 3. Perform Bulk Soft Delete
         const { error: deleteError } = await supabase
             .from('request_comments')
-            .update({ deleted_at: new Date().toISOString() })
-            .eq('id', commentId);
+            .update({ deleted_at: timestamp })
+            .in('id', idsToDelete);
 
         if (deleteError) {
-            console.error('Error deleting comment:', deleteError);
+            console.error('Error deleting comments:', deleteError);
             return NextResponse.json(
                 { error: 'Failed to delete comment' },
                 { status: 500 }
             );
         }
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, count: idsToDelete.length });
     } catch (error) {
         console.error('Error in DELETE /api/admin/comments:', error);
         return NextResponse.json(

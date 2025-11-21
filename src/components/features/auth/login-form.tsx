@@ -55,13 +55,13 @@ export function LoginForm({
     const authResponse =
       mode === "signup"
         ? await supabase.auth.signUp({
-            email: values.email,
-            password: values.password,
-          })
+          email: values.email,
+          password: values.password,
+        })
         : await supabase.auth.signInWithPassword({
-            email: values.email,
-            password: values.password,
-          });
+          email: values.email,
+          password: values.password,
+        });
 
     const { error } = authResponse;
 
@@ -72,14 +72,6 @@ export function LoginForm({
         variant: "destructive",
       });
     } else {
-      toast({
-        title: mode === "signup" ? "Account Created" : "Logged In",
-        description:
-          mode === "signup"
-            ? "We've created your account. You will be redirected shortly."
-            : "You are now logged in. Redirecting...",
-        variant: "success",
-      });
       router.push("/dashboard");
     }
     setIsLoading(false);

@@ -32,10 +32,10 @@ export async function GET(request: Request) {
         // Check if user is super admin
         const isSuperAdmin = user.app_metadata?.is_super_admin === true;
 
-        // Fetch requests with cities
+        // Fetch requests with cities and comment counts
         let query = supabase
             .from("requests")
-            .select("*, cities(name, state_code)")
+            .select("*, cities(name, state_code), request_comments(id, deleted_at)")
             .order("created_at", { ascending: false });
 
         if (!isSuperAdmin) {
@@ -133,6 +133,7 @@ export async function GET(request: Request) {
             const creator = profileMap.get(req.created_by);
             const requester = profileMap.get(req.requester_id);
             const assignedBdrs = assignmentsMap.get(req.id) || [];
+            const commentsCount = req.request_comments?.filter((c: any) => !c.deleted_at).length || 0;
 
             return {
                 id: req.id,
@@ -155,6 +156,7 @@ export async function GET(request: Request) {
                 creator_name: creator?.display_name || creator?.email,
                 requester_name: requester?.display_name || requester?.email,
                 assigned_bdrs: assignedBdrs,
+                comments_count: commentsCount,
             };
         });
 

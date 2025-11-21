@@ -32,6 +32,7 @@ import { useRequestDetail } from "@/hooks/useRequestDetail";
 import { useBDRManagement } from "@/components/features/requests/hooks/useBDRManagement";
 import { useCities } from "@/hooks/useCities";
 import { useAccountManagers } from "@/hooks/useAccountManagers";
+import { useRequestFilters } from "@/hooks/useRequestFilters";
 import { Plus, UserCog, Edit2, RefreshCw, MoreHorizontal } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
@@ -47,18 +48,11 @@ export default function RequestPage() {
     const [bdrSearchOpen, setBdrSearchOpen] = useState(false);
     const [statusDialogOpen, setStatusDialogOpen] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState(false);
-    const [filters, setFilters] = useState<RequestFilters>({
-        search: '',
-        types: [],
-        statuses: [],
-        dateFrom: undefined,
-        dateTo: undefined,
-        sortBy: 'created_at',
-        sortDirection: 'desc',
-    });
 
     // Custom hooks for business logic
     const { requests, loading, loadRequests } = useRequests();
+    const { filters, setFilters, filteredRequests } = useRequestFilters(requests);
+
     const {
         selectedRequest,
         showDetailSheet,
@@ -70,7 +64,7 @@ export default function RequestPage() {
         setIsEditing,
         setEditFormData,
         handleSave,
-    } = useRequestDetail(loadRequests);
+    } = useRequestDetail(loadRequests, requests);
 
     const { bdrs, bdrLoading, assigningBdr, loadBdrs, updateBdrAssignments } = useBDRManagement();
 
@@ -147,75 +141,6 @@ export default function RequestPage() {
         }
     };
 
-    // Filter requests based on active filters
-    const filterRequests = (requestsList: Request[]) => {
-        // 1. Apply filters
-        let filtered = requestsList.filter(request => {
-            // Text search (title, company, requester)
-            if (filters.search) {
-                const searchLower = filters.search.toLowerCase();
-                const matchesSearch =
-                    request.title.toLowerCase().includes(searchLower) ||
-                    request.company?.toLowerCase().includes(searchLower) ||
-                    request.requester_name?.toLowerCase().includes(searchLower);
-                if (!matchesSearch) return false;
-            }
-
-            // Type filter
-            if (filters.types.length > 0) {
-                if (!filters.types.includes(request.request_type)) return false;
-            }
-
-            // Status filter
-            if (filters.statuses.length > 0) {
-                if (!filters.statuses.includes(request.status)) return false;
-            }
-
-            // Date range filter
-            if (filters.dateFrom) {
-                if (new Date(request.created_at) < filters.dateFrom) return false;
-            }
-            if (filters.dateTo) {
-                if (new Date(request.created_at) > filters.dateTo) return false;
-            }
-
-            return true;
-        });
-
-        // 2. Apply sorting
-        filtered.sort((a, b) => {
-            let comparison = 0;
-
-            switch (filters.sortBy) {
-                case 'created_at':
-                    comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-                    break;
-                case 'updated_at':
-                    // Fallback to created_at if updated_at doesn't exist
-                    const aUpdated = (a as any).updated_at || a.created_at;
-                    const bUpdated = (b as any).updated_at || b.created_at;
-                    comparison = new Date(aUpdated).getTime() - new Date(bUpdated).getTime();
-                    break;
-                case 'title':
-                    comparison = a.title.localeCompare(b.title);
-                    break;
-                case 'company':
-                    comparison = (a.company || '').localeCompare(b.company || '');
-                    break;
-                case 'volume':
-                    comparison = (a.volume || 0) - (b.volume || 0);
-                    break;
-            }
-
-            return filters.sortDirection === 'asc' ? comparison : -comparison;
-        });
-
-        return filtered;
-    };
-
-    // Apply filters to requests
-    const filteredRequests = filterRequests(requests);
-
     if (authLoading) return <SplashScreen />;
     if (!user) return <ErrorSplashScreen message="Please log in" actionText="Go to Login" onActionClick={() => window.location.href = '/'} />;
 
@@ -232,19 +157,12 @@ export default function RequestPage() {
                     <div className="relative z-10 w-full h-full" style={{ transform: "scale(0.9)", transformOrigin: "top center" }}>
                         <div className="h-full overflow-y-auto pr-4" style={{ paddingTop: '5%' }}>
                             <div className="mx-auto max-w-[1600px] relative z-20">
-                                {/* Create Request Button */}
-                                <div className="mb-6">
-                                    <Button onClick={() => setShowCreateModal(true)} size="lg">
-                                        <Plus className="mr-2 h-5 w-5" />
-                                        Create New Request
-                                    </Button>
-                                </div>
-
-                                {/* Filter Bar */}
+                                {/* Filter Bar with Create Button */}
                                 <div className="mb-6">
                                     <FilterBar
                                         onFilterChange={setFilters}
                                         activeFilters={filters}
+                                        onCreateRequest={() => setShowCreateModal(true)}
                                     />
                                 </div>
 
@@ -381,7 +299,6 @@ export default function RequestPage() {
                         await updateBdrAssignments(selectedRequest.id, currentBdrIds, newBdrIds, async () => {
                             setBdrSearchOpen(false);
                             await loadRequests();
-                            handleCloseDetailSheet();
                         });
                     }}
                 />

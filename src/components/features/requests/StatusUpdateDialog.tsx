@@ -61,8 +61,8 @@ export function StatusUpdateDialog({
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    <div className="space-y-3">
-                        <label className="text-sm font-medium block">Current Status</label>
+                    <div className="flex items-center gap-3">
+                        <label className="text-sm font-medium">Current Status:</label>
                         <div className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_OPTIONS.find(s => s.value === currentStatus)?.color || 'bg-gray-500 text-white'}`}>
                             {STATUS_OPTIONS.find(s => s.value === currentStatus)?.label || currentStatus}
                         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Request, EditFormData } from "@/components/features/requests/types";
@@ -7,11 +7,22 @@ import type { Request, EditFormData } from "@/components/features/requests/types
  * Custom hook for managing request detail sheet and edit functionality
  * 
  * @param onRequestsChange - Callback to refresh requests after updates
+ * @param requests - Current list of requests to sync selected request state
  * @returns Object containing detail sheet state, form data, and handler functions
  */
-export function useRequestDetail(onRequestsChange: () => Promise<void>) {
+export function useRequestDetail(onRequestsChange: () => Promise<void>, requests: Request[] = []) {
     const { toast } = useToast();
     const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
+
+    // Sync selected request with latest data from requests list
+    useEffect(() => {
+        if (selectedRequest && requests.length > 0) {
+            const updatedRequest = requests.find(r => r.id === selectedRequest.id);
+            if (updatedRequest && updatedRequest !== selectedRequest) {
+                setSelectedRequest(updatedRequest);
+            }
+        }
+    }, [requests, selectedRequest]);
     const [showDetailSheet, setShowDetailSheet] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editFormData, setEditFormData] = useState<EditFormData>({

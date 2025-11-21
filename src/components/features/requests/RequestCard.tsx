@@ -10,32 +10,10 @@ import {
     Calendar,
     Clock,
     Truck,
+    MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
-
-// Type definition for Request
-interface Request {
-    id: string;
-    title: string;
-    description?: string;
-    request_type: string;
-    status: string;
-    company?: string;
-    city_name?: string;
-    city_state?: string;
-    volume?: number;
-    created_at: string;
-    need_answer_by?: string;
-    delivery_date?: string;
-    created_on_behalf?: boolean;
-    creator_name?: string;
-    requester_name?: string;
-    assigned_bdrs?: Array<{
-        id: string;
-        name: string;
-        avatar?: string;
-    }>;
-}
+import type { Request } from "@/components/features/requests/types";
 
 // Color constants
 const REQUEST_TYPE_COLORS: Record<string, string> = {
@@ -44,23 +22,7 @@ const REQUEST_TYPE_COLORS: Record<string, string> = {
     CUISINE: "bg-purple-500 text-white",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-    "new": "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    "ongoing": "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
-    "on hold": "bg-gradient-to-r from-orange-500 to-amber-500 text-white",
-    "done": "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
-    // Legacy/fallback statuses
-    NEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    PENDING: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    IN_PROGRESS: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
-    ON_PROGRESS: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
-    ON_HOLD: "bg-gradient-to-r from-orange-500 to-amber-500 text-white",
-    DONE: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
-    COMPLETED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
-    CANCELLED: "bg-gray-500/90 text-white",
-    OPEN: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    CLOSED: "bg-slate-500/90 text-white",
-};
+
 
 // Helper function
 function getDaysOld(dateString: string): number {
@@ -125,19 +87,17 @@ export function RequestCard({
                             >
                                 {request.request_type}
                             </span>
-                            <span
-                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_COLORS[request.status] || "bg-gray-500 text-white"}`}
-                            >
-                                {request.status}
-                            </span>
-                            {isNew && (
-                                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-gradient-to-r from-pink-500 to-purple-500 text-white">
-                                    New ✨
-                                </span>
-                            )}
+
                         </div>
                         <h3 className="font-semibold text-xl line-clamp-2 mb-2">{request.title}</h3>
                     </div>
+                    {/* Comment Notification */}
+                    {(request.comments_count || 0) > 0 && (
+                        <div className="flex items-center gap-1 text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
+                            <MessageSquare className="h-4 w-4" />
+                            <span className="text-xs font-medium">{request.comments_count}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Description */}

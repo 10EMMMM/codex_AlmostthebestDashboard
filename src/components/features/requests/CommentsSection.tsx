@@ -10,9 +10,10 @@ import { Separator } from "@/components/ui/separator";
 
 interface CommentsSectionProps {
     request: Request;
+    onRefresh?: () => Promise<void>;
 }
 
-export function CommentsSection({ request }: CommentsSectionProps) {
+export function CommentsSection({ request, onRefresh }: CommentsSectionProps) {
     const requestId = request.id;
     const [currentUserId, setCurrentUserId] = useState<string>("");
     const {
@@ -56,6 +57,7 @@ export function CommentsSection({ request }: CommentsSectionProps) {
             mentions,
         });
         setIsInputVisible(false);
+        if (onRefresh) await onRefresh();
     };
 
     // Handle reply
@@ -66,6 +68,7 @@ export function CommentsSection({ request }: CommentsSectionProps) {
             parent_comment_id: parentId,
             mentions,
         });
+        if (onRefresh) await onRefresh();
     };
 
     // Handle edit
@@ -76,6 +79,7 @@ export function CommentsSection({ request }: CommentsSectionProps) {
     // Handle delete
     const handleDelete = async (commentId: string) => {
         await deleteComment(commentId);
+        if (onRefresh) await onRefresh();
     };
 
     // Handle reaction

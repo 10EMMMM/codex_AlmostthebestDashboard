@@ -15,6 +15,17 @@ import { CommentReactions } from "./CommentReactions";
 import type { Comment } from "./types";
 import { formatDistanceToNow } from "date-fns";
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 interface CommentItemProps {
     comment: Comment;
     currentUserId: string;
@@ -38,6 +49,7 @@ export function CommentItem({
 }: CommentItemProps) {
     const [showReplyInput, setShowReplyInput] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const isOwnComment = comment.user_id === currentUserId;
     const maxDepth = 3; // Maximum nesting level
@@ -58,10 +70,13 @@ export function CommentItem({
     };
 
     // Handle delete
-    const handleDelete = async () => {
-        if (confirm("Are you sure you want to delete this comment?")) {
-            await onDelete(comment.id);
-        }
+    const handleDeleteClick = () => {
+        setShowDeleteDialog(true);
+    };
+
+    const confirmDelete = async () => {
+        await onDelete(comment.id);
+        setShowDeleteDialog(false);
     };
 
     return (
@@ -119,7 +134,7 @@ export function CommentItem({
                                             Edit
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
-                                            onClick={handleDelete}
+                                            onClick={handleDeleteClick}
                                             className="text-red-600"
                                         >
                                             <Trash2 className="h-4 w-4 mr-2" />
@@ -191,6 +206,24 @@ export function CommentItem({
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Comment?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this comment? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

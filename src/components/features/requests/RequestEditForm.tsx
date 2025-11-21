@@ -92,38 +92,6 @@ export function RequestEditForm({
 
     return (
         <div className="space-y-6">
-            {/* Request Type */}
-            <div className="space-y-3">
-                <Label>Request Type <span className="text-destructive">*</span></Label>
-                <TooltipProvider>
-                    <div className="grid grid-cols-3 gap-3">
-                        {(["RESTAURANT", "EVENT", "CUISINE"] as const).map((type) => {
-                            const config = REQUEST_TYPE_CONFIG[type];
-                            const Icon = config.icon;
-                            return (
-                                <Tooltip key={type}>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            type="button"
-                                            variant={formData.request_type === type ? "default" : "outline"}
-                                            onClick={() => onChange({ ...formData, request_type: type })}
-                                            className="h-12 w-full flex items-center justify-center"
-                                        >
-                                            <Icon className="h-6 w-6" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{type}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            );
-                        })}
-                    </div>
-                </TooltipProvider>
-            </div>
-
-            <Separator />
-
             {/* Conditional: Show Account Manager & City for users with feature */}
             {canEditForOthers ? (
                 <div className="space-y-4">
@@ -272,6 +240,38 @@ export function RequestEditForm({
                     </Select>
                 </div>
             )}
+
+            <Separator />
+
+            {/* Request Type */}
+            <div className="space-y-3">
+                <Label>Request Type <span className="text-destructive">*</span></Label>
+                <TooltipProvider>
+                    <div className="grid grid-cols-3 gap-3">
+                        {(["RESTAURANT", "EVENT", "CUISINE"] as const).map((type) => {
+                            const config = REQUEST_TYPE_CONFIG[type];
+                            const Icon = config.icon;
+                            return (
+                                <Tooltip key={type}>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant={formData.request_type === type ? "default" : "outline"}
+                                            onClick={() => onChange({ ...formData, request_type: type })}
+                                            className="h-12 w-full flex items-center justify-center"
+                                        >
+                                            <Icon className="h-6 w-6" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{type}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            );
+                        })}
+                    </div>
+                </TooltipProvider>
+            </div>
 
             <Separator />
 

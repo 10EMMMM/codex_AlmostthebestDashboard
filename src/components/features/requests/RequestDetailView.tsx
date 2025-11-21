@@ -11,6 +11,16 @@ import { CommentsSection } from "./CommentsSection";
 import { BDRAssignmentDialog } from "./BDRAssignmentDialog";
 import { useBDRManagement } from "./hooks/useBDRManagement";
 import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface RequestDetailViewProps {
     request: Request;
@@ -20,6 +30,7 @@ interface RequestDetailViewProps {
 
 export function RequestDetailView({ request, onRefresh, onClose }: RequestDetailViewProps) {
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+    const [bdrToUnassign, setBdrToUnassign] = useState<string | null>(null);
     const { updateBdrAssignments, assigningBdr, bdrs, bdrLoading, loadBdrs } = useBDRManagement();
 
     const handleSaveAssignments = async (newBdrIds: string[]) => {
@@ -33,18 +44,16 @@ export function RequestDetailView({ request, onRefresh, onClose }: RequestDetail
         });
     };
 
-    const handleUnassign = async (bdrId: string) => {
+    const confirmUnassign = async () => {
+        if (!bdrToUnassign) return;
+
         const currentBdrIds = request.assigned_bdrs?.map(b => b.id) || [];
-        const newBdrIds = currentBdrIds.filter(id => id !== bdrId);
+        const newBdrIds = currentBdrIds.filter(id => id !== bdrToUnassign);
+
         await updateBdrAssignments(request.id, currentBdrIds, newBdrIds, async () => {
             if (onRefresh) await onRefresh();
-            // For unassign, we might want to keep it open, but to avoid stale data and match "edit" behavior implies refreshing.
-            // However, "edit" behavior is usually "save and close". Unassigning from a list is an action.
-            // If we close on unassign, it might be disruptive.
-            // But we can't easily update the local state without re-fetching the request.
-            // Let's close it for now to be safe and consistent with "edit" refresh behavior requested.
-            if (onClose) onClose();
-            if (!onRefresh && !onClose) window.location.reload();
+            // We intentionally DO NOT call onClose() here to keep the sheet open
+            setBdrToUnassign(null);
         });
     };
 
@@ -119,7 +128,7 @@ export function RequestDetailView({ request, onRefresh, onClose }: RequestDetail
                                 <span key={bdr.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400 group relative pr-6">
                                     {bdr.name}
                                     <button
-                                        onClick={() => handleUnassign(bdr.id)}
+                                        onClick={() => setBdrToUnassign(bdr.id)}
                                         className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full transition-colors"
                                         title="Unassign BDR"
                                     >
@@ -130,15 +139,7 @@ export function RequestDetailView({ request, onRefresh, onClose }: RequestDetail
                         ) : (
                             <span className="text-sm text-muted-foreground">Not assigned</span>
                         )}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                            onClick={() => setIsAssignDialogOpen(true)}
-                            title="Assign BDR"
-                        >
-                            <Plus className="h-4 w-4 text-gray-500" />
-                        </Button>
+
                     </div>
                 </div>
 
@@ -163,7 +164,7 @@ export function RequestDetailView({ request, onRefresh, onClose }: RequestDetail
 
             {/* Comments Section */}
             <Separator className="my-6" />
-            <CommentsSection request={request} />
+            <CommentsSection request={request} onRefresh={onRefresh} />
 
             {/* BDR Assignment Dialog */}
             <BDRAssignmentDialog
@@ -176,6 +177,25 @@ export function RequestDetailView({ request, onRefresh, onClose }: RequestDetail
                 onSave={handleSaveAssignments}
                 assigningBdr={assigningBdr}
             />
+
+            {/* Unassign Confirmation Dialog */}
+            <AlertDialog open={!!bdrToUnassign} onOpenChange={(open) => !open && setBdrToUnassign(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Unassign BDR?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to unassign this BDR from the request?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmUnassign} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Unassign
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
+

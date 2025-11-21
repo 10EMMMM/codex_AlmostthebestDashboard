@@ -40,7 +40,7 @@ export function DashboardLayout({ children, title, actionButton }: { children: R
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/');
+    window.location.href = '/';
   };
 
   return (

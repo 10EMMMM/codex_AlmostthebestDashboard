@@ -1,0 +1,155 @@
+# Request Page - Feature Roadmap
+
+## ✅ Completed Features
+
+### Core Functionality
+- [x] View all requests in Kanban board layout
+- [x] Create new requests
+- [x] View request details
+- [x] Edit request details
+- [x] BDR assignment/unassignment
+- [x] City selection for account managers
+- [x] Account manager selection (for super admins)
+- [x] Request type categorization
+- [x] Volume tracking
+- [x] Company information
+
+### Code Quality
+- [x] Phase 1: Extract type definitions
+- [x] Phase 2: Extract stateless UI components
+- [x] Phase 3: Extract business logic to hooks
+- [x] Reduce page from 1343 → 314 lines (76% reduction)
+
+---
+
+## 🚀 Planned Features (Backlog)
+
+### Priority 1: Core Enhancements
+- [ ] **Request Status Management**
+  - [ ] Add status field (pending, in-progress, completed, cancelled)
+  - [ ] Status workflow/transitions
+  - [ ] Visual status indicators
+  - [ ] Status change history
+
+- [ ] **Advanced Filtering & Search**
+  - [ ] Filter by request type
+  - [ ] Filter by status
+  - [ ] Filter by date range
+  - [ ] Search by title, company, requester
+  - [ ] Save filter presets
+  - [ ] Clear all filters button
+
+- [ ] **Sorting & Ordering**
+  - [ ] Sort by date (created, updated)
+  - [ ] Sort by priority
+  - [ ] Sort by status
+  - [ ] Custom column sorting
+  - [ ] Remember sort preferences
+
+### Priority 2: Productivity Features
+- [ ] **Bulk Operations**
+  - [ ] Select multiple requests (checkboxes)
+  - [ ] Bulk assign BDRs
+  - [ ] Bulk status updates
+  - [ ] Bulk delete/archive
+  - [ ] Select all/deselect all
+
+- [ ] **Comments & Notes**
+  - [ ] Add internal notes to requests
+  - [ ] Comment threads
+  - [ ] @mentions for team members
+  - [ ] Comment timestamps
+  - [ ] Edit/delete comments
+
+- [ ] **Request Templates**
+  - [ ] Create request from template
+  - [ ] Save request as template
+  - [ ] Template library
+  - [ ] Template categories
+
+### Priority 3: Collaboration Features
+- [ ] **Activity Log / Audit Trail**
+  - [ ] Track all changes to requests
+  - [ ] Show who made changes and when
+  - [ ] View change history
+  - [ ] Revert changes (if needed)
+
+- [ ] **Notifications**
+  - [ ] Email notifications for assignments
+  - [ ] In-app notifications
+  - [ ] Notification preferences
+  - [ ] Notification center/bell icon
+
+- [ ] **Team Collaboration**
+  - [ ] Assign multiple team members
+  - [ ] Request ownership transfer
+  - [ ] Watchers/followers
+  - [ ] Team mentions in comments
+
+### Priority 4: Advanced Features
+- [ ] **File Attachments**
+  - [ ] Upload documents to requests
+  - [ ] View/download attachments
+  - [ ] File preview (images, PDFs)
+  - [ ] Attachment size limits
+  - [ ] Multiple file upload
+
+- [ ] **Analytics & Reporting**
+  - [ ] Request metrics dashboard
+  - [ ] Export to CSV/Excel
+  - [ ] Charts and visualizations
+  - [ ] Custom reports
+  - [ ] Date range filtering for reports
+
+- [ ] **Performance Optimization**
+  - [ ] Implement React Query for caching
+  - [ ] Virtualization for large lists
+  - [ ] Optimistic updates
+  - [ ] Loading skeletons
+  - [ ] Suspense boundaries
+
+### Priority 5: Quality & Testing
+- [ ] **Testing**
+  - [ ] Unit tests for hooks
+  - [ ] Component tests
+  - [ ] Integration tests
+  - [ ] E2E tests for critical flows
+
+- [ ] **Documentation**
+  - [ ] JSDoc comments for all hooks
+  - [ ] Storybook stories for components
+  - [ ] Architecture documentation
+  - [ ] Usage guides
+
+---
+
+## 📊 Other Pages to Refactor (Later)
+
+> **Note**: These are deferred until request page features are complete
+
+- [ ] Audit all page files for line count
+- [ ] Identify pages > 500 lines
+- [ ] Create refactoring plan for each page
+- [ ] Apply Phase 1-3 refactoring pattern
+- [ ] Document refactoring results
+
+---
+
+## 🎯 Next Steps
+
+1. Review this roadmap and prioritize features
+2. Pick the next feature to implement
+3. Create implementation plan
+4. Build and test
+5. Repeat until request page is feature-complete
+6. Then refactor other pages as needed
+
+---
+
+## 📝 Notes
+
+- Always check page line count before adding features
+- If page exceeds 500 lines, refactor before adding more features
+- Test thoroughly after each feature
+- Document changes in walkthrough.md
+- Keep task.md updated with progress

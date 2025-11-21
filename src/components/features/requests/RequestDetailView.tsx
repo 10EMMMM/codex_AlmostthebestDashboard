@@ -1,23 +1,36 @@
-import { FileText, Building2, User, MapPin, Package, UserCog, Calendar } from "lucide-react";
+import { FileText, Building2, User, MapPin, Package, UserCog, Calendar, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { REQUEST_TYPE_COLORS, STATUS_COLORS } from "./constants";
 import type { Request } from "./types";
+import { Button } from "@/components/ui/button";
 
 interface RequestDetailViewProps {
     request: Request;
+    onStatusUpdateClick?: () => void;
 }
 
-export function RequestDetailView({ request }: RequestDetailViewProps) {
+export function RequestDetailView({ request, onStatusUpdateClick }: RequestDetailViewProps) {
     return (
         <>
             {/* Type and Status Badges */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center flex-wrap">
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}>
                     {request.request_type}
                 </span>
                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[request.status] || "bg-gray-500 text-white"}`}>
                     {request.status}
                 </span>
+                {onStatusUpdateClick && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onStatusUpdateClick}
+                        className="h-7 text-xs gap-1"
+                    >
+                        <RefreshCw className="h-3 w-3" />
+                        Change Status
+                    </Button>
+                )}
             </div>
 
             {/* Description */}

@@ -24,6 +24,13 @@ export const STATUS_COLORS: Record<string, string> = {
     CLOSED: "bg-slate-500/90 text-white",
 };
 
+export const STATUS_OPTIONS = [
+    { value: 'new', label: 'New', color: STATUS_COLORS['new'] },
+    { value: 'ongoing', label: 'Ongoing', color: STATUS_COLORS['ongoing'] },
+    { value: 'on hold', label: 'On Hold', color: STATUS_COLORS['on hold'] },
+    { value: 'done', label: 'Done', color: STATUS_COLORS['done'] },
+] as const;
+
 export const REQUEST_TYPE_CONFIG = {
     RESTAURANT: {
         icon: UtensilsCrossed,

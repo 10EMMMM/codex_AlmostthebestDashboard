@@ -9,6 +9,7 @@ import { KanbanColumn } from "@/components/features/requests/KanbanColumn";
 import { RequestDetailView } from "@/components/features/requests/RequestDetailView";
 import { RequestEditForm } from "@/components/features/requests/RequestEditForm";
 import { BDRAssignmentDialog } from "@/components/features/requests/BDRAssignmentDialog";
+import { StatusUpdateDialog } from "@/components/features/requests/StatusUpdateDialog";
 import {
     Sheet,
     SheetContent,
@@ -79,11 +80,14 @@ const RequestListCard = dynamic(
 
 export default function RequestPage() {
     const { user, loading: authLoading } = useAuth();
+    const { toast } = useToast();
     const canEditForOthers = useFeatureFlag('proxy_request_creation');
 
     // UI state
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [bdrSearchOpen, setBdrSearchOpen] = useState(false);
+    const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
 
     // Custom hooks for business logic
     const { requests, loading, loadRequests } = useRequests();
@@ -125,6 +129,57 @@ export default function RequestPage() {
         if (!canEditForOthers || !isEditing) return;
         loadAccountManagers();
     }, [canEditForOthers, isEditing]);
+
+    // Status update handler
+    const updateStatus = async (newStatus: string) => {
+        if (!selectedRequest) return;
+
+        setUpdatingStatus(true);
+        try {
+            const supabase = (window as any).supabase;
+            if (!supabase) {
+                throw new Error("Supabase client not initialized");
+            }
+
+            const { data: { session } } = await supabase.auth.getSession();
+
+            const response = await fetch("/api/admin/update-request", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${session?.access_token}`,
+                },
+                body: JSON.stringify({
+                    request_id: selectedRequest.id,
+                    updates: {
+                        status: newStatus,
+                    },
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to update status");
+            }
+
+            toast({
+                title: "Success",
+                description: "Status updated successfully",
+            });
+
+            // Reload requests to get updated data
+            await loadRequests();
+        } catch (error: any) {
+            console.error("Error updating status:", error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to update status",
+                variant: "destructive",
+            });
+        } finally {
+            setUpdatingStatus(false);
+        }
+    };
 
     // Load BDRs when detail sheet opens
     useEffect(() => {
@@ -258,7 +313,10 @@ export default function RequestPage() {
                             <div className="mt-6 space-y-6">
                                 {!isEditing ? (
                                     // VIEW MODE
-                                    <RequestDetailView request={selectedRequest} />
+                                    <RequestDetailView
+                                        request={selectedRequest}
+                                        onStatusUpdateClick={() => setStatusDialogOpen(true)}
+                                    />
                                 ) : (
                                     // EDIT MODE
                                     <RequestEditForm
@@ -312,6 +370,17 @@ export default function RequestPage() {
                     onAssign={assignBdr}
                     onUnassign={unassignBdr}
                 />
+
+                {/* Status Update Dialog */}
+                {selectedRequest && (
+                    <StatusUpdateDialog
+                        open={statusDialogOpen}
+                        onOpenChange={setStatusDialogOpen}
+                        currentStatus={selectedRequest.status}
+                        onStatusUpdate={updateStatus}
+                        loading={updatingStatus}
+                    />
+                )}
             </DashboardLayout>
         </>
     );

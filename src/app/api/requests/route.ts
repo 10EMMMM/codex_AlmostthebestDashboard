@@ -92,10 +92,47 @@ export async function GET(request: Request) {
             }
         }
 
+        // Fetch BDR assignments for all requests
+        const requestIds = requests.map((r: any) => r.id);
+        const { data: assignments } = await supabase
+            .from('request_assignments')
+            .select('request_id, user_id')
+            .in('request_id', requestIds)
+            .eq('role', 'BDR');
+
+        // Get unique BDR user IDs
+        const bdrUserIds = [...new Set(assignments?.map((a: any) => a.user_id) || [])];
+
+        // Fetch profiles for all BDRs
+        const { data: bdrProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, display_name')
+            .in('user_id', bdrUserIds);
+
+        // Create a map of user_id to profile
+        const bdrProfileMap = new Map();
+        bdrProfiles?.forEach((profile: any) => {
+            bdrProfileMap.set(profile.user_id, profile);
+        });
+
+        // Create a map of request_id to assigned BDRs
+        const assignmentsMap = new Map<string, any[]>();
+        assignments?.forEach((assignment: any) => {
+            if (!assignmentsMap.has(assignment.request_id)) {
+                assignmentsMap.set(assignment.request_id, []);
+            }
+            const profile = bdrProfileMap.get(assignment.user_id);
+            assignmentsMap.get(assignment.request_id)!.push({
+                id: assignment.user_id,
+                name: profile?.display_name || 'Unknown BDR',
+            });
+        });
+
         // Format the response
         const formattedRequests = requests?.map((req: any) => {
             const creator = profileMap.get(req.created_by);
             const requester = profileMap.get(req.requester_id);
+            const assignedBdrs = assignmentsMap.get(req.id) || [];
 
             return {
                 id: req.id,
@@ -114,10 +151,10 @@ export async function GET(request: Request) {
                 status: req.status || "PENDING",
                 created_by: req.created_by,
                 requester_id: req.requester_id,
-                created_on_behalf: req.created_on_behalf || false,
                 created_at: req.created_at,
                 creator_name: creator?.display_name || creator?.email,
                 requester_name: requester?.display_name || requester?.email,
+                assigned_bdrs: assignedBdrs,
             };
         });
 

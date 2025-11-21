@@ -15,8 +15,6 @@ type InsertPayload = {
   company: string | null;
   need_answer_by: string | null;
   delivery_date: string | null;
-  budget?: number;
-  deadline?: string;
 };
 
 export async function POST(request: Request) {
@@ -78,17 +76,14 @@ export async function POST(request: Request) {
       request_type: payload.request_type,
       city_id: payload.city_id,
       created_by: user.id,
-      requested_by: requestedBy,
-      created_on_behalf: createdOnBehalf,
-      budget: payload.budget || null,
-      deadline: payload.deadline || null,
+      requester_id: requestedBy,
       priority: payload.priority || null,
       category: payload.category || null,
       volume: payload.volume || null,
       company: payload.company || null,
       need_answer_by: payload.need_answer_by || null,
       delivery_date: payload.delivery_date || null,
-      status: "PENDING",
+      status: "new",
     };
 
     const { error } = await supabaseAdmin.from("requests").insert(insertData);

@@ -110,10 +110,10 @@ export interface CreateRestaurantCommentData {
 export interface RestaurantFilters {
     search: string;
     statuses: RestaurantStatus[];
-    cities: string[];
-    dateFrom?: Date;
-    dateTo?: Date;
-    sortBy: 'created_at' | 'updated_at' | 'name' | 'bdr_target_per_week';
+    onboardingStages: string[];
+    cityIds: string[];
+    cuisineIds: string[];
+    sortBy: 'created_at' | 'updated_at' | 'name' | 'bdr_target_per_week' | 'status' | 'city_name';
     sortDirection: 'asc' | 'desc';
 }
 

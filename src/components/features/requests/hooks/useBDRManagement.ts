@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import type { BDR, Request } from '../types';
 
@@ -8,7 +8,7 @@ export function useBDRManagement() {
     const [bdrLoading, setBdrLoading] = useState(false);
     const [assigningBdr, setAssigningBdr] = useState(false);
 
-    const loadBdrs = async () => {
+    const loadBdrs = useCallback(async () => {
         setBdrLoading(true);
         try {
             const supabase = (window as any).supabase;
@@ -62,7 +62,7 @@ export function useBDRManagement() {
         } finally {
             setBdrLoading(false);
         }
-    };
+    }, [toast]);
 
     const assignBdr = async (requestId: string, bdrId: string, onSuccess?: () => void) => {
         setAssigningBdr(true);
@@ -154,6 +154,88 @@ export function useBDRManagement() {
         }
     };
 
+    const updateBdrAssignments = async (
+        requestId: string,
+        currentBdrIds: string[],
+        newBdrIds: string[],
+        onSuccess?: () => void
+    ) => {
+        setAssigningBdr(true);
+        try {
+            // Calculate diffs
+            const toAdd = newBdrIds.filter(id => !currentBdrIds.includes(id));
+            const toRemove = currentBdrIds.filter(id => !newBdrIds.includes(id));
+
+            if (toAdd.length === 0 && toRemove.length === 0) {
+                setAssigningBdr(false);
+                if (onSuccess) onSuccess();
+                return;
+            }
+
+            const supabase = (window as any).supabase;
+            if (!supabase) throw new Error("Supabase client not initialized");
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            // Execute additions
+            const addPromises = toAdd.map(bdrId =>
+                fetch(`/api/admin/assign-bdr`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ request_id: requestId, bdr_id: bdrId }),
+                }).then(res => {
+                    if (!res.ok) throw new Error(`Failed to assign BDR ${bdrId}`);
+                    return res.json();
+                })
+            );
+
+            // Execute removals
+            const removePromises = toRemove.map(bdrId =>
+                fetch(`/api/admin/unassign-bdr`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ request_id: requestId, bdr_id: bdrId }),
+                }).then(res => {
+                    if (!res.ok) throw new Error(`Failed to unassign BDR ${bdrId}`);
+                    return res.json();
+                })
+            );
+
+            await Promise.all([...addPromises, ...removePromises]);
+
+            let description = "BDR assignments updated successfully";
+            if (toAdd.length > 0 && toRemove.length === 0) {
+                description = `Assigned ${toAdd.length} BDR${toAdd.length > 1 ? 's' : ''} successfully`;
+            } else if (toRemove.length > 0 && toAdd.length === 0) {
+                description = `Unassigned ${toRemove.length} BDR${toRemove.length > 1 ? 's' : ''} successfully`;
+            } else if (toAdd.length > 0 && toRemove.length > 0) {
+                description = `Updated assignments: +${toAdd.length} added, -${toRemove.length} removed`;
+            }
+
+            toast({
+                title: "Success",
+                description: description,
+            });
+
+            if (onSuccess) onSuccess();
+        } catch (error: any) {
+            console.error("Error updating BDR assignments:", error);
+            toast({
+                title: "Error",
+                description: error.message || "Failed to update assignments",
+                variant: "destructive",
+            });
+        } finally {
+            setAssigningBdr(false);
+        }
+    };
+
     return {
         bdrs,
         bdrLoading,
@@ -161,5 +243,6 @@ export function useBDRManagement() {
         loadBdrs,
         assignBdr,
         unassignBdr,
+        updateBdrAssignments,
     };
 }

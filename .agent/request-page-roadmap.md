@@ -25,26 +25,34 @@
 ## 🚀 Planned Features (Backlog)
 
 ### Priority 1: Core Enhancements
-- [ ] **Request Status Management**
-  - [ ] Add status field (pending, in-progress, completed, cancelled)
-  - [ ] Status workflow/transitions
-  - [ ] Visual status indicators
-  - [ ] Status change history
+- [x] **Request Status Management**
+  - [x] Add status field (new, ongoing, on hold, done)
+  - [x] Status update dialog (separate from edit form)
+  - [x] Visual status indicators with color coding
+  - [x] Toast notifications for status changes
+  - [x] Status workflow/transitions (validation)
+  - [x] Status change audit trail (database recording)
+  - [ ] Status history UI component (optional enhancement)
 
-- [ ] **Advanced Filtering & Search**
-  - [ ] Filter by request type
-  - [ ] Filter by status
-  - [ ] Filter by date range
-  - [ ] Search by title, company, requester
-  - [ ] Save filter presets
-  - [ ] Clear all filters button
+- [x] **Advanced Filtering & Search** ✅ COMPLETE
+  - [x] Filter by request type (dropdown)
+  - [x] Filter by status (dropdown)
+  - [x] Text search (title, company, requester)
+  - [x] Active filter chips (color-coded)
+  - [x] Clear all filters button
+  - [x] **Integrated into page.tsx**
+  - [ ] Filter by date range (future enhancement)
+  - [ ] Save filter presets (future enhancement)
 
-- [ ] **Sorting & Ordering**
-  - [ ] Sort by date (created, updated)
-  - [ ] Sort by priority
-  - [ ] Sort by status
-  - [ ] Custom column sorting
-  - [ ] Remember sort preferences
+- [x] **Sorting & Ordering** ✅ COMPLETE
+  - [x] Sort by date (created, updated)
+  - [x] Sort by title (alphabetical)
+  - [x] Sort by company (alphabetical)
+  - [x] Sort by volume (numerical)
+  - [x] Ascending/descending toggle
+  - [x] **Integrated into page.tsx**
+  - [ ] Remember sort preferences (future enhancement)
+  - [ ] Per-column sorting (future enhancement)
 
 ### Priority 2: Productivity Features
 - [ ] **Bulk Operations**
@@ -54,12 +62,17 @@
   - [ ] Bulk delete/archive
   - [ ] Select all/deselect all
 
-- [ ] **Comments & Notes**
-  - [ ] Add internal notes to requests
-  - [ ] Comment threads
-  - [ ] @mentions for team members
-  - [ ] Comment timestamps
-  - [ ] Edit/delete comments
+- [x] **Comments & Notes** ✅ COMPLETE (Pending Migration)
+  - [x] Add internal notes to requests
+  - [x] Comment threads with replies (3 levels deep)
+  - [x] @mentions for team members with autocomplete
+  - [x] Comment timestamps (relative time)
+  - [x] Edit/delete comments (own comments only)
+  - [x] Emoji reactions (👍, ❤️, 🎉, 👀, 🚀, 😄)
+  - [x] Real-time updates via Supabase subscriptions
+  - [x] Role-based visibility (super_admin, assigned BDR, feature flag)
+  - [ ] Run database migration (manual step required)
+  - [ ] Notification system for mentions (future enhancement)
 
 - [ ] **Request Templates**
   - [ ] Create request from template

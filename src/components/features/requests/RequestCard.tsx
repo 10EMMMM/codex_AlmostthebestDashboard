@@ -1,4 +1,6 @@
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import {
     Building2,
     User,
@@ -73,17 +75,46 @@ function getDaysOld(dateString: string): number {
 interface RequestCardProps {
     request: Request;
     onClick: () => void;
+    // Selection props
+    isSelected?: boolean;
+    onSelect?: (id: string, selected: boolean) => void;
+    selectionMode?: boolean;
 }
 
-export function RequestCard({ request, onClick }: RequestCardProps) {
+export function RequestCard({
+    request,
+    onClick,
+    isSelected = false,
+    onSelect,
+    selectionMode = false
+}: RequestCardProps) {
     const daysOld = getDaysOld(request.created_at);
     const isNew = daysOld === 0;
 
     return (
         <Card
-            className="relative bg-card rounded-xl p-6 flex flex-col shadow-lg hover:shadow-xl transition-shadow cursor-pointer border-0"
+            className={cn(
+                "relative bg-card rounded-xl p-6 flex flex-col shadow-lg hover:shadow-xl transition-all cursor-pointer border-0",
+                isSelected && "ring-2 ring-primary shadow-2xl"
+            )}
             onClick={onClick}
         >
+            {/* Selection Checkbox */}
+            {selectionMode && (
+                <div
+                    className="absolute top-3 right-3 z-10"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) =>
+                            onSelect?.(request.id, checked as boolean)
+                        }
+                        className="h-5 w-5"
+                    />
+                </div>
+            )}
+
             <div className="space-y-3">
                 {/* Header with badges */}
                 <div className="flex items-start justify-between gap-3">

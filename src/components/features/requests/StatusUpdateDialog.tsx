@@ -13,9 +13,9 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { STATUS_OPTIONS } from "./constants";
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { STATUS_OPTIONS, getAllowedStatusTransitions } from "./constants";
+import { useState, useMemo } from "react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface StatusUpdateDialogProps {
     open: boolean;
@@ -33,6 +33,12 @@ export function StatusUpdateDialog({
     loading,
 }: StatusUpdateDialogProps) {
     const [selectedStatus, setSelectedStatus] = useState(currentStatus);
+
+    // Get allowed transitions based on current status
+    const allowedTransitions = useMemo(() =>
+        getAllowedStatusTransitions(currentStatus),
+        [currentStatus]
+    );
 
     const handleUpdate = async () => {
         if (selectedStatus === currentStatus) {
@@ -62,35 +68,53 @@ export function StatusUpdateDialog({
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">New Status</label>
-                        <Select
-                            value={selectedStatus}
-                            onValueChange={setSelectedStatus}
-                            disabled={loading}
-                        >
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {STATUS_OPTIONS.map((status) => (
-                                    <SelectItem key={status.value} value={status.value}>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-3 h-3 rounded-full ${status.color}`} />
-                                            <span>{status.label}</span>
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {selectedStatus !== currentStatus && (
-                        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                            <p className="text-sm text-blue-800 dark:text-blue-200">
-                                Status will change from <span className="font-semibold">{STATUS_OPTIONS.find(s => s.value === currentStatus)?.label}</span> to <span className="font-semibold">{STATUS_OPTIONS.find(s => s.value === selectedStatus)?.label}</span>
-                            </p>
+                    {allowedTransitions.length === 0 ? (
+                        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                            <div className="flex items-start gap-2">
+                                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                                        No status changes available
+                                    </p>
+                                    <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                                        This request is marked as "done" and cannot be changed to another status.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
+                    ) : (
+                        <>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">New Status</label>
+                                <Select
+                                    value={selectedStatus}
+                                    onValueChange={setSelectedStatus}
+                                    disabled={loading}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allowedTransitions.map((status) => (
+                                            <SelectItem key={status.value} value={status.value}>
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-3 h-3 rounded-full ${status.color}`} />
+                                                    <span>{status.label}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {selectedStatus !== currentStatus && (
+                                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                                        Status will change from <span className="font-semibold">{STATUS_OPTIONS.find(s => s.value === currentStatus)?.label}</span> to <span className="font-semibold">{STATUS_OPTIONS.find(s => s.value === selectedStatus)?.label}</span>
+                                    </p>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -100,15 +124,17 @@ export function StatusUpdateDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={loading}
                     >
-                        Cancel
+                        {allowedTransitions.length === 0 ? 'Close' : 'Cancel'}
                     </Button>
-                    <Button
-                        onClick={handleUpdate}
-                        disabled={loading || selectedStatus === currentStatus}
-                    >
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Update Status
-                    </Button>
+                    {allowedTransitions.length > 0 && (
+                        <Button
+                            onClick={handleUpdate}
+                            disabled={loading || selectedStatus === currentStatus}
+                        >
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Update Status
+                        </Button>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

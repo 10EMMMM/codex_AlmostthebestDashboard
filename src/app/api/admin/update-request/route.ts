@@ -127,6 +127,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 400 });
     }
 
+    // Record status change in audit trail if status was updated
+    if (payload.updates.status) {
+      const { error: historyError } = await supabaseAdmin
+        .from("request_status_history")
+        .insert({
+          request_id: payload.request_id,
+          status: payload.updates.status,
+          changed_by: user.id,
+          changed_at: new Date().toISOString(),
+        });
+
+      if (historyError) {
+        console.error("Error recording status history:", historyError);
+        // Don't fail the request if history recording fails
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Unexpected error updating request:", error);

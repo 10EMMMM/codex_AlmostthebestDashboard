@@ -1,15 +1,54 @@
-import { FileText, Building2, User, MapPin, Package, UserCog, Calendar, RefreshCw } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { FileText, Building2, User, MapPin, Package, UserCog, Calendar, RefreshCw, Plus, X } from "lucide-react";
 import { format } from "date-fns";
 import { REQUEST_TYPE_COLORS, STATUS_COLORS } from "./constants";
 import type { Request } from "./types";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { CommentsSection } from "./CommentsSection";
+import { BDRAssignmentDialog } from "./BDRAssignmentDialog";
+import { useBDRManagement } from "./hooks/useBDRManagement";
+import { toast } from "sonner";
 
 interface RequestDetailViewProps {
     request: Request;
     onStatusUpdateClick?: () => void;
+    onRefresh?: () => Promise<void>;
+    onClose?: () => void;
 }
 
-export function RequestDetailView({ request, onStatusUpdateClick }: RequestDetailViewProps) {
+export function RequestDetailView({ request, onStatusUpdateClick, onRefresh, onClose }: RequestDetailViewProps) {
+    const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+    const { updateBdrAssignments, assigningBdr, bdrs, bdrLoading, loadBdrs } = useBDRManagement();
+
+    const handleSaveAssignments = async (newBdrIds: string[]) => {
+        const currentBdrIds = request.assigned_bdrs?.map(b => b.id) || [];
+        await updateBdrAssignments(request.id, currentBdrIds, newBdrIds, async () => {
+            setIsAssignDialogOpen(false);
+            if (onRefresh) await onRefresh();
+            if (onClose) onClose();
+            // Fallback if no callbacks provided (though they should be)
+            if (!onRefresh && !onClose) window.location.reload();
+        });
+    };
+
+    const handleUnassign = async (bdrId: string) => {
+        const currentBdrIds = request.assigned_bdrs?.map(b => b.id) || [];
+        const newBdrIds = currentBdrIds.filter(id => id !== bdrId);
+        await updateBdrAssignments(request.id, currentBdrIds, newBdrIds, async () => {
+            if (onRefresh) await onRefresh();
+            // For unassign, we might want to keep it open, but to avoid stale data and match "edit" behavior implies refreshing.
+            // However, "edit" behavior is usually "save and close". Unassigning from a list is an action.
+            // If we close on unassign, it might be disruptive.
+            // But we can't easily update the local state without re-fetching the request.
+            // Let's close it for now to be safe and consistent with "edit" refresh behavior requested.
+            if (onClose) onClose();
+            if (!onRefresh && !onClose) window.location.reload();
+        });
+    };
+
     return (
         <>
             {/* Type and Status Badges */}
@@ -86,16 +125,32 @@ export function RequestDetailView({ request, onStatusUpdateClick }: RequestDetai
                 <div className="flex items-center gap-2">
                     <UserCog className="h-4 w-4" />
                     <span className="text-sm font-semibold">Assigned BDRs:</span>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 items-center">
                         {request.assigned_bdrs && request.assigned_bdrs.length > 0 ? (
                             request.assigned_bdrs.map((bdr) => (
-                                <span key={bdr.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400">
+                                <span key={bdr.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400 group relative pr-6">
                                     {bdr.name}
+                                    <button
+                                        onClick={() => handleUnassign(bdr.id)}
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full transition-colors"
+                                        title="Unassign BDR"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
                                 </span>
                             ))
                         ) : (
                             <span className="text-sm text-muted-foreground">Not assigned</span>
                         )}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                            onClick={() => setIsAssignDialogOpen(true)}
+                            title="Assign BDR"
+                        >
+                            <Plus className="h-4 w-4 text-gray-500" />
+                        </Button>
                     </div>
                 </div>
 
@@ -117,6 +172,22 @@ export function RequestDetailView({ request, onStatusUpdateClick }: RequestDetai
                     </div>
                 </div>
             </div>
+
+            {/* Comments Section */}
+            <Separator className="my-6" />
+            <CommentsSection requestId={request.id} />
+
+            {/* BDR Assignment Dialog */}
+            <BDRAssignmentDialog
+                open={isAssignDialogOpen}
+                onOpenChange={setIsAssignDialogOpen}
+                selectedRequest={request}
+                bdrs={bdrs}
+                bdrLoading={bdrLoading}
+                onLoadBdrs={loadBdrs}
+                onSave={handleSaveAssignments}
+                assigningBdr={assigningBdr}
+            />
         </>
     );
 }

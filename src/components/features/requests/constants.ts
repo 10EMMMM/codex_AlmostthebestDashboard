@@ -31,6 +31,20 @@ export const STATUS_OPTIONS = [
     { value: 'done', label: 'Done', color: STATUS_COLORS['done'] },
 ] as const;
 
+// Status transition rules - defines valid status changes
+export const STATUS_TRANSITIONS: Record<string, string[]> = {
+    'new': ['ongoing', 'on hold'],           // New can go to ongoing or on hold
+    'ongoing': ['on hold', 'done'],          // Ongoing can go to on hold or done
+    'on hold': ['ongoing', 'done'],          // On hold can resume or complete
+    'done': [],                              // Done is final (no transitions)
+};
+
+// Helper function to get allowed status transitions
+export function getAllowedStatusTransitions(currentStatus: string): typeof STATUS_OPTIONS[number][] {
+    const allowedValues = STATUS_TRANSITIONS[currentStatus] || [];
+    return STATUS_OPTIONS.filter(option => allowedValues.includes(option.value));
+}
+
 export const REQUEST_TYPE_CONFIG = {
     RESTAURANT: {
         icon: UtensilsCrossed,

@@ -5,6 +5,10 @@ import dynamic from "next/dynamic";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { CreateRequestForm } from "@/components/features/requests/create-request-form";
 import { RequestCard } from "@/components/features/requests/RequestCard";
+import { KanbanColumn } from "@/components/features/requests/KanbanColumn";
+import { RequestDetailView } from "@/components/features/requests/RequestDetailView";
+import { RequestEditForm } from "@/components/features/requests/RequestEditForm";
+import { BDRAssignmentDialog } from "@/components/features/requests/BDRAssignmentDialog";
 import {
     Sheet,
     SheetContent,
@@ -12,100 +16,25 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-} from "@/components/ui/command";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, Plus, Calendar, DollarSign, MapPin, UserCog, Package, Clock, Truck, Edit2, X, Save, UtensilsCrossed, PartyPopper, ChefHat, AlignLeft, Building2, User, Check, ChevronsUpDown } from "lucide-react";
+import { useRequests } from "@/hooks/useRequests";
+import { useRequestDetail } from "@/hooks/useRequestDetail";
+import { useBdrAssignment } from "@/hooks/useBdrAssignment";
+import { useCities } from "@/hooks/useCities";
+import { useAccountManagers } from "@/hooks/useAccountManagers";
+import { FileText, Plus, UserCog, Edit2 } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import type { Request } from "@/components/features/requests/types";
+import type { Request, BDR } from "@/components/features/requests/types";
 
 
-const REQUEST_TYPE_COLORS: Record<string, string> = {
-    RESTAURANT: "bg-emerald-500 text-white",
-    EVENT: "bg-blue-500 text-white",
-    CUISINE: "bg-purple-500 text-white",
-};
 
-const STATUS_COLORS: Record<string, string> = {
-    "new": "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    "ongoing": "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
-    "on hold": "bg-gradient-to-r from-orange-500 to-amber-500 text-white",
-    "done": "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
-    // Legacy/fallback statuses
-    NEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    PENDING: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    IN_PROGRESS: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
-    ON_PROGRESS: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white",
-    ON_HOLD: "bg-gradient-to-r from-orange-500 to-amber-500 text-white",
-    DONE: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
-    COMPLETED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white",
-    CANCELLED: "bg-gray-500/90 text-white",
-    OPEN: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
-    CLOSED: "bg-slate-500/90 text-white",
-};
-
-const REQUEST_TYPE_CONFIG = {
-    RESTAURANT: {
-        icon: UtensilsCrossed,
-    },
-    EVENT: {
-        icon: PartyPopper,
-    },
-    CUISINE: {
-        icon: ChefHat,
-    },
-} as const;
-
-function getDaysOld(dateString: string): number {
-    const createdDate = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - createdDate.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-}
 
 
 const RequestListCard = dynamic(
@@ -150,371 +79,41 @@ const RequestListCard = dynamic(
 
 export default function RequestPage() {
     const { user, loading: authLoading } = useAuth();
-    const { toast } = useToast();
-    const [requests, setRequests] = useState<Request[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
-    const [showDetailSheet, setShowDetailSheet] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editFormData, setEditFormData] = useState({
-        selectedAM: "",
-        cityId: "",
-        title: "",
-        description: "",
-        request_type: "",
-        volume: undefined as number | undefined,
-        need_answer_by: undefined as Date | undefined,
-        delivery_date: undefined as Date | undefined,
-        company: "",
-    });
-    const [saving, setSaving] = useState(false);
-    const [cities, setCities] = useState<Array<{ id: string; name: string; state_code: string }>>([]);
-    const [citiesLoading, setCitiesLoading] = useState(false);
-    const [needAnswerByOpen, setNeedAnswerByOpen] = useState(false);
-    const [deliveryDateOpen, setDeliveryDateOpen] = useState(false);
-    const [accountManagers, setAccountManagers] = useState<Array<{ id: string; email: string; display_name: string; city_count: number }>>([]);
-    const [amSearchOpen, setAmSearchOpen] = useState(false);
-    const [amLoading, setAmLoading] = useState(false);
-
-    // BDR Assignment state
-    const [bdrs, setBdrs] = useState<Array<{ id: string; label: string }>>([]);
-    const [bdrSearchOpen, setBdrSearchOpen] = useState(false);
-    const [bdrLoading, setBdrLoading] = useState(false);
-    const [assigningBdr, setAssigningBdr] = useState(false);
-    const [pendingBdrs, setPendingBdrs] = useState<Array<{ id: string; label: string }>>([]);
-
     const canEditForOthers = useFeatureFlag('proxy_request_creation');
 
-    const loadRequests = async () => {
-        try {
-            setLoading(true);
-            const supabase = (window as any).supabase;
-            if (!supabase) {
-                throw new Error("Supabase client not initialized");
-            }
-            const { data: { session } } = await supabase.auth.getSession();
+    // UI state
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [bdrSearchOpen, setBdrSearchOpen] = useState(false);
 
-            const response = await fetch("/api/requests", {
-                headers: {
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
-            });
+    // Custom hooks for business logic
+    const { requests, loading, loadRequests } = useRequests();
+    const {
+        selectedRequest,
+        showDetailSheet,
+        isEditing,
+        editFormData,
+        saving,
+        handleRequestClick,
+        handleCloseDetailSheet,
+        setIsEditing,
+        setEditFormData,
+        handleSave,
+    } = useRequestDetail(loadRequests);
 
-            if (!response.ok) throw new Error("Failed to fetch requests");
+    const { bdrs, bdrLoading, assigningBdr, loadBdrs, assignBdr, unassignBdr } =
+        useBdrAssignment(selectedRequest, loadRequests);
 
-            const data = await response.json();
-            setRequests(data.requests || []);
-        } catch (error: any) {
-            toast({
-                title: "Error",
-                description: error.message,
-                variant: "destructive",
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { cities, citiesLoading, loadCities } = useCities();
+    const { accountManagers, amLoading, loadAccountManagers } = useAccountManagers();
 
-
-    const loadCities = async (userId: string) => {
-        if (!userId) return;
-
-        setCitiesLoading(true);
-        try {
-            const supabase = (window as any).supabase;
-            if (!supabase) {
-                console.error("Supabase client not initialized");
-                return;
-            }
-
-            const { data: { session } } = await supabase.auth.getSession();
-
-            const response = await fetch(`/api/admin/user-cities?userId=${userId}`, {
-                headers: {
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
-            });
-
-            if (!response.ok) {
-                console.error("Error fetching cities from API:", await response.text());
-                setCities([]);
-                return;
-            }
-
-            const data = await response.json();
-
-            if (data.cities && data.cities.length > 0) {
-                setCities(data.cities);
-            } else {
-                setCities([]);
-            }
-        } catch (error) {
-            console.error("Error loading cities:", error);
-            setCities([]);
-        } finally {
-            setCitiesLoading(false);
-        }
-    };
-
-    const loadBdrs = async () => {
-        setBdrLoading(true);
-        try {
-            const supabase = (window as any).supabase;
-            if (!supabase) {
-                throw new Error("Supabase client not initialized");
-            }
-
-            // Get all users with BDR role
-            const { data: bdrRoles, error: roleError } = await supabase
-                .from('user_roles')
-                .select('user_id')
-                .eq('role', 'BDR');
-
-            if (roleError) {
-                console.error("Error fetching BDR roles:", roleError);
-                setBdrs([]);
-                return;
-            }
-
-            if (!bdrRoles || bdrRoles.length === 0) {
-                setBdrs([]);
-                return;
-            }
-
-            // Get unique user IDs
-            const userIds = [...new Set(bdrRoles.map(r => r.user_id))];
-
-            // Fetch profiles for these users
-            const { data: profiles, error: profileError } = await supabase
-                .from('profiles')
-                .select('user_id, display_name')
-                .in('user_id', userIds);
-
-            if (profileError) {
-                console.error("Error fetching BDR profiles:", profileError);
-                setBdrs([]);
-                return;
-            }
-
-            // Map to the format expected by the UI
-            const bdrList = profiles.map(profile => ({
-                id: profile.user_id,
-                label: profile.display_name || 'Unknown BDR'
-            }));
-
-            setBdrs(bdrList);
-        } catch (error) {
-            console.error("Error loading BDRs:", error);
-            setBdrs([]);
-        } finally {
-            setBdrLoading(false);
-        }
-    };
-
-    const assignBdr = async (bdrId: string) => {
-        if (!selectedRequest) return;
-
-        setAssigningBdr(true);
-        try {
-            const supabase = (window as any).supabase;
-            if (!supabase) {
-                throw new Error("Supabase client not initialized");
-            }
-
-            const { data: { session } } = await supabase.auth.getSession();
-
-            const response = await fetch(`/api/admin/assign-bdr`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
-                body: JSON.stringify({
-                    request_id: selectedRequest.id,
-                    bdr_id: bdrId,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to assign BDR');
-            }
-
-            const data = await response.json();
-
-            toast({
-                title: "Success",
-                description: "BDR assigned successfully",
-            });
-
-            // Reload the requests to get updated assignments
-            await loadRequests();
-
-            // If we have a selected request, reload its data
-            if (selectedRequest) {
-                const updatedRequest = requests.find(r => r.id === selectedRequest.id);
-                if (updatedRequest) {
-                    setSelectedRequest(updatedRequest);
-                }
-            }
-        } catch (error: any) {
-            console.error("Error assigning BDR:", error);
-            toast({
-                title: "Error",
-                description: error.message || "Failed to assign BDR",
-                variant: "destructive",
-            });
-        } finally {
-            setAssigningBdr(false);
-        }
-    };
-
-    const unassignBdr = async (bdrId: string) => {
-        if (!selectedRequest) return;
-
-        setAssigningBdr(true);
-        try {
-            const supabase = (window as any).supabase;
-            if (!supabase) {
-                throw new Error("Supabase client not initialized");
-            }
-
-            const { data: { session } } = await supabase.auth.getSession();
-
-            const response = await fetch(`/api/admin/unassign-bdr`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
-                body: JSON.stringify({
-                    request_id: selectedRequest.id,
-                    bdr_id: bdrId,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to unassign BDR');
-            }
-
-            toast({
-                title: "Success",
-                description: "BDR unassigned successfully",
-            });
-
-            // Reload the requests to get updated assignments
-            await loadRequests();
-
-            // If we have a selected request, reload its data
-            if (selectedRequest) {
-                const updatedRequest = requests.find(r => r.id === selectedRequest.id);
-                if (updatedRequest) {
-                    setSelectedRequest(updatedRequest);
-                }
-            }
-        } catch (error: any) {
-            console.error("Error unassigning BDR:", error);
-            toast({
-                title: "Error",
-                description: error.message || "Failed to unassign BDR",
-                variant: "destructive",
-            });
-        } finally {
-            setAssigningBdr(false);
-        }
-    };
-
-    const handleRequestClick = (request: Request) => {
-        setSelectedRequest(request);
-        setEditFormData({
-            selectedAM: request.requester_id,
-            cityId: request.city_id,
-            title: request.title,
-            description: request.description || "",
-            request_type: request.request_type,
-            volume: request.volume,
-            need_answer_by: request.need_answer_by ? new Date(request.need_answer_by) : undefined,
-            delivery_date: request.delivery_date ? new Date(request.delivery_date) : undefined,
-            company: request.company || "",
-        });
-        setIsEditing(false);
-        setShowDetailSheet(true);
-    };
-
-    const handleSave = async () => {
-        if (!selectedRequest) return;
-
-        if (!editFormData.title.trim()) {
-            toast({
-                title: "Validation Error",
-                description: "Title is required",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        setSaving(true);
-        try {
-            const supabase = (window as any).supabase;
-            const { data: { session } } = await supabase.auth.getSession();
-
-            const response = await fetch("/api/admin/update-request", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${session?.access_token}`,
-                },
-                body: JSON.stringify({
-                    request_id: selectedRequest.id,
-                    updates: {
-                        title: editFormData.title.trim(),
-                        description: editFormData.description.trim() || null,
-                        request_type: editFormData.request_type,
-                        city_id: editFormData.cityId,
-                        volume: editFormData.volume ?? null,
-                        need_answer_by: editFormData.need_answer_by
-                            ? format(editFormData.need_answer_by, "yyyy-MM-dd")
-                            : null,
-                        delivery_date: editFormData.delivery_date
-                            ? format(editFormData.delivery_date, "yyyy-MM-dd")
-                            : null,
-                    },
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error("Failed to update request");
-            }
-
-            toast({
-                title: "Success",
-                description: "Request updated successfully",
-            });
-
-            setIsEditing(false);
+    // Load requests on mount
+    useEffect(() => {
+        if (user) {
             loadRequests();
-            handleCloseDetailSheet();
-        } catch (error: any) {
-            toast({
-                title: "Error",
-                description: error.message,
-                variant: "destructive",
-            });
-        } finally {
-            setSaving(false);
         }
-    };
+    }, [user]);
 
-    const handleCloseDetailSheet = () => {
-        setShowDetailSheet(false);
-        setIsEditing(false);
-        // Small delay before clearing selected request to allow sheet animation
-        setTimeout(() => setSelectedRequest(null), 300);
-    };
-
-    // Load cities when entering edit mode
+    // Load cities when entering edit mode or changing AM
     useEffect(() => {
         if (isEditing && editFormData.selectedAM) {
             loadCities(editFormData.selectedAM);
@@ -524,32 +123,6 @@ export default function RequestPage() {
     // Load account managers when entering edit mode (for super admins)
     useEffect(() => {
         if (!canEditForOthers || !isEditing) return;
-
-        const loadAccountManagers = async () => {
-            setAmLoading(true);
-            try {
-                const supabase = (window as any).supabase;
-                if (!supabase) return;
-
-                const { data: { session } } = await supabase.auth.getSession();
-
-                const response = await fetch('/api/admin/account-managers', {
-                    headers: {
-                        Authorization: `Bearer ${session?.access_token}`,
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setAccountManagers(data.accountManagers || []);
-                }
-            } catch (error) {
-                console.error('Error loading account managers:', error);
-            } finally {
-                setAmLoading(false);
-            }
-        };
-
         loadAccountManagers();
     }, [canEditForOthers, isEditing]);
 
@@ -597,163 +170,51 @@ export default function RequestPage() {
                                     </Button>
                                 </div>
 
-                                {/* Kanban Board - 4 Columns */}
-                                <div className="grid grid-cols-4 gap-4">
+                                {/* Kanban Board - Responsive 4 Columns with min 300px width */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                     {/* Column 1: NEW */}
-                                    <div className="flex flex-col">
-                                        <div className="mb-4 pb-2 border-b-2 border-green-500">
-                                            <h2 className="text-lg font-bold text-green-600 dark:text-green-400">NEW</h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                {loading ? '...' : requests.filter(r => r.status === 'new').length} requests
-                                            </p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {loading ? (
-                                                [...Array(2)].map((_, i) => (
-                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
-                                                        <div className="space-y-4">
-                                                            <div className="flex gap-2 mb-3">
-                                                                <Skeleton className="h-6 w-24 rounded-full" />
-                                                                <Skeleton className="h-6 w-20 rounded-full" />
-                                                            </div>
-                                                            <Skeleton className="h-7 w-3/4" />
-                                                            <div className="space-y-2">
-                                                                <Skeleton className="h-4 w-full" />
-                                                                <Skeleton className="h-4 w-5/6" />
-                                                            </div>
-                                                        </div>
-                                                    </Card>
-                                                ))
-                                            ) : (
-                                                requests
-                                                    .filter(request => request.status === 'new')
-                                                    .map((request) => (
-                                                        <RequestCard
-                                                            key={request.id}
-                                                            request={request}
-                                                            onClick={() => handleRequestClick(request)}
-                                                        />
-                                                    ))
-                                            )}
-                                        </div>
-                                    </div>
+                                    <KanbanColumn
+                                        title="NEW"
+                                        borderColor="border-green-500"
+                                        textColor="text-green-600 dark:text-green-400"
+                                        count={requests.filter(r => r.status === 'new').length}
+                                        loading={loading}
+                                        requests={requests.filter(request => request.status === 'new')}
+                                        onRequestClick={handleRequestClick}
+                                    />
 
                                     {/* Column 2: ONGOING */}
-                                    <div className="flex flex-col">
-                                        <div className="mb-4 pb-2 border-b-2 border-blue-500">
-                                            <h2 className="text-lg font-bold text-blue-600 dark:text-blue-400">ONGOING</h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                {loading ? '...' : requests.filter(r => r.status === 'ongoing').length} requests
-                                            </p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {loading ? (
-                                                [...Array(2)].map((_, i) => (
-                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
-                                                        <div className="space-y-4">
-                                                            <div className="flex gap-2 mb-3">
-                                                                <Skeleton className="h-6 w-24 rounded-full" />
-                                                                <Skeleton className="h-6 w-20 rounded-full" />
-                                                            </div>
-                                                            <Skeleton className="h-7 w-3/4" />
-                                                            <div className="space-y-2">
-                                                                <Skeleton className="h-4 w-full" />
-                                                                <Skeleton className="h-4 w-5/6" />
-                                                            </div>
-                                                        </div>
-                                                    </Card>
-                                                ))
-                                            ) : (
-                                                requests
-                                                    .filter(request => request.status === 'ongoing')
-                                                    .map((request) => (
-                                                        <RequestCard
-                                                            key={request.id}
-                                                            request={request}
-                                                            onClick={() => handleRequestClick(request)}
-                                                        />
-                                                    ))
-                                            )}
-                                        </div>
-                                    </div>
+                                    <KanbanColumn
+                                        title="ONGOING"
+                                        borderColor="border-blue-500"
+                                        textColor="text-blue-600 dark:text-blue-400"
+                                        count={requests.filter(r => r.status === 'ongoing').length}
+                                        loading={loading}
+                                        requests={requests.filter(request => request.status === 'ongoing')}
+                                        onRequestClick={handleRequestClick}
+                                    />
 
                                     {/* Column 3: ON HOLD */}
-                                    <div className="flex flex-col">
-                                        <div className="mb-4 pb-2 border-b-2 border-orange-500">
-                                            <h2 className="text-lg font-bold text-orange-600 dark:text-orange-400">ON HOLD</h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                {loading ? '...' : requests.filter(r => r.status === 'on hold').length} requests
-                                            </p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {loading ? (
-                                                [...Array(2)].map((_, i) => (
-                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
-                                                        <div className="space-y-4">
-                                                            <div className="flex gap-2 mb-3">
-                                                                <Skeleton className="h-6 w-24 rounded-full" />
-                                                                <Skeleton className="h-6 w-20 rounded-full" />
-                                                            </div>
-                                                            <Skeleton className="h-7 w-3/4" />
-                                                            <div className="space-y-2">
-                                                                <Skeleton className="h-4 w-full" />
-                                                                <Skeleton className="h-4 w-5/6" />
-                                                            </div>
-                                                        </div>
-                                                    </Card>
-                                                ))
-                                            ) : (
-                                                requests
-                                                    .filter(request => request.status === 'on hold')
-                                                    .map((request) => (
-                                                        <RequestCard
-                                                            key={request.id}
-                                                            request={request}
-                                                            onClick={() => handleRequestClick(request)}
-                                                        />
-                                                    ))
-                                            )}
-                                        </div>
-                                    </div>
+                                    <KanbanColumn
+                                        title="ON HOLD"
+                                        borderColor="border-orange-500"
+                                        textColor="text-orange-600 dark:text-orange-400"
+                                        count={requests.filter(r => r.status === 'on hold').length}
+                                        loading={loading}
+                                        requests={requests.filter(request => request.status === 'on hold')}
+                                        onRequestClick={handleRequestClick}
+                                    />
 
                                     {/* Column 4: DONE */}
-                                    <div className="flex flex-col">
-                                        <div className="mb-4 pb-2 border-b-2 border-purple-500">
-                                            <h2 className="text-lg font-bold text-purple-600 dark:text-purple-400">DONE</h2>
-                                            <p className="text-xs text-muted-foreground">
-                                                {loading ? '...' : requests.filter(r => r.status === 'done').length} requests
-                                            </p>
-                                        </div>
-                                        <div className="space-y-3">
-                                            {loading ? (
-                                                [...Array(2)].map((_, i) => (
-                                                    <Card key={i} className="bg-card rounded-xl p-6 flex flex-col shadow-lg border-0">
-                                                        <div className="space-y-4">
-                                                            <div className="flex gap-2 mb-3">
-                                                                <Skeleton className="h-6 w-24 rounded-full" />
-                                                                <Skeleton className="h-6 w-20 rounded-full" />
-                                                            </div>
-                                                            <Skeleton className="h-7 w-3/4" />
-                                                            <div className="space-y-2">
-                                                                <Skeleton className="h-4 w-full" />
-                                                                <Skeleton className="h-4 w-5/6" />
-                                                            </div>
-                                                        </div>
-                                                    </Card>
-                                                ))
-                                            ) : (
-                                                requests
-                                                    .filter(request => request.status === 'done')
-                                                    .map((request) => (
-                                                        <RequestCard
-                                                            key={request.id}
-                                                            request={request}
-                                                            onClick={() => handleRequestClick(request)}
-                                                        />
-                                                    ))
-                                            )}
-                                        </div>
-                                    </div>
+                                    <KanbanColumn
+                                        title="DONE"
+                                        borderColor="border-purple-500"
+                                        textColor="text-purple-600 dark:text-purple-400"
+                                        count={requests.filter(r => r.status === 'done').length}
+                                        loading={loading}
+                                        requests={requests.filter(request => request.status === 'done')}
+                                        onRequestClick={handleRequestClick}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -797,451 +258,21 @@ export default function RequestPage() {
                             <div className="mt-6 space-y-6">
                                 {!isEditing ? (
                                     // VIEW MODE
-                                    <>
-                                        {/* Type and Status Badges */}
-                                        <div className="flex gap-2">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${REQUEST_TYPE_COLORS[selectedRequest.request_type] || "bg-gray-500 text-white"}`}>
-                                                {selectedRequest.request_type}
-                                            </span>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[selectedRequest.status] || "bg-gray-500 text-white"}`}>
-                                                {selectedRequest.status}
-                                            </span>
-                                        </div>
-
-                                        {/* Description */}
-                                        {selectedRequest.description && (
-                                            <div>
-                                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                                                    <FileText className="h-4 w-4" />
-                                                    Description
-                                                </h4>
-                                                <p className="text-sm text-muted-foreground">{selectedRequest.description}</p>
-                                            </div>
-                                        )}
-
-                                        {/* Details Section - All Inline */}
-                                        <div className="space-y-2">
-                                            {selectedRequest.company && (
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="h-4 w-4" />
-                                                    <span className="text-sm font-semibold">Company:</span>
-                                                    <span className="text-sm text-muted-foreground">{selectedRequest.company}</span>
-                                                </div>
-                                            )}
-
-                                            {(selectedRequest.requester_name || selectedRequest.creator_name) && (
-                                                <div className="flex items-center gap-2">
-                                                    <User className="h-4 w-4" />
-                                                    <span className="text-sm font-semibold">Requested For:</span>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {selectedRequest.requester_name || selectedRequest.creator_name}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {selectedRequest.city_name && (
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="h-4 w-4" />
-                                                    <span className="text-sm font-semibold">City:</span>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {selectedRequest.city_name}{selectedRequest.city_state && `, ${selectedRequest.city_state}`}
-                                                    </span>
-                                                </div>
-                                            )}
-
-                                            {selectedRequest.volume !== undefined && selectedRequest.volume !== null && (
-                                                <div className="flex items-center gap-2">
-                                                    <Package className="h-4 w-4" />
-                                                    <span className="text-sm font-semibold">Volume:</span>
-                                                    <span className="text-sm text-muted-foreground">{selectedRequest.volume}</span>
-                                                </div>
-                                            )}
-
-                                            {/* Assigned BDR Badges */}
-                                            <div className="flex items-center gap-2">
-                                                <UserCog className="h-4 w-4" />
-                                                <span className="text-sm font-semibold">Assigned BDRs:</span>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {selectedRequest.assigned_bdrs && selectedRequest.assigned_bdrs.length > 0 ? (
-                                                        selectedRequest.assigned_bdrs.map((bdr) => (
-                                                            <span key={bdr.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400">
-                                                                {bdr.name}
-                                                            </span>
-                                                        )
-                                                        )
-                                                    ) : (
-                                                        <span className="text-sm text-muted-foreground">Not assigned</span>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Footer Info with Badges */}
-                                            <div className="pt-4 border-t space-y-3"></div>
-                                            {/* Creator Info - Inline */}
-                                            <div className="text-sm text-muted-foreground space-y-1" >
-                                                {
-                                                    selectedRequest.creator_name && (
-                                                        <div className="flex items-center gap-2">
-                                                            <UserCog className="h-4 w-4" />
-                                                            <span className="font-medium text-foreground">Created by:</span>
-                                                            <span className="font-medium text-foreground">{selectedRequest.creator_name}</span>
-                                                        </div>
-                                                    )
-                                                }
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4" />
-                                                    <span className="font-medium text-foreground">Created:</span>
-                                                    <span className="font-medium">{format(new Date(selectedRequest.created_at), "MMM d, yyyy 'at' h:mm a")}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </>
+                                    <RequestDetailView request={selectedRequest} />
                                 ) : (
                                     // EDIT MODE
-                                    <div className="space-y-6">
-                                        {/* Request Type */}
-                                        <div className="space-y-3">
-                                            <Label>Request Type <span className="text-destructive">*</span></Label>
-                                            <TooltipProvider>
-                                                <div className="grid grid-cols-3 gap-3">
-                                                    {(["RESTAURANT", "EVENT", "CUISINE"] as const).map((type) => {
-                                                        const config = REQUEST_TYPE_CONFIG[type];
-                                                        const Icon = config.icon;
-                                                        return (
-                                                            <Tooltip key={type}>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant={editFormData.request_type === type ? "default" : "outline"}
-                                                                        onClick={() => setEditFormData({ ...editFormData, request_type: type })}
-                                                                        className="h-12 w-full flex items-center justify-center"
-                                                                    >
-                                                                        <Icon className="h-6 w-6" />
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>{type}</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </TooltipProvider>
-                                        </div>
-
-                                        <Separator />
-
-                                        {/* Conditional: Show Account Manager & City for users with feature */}
-                                        {canEditForOthers ? (
-                                            <div className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <User className="h-4 w-4 text-muted-foreground" />
-                                                            <Label>Requested By <span className="text-destructive">*</span></Label>
-                                                        </div>
-                                                        <Popover open={amSearchOpen} onOpenChange={setAmSearchOpen}>
-                                                            <PopoverTrigger asChild>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    role="combobox"
-                                                                    aria-expanded={amSearchOpen}
-                                                                    className="w-full justify-between"
-                                                                >
-                                                                    {accountManagers.find(am => am.id === editFormData.selectedAM)?.display_name || "Search Account Manager..."}
-                                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                                </Button>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-[300px] p-0">
-                                                                <Command>
-                                                                    <CommandInput placeholder="Search account manager..." />
-                                                                    {!amLoading && <CommandEmpty>No account manager found.</CommandEmpty>}
-                                                                    <CommandGroup className="max-h-64 overflow-auto">
-                                                                        {amLoading ? (
-                                                                            <div className="p-2 space-y-3">
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <Skeleton className="h-4 w-4 rounded-sm" />
-                                                                                    <div className="flex-1 space-y-1">
-                                                                                        <Skeleton className="h-4 w-32" />
-                                                                                        <Skeleton className="h-3 w-16" />
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <Skeleton className="h-4 w-4 rounded-sm" />
-                                                                                    <div className="flex-1 space-y-1">
-                                                                                        <Skeleton className="h-4 w-40" />
-                                                                                        <Skeleton className="h-3 w-20" />
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <Skeleton className="h-4 w-4 rounded-sm" />
-                                                                                    <div className="flex-1 space-y-1">
-                                                                                        <Skeleton className="h-4 w-36" />
-                                                                                        <Skeleton className="h-3 w-14" />
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            accountManagers.map((am) => (
-                                                                                <CommandItem
-                                                                                    key={am.id}
-                                                                                    value={am.display_name}
-                                                                                    onSelect={() => {
-                                                                                        setEditFormData({ ...editFormData, selectedAM: am.id, cityId: "" });
-                                                                                        setAmSearchOpen(false);
-                                                                                    }}
-                                                                                >
-                                                                                    <Check
-                                                                                        className={cn(
-                                                                                            "mr-2 h-4 w-4",
-                                                                                            editFormData.selectedAM === am.id ? "opacity-100" : "opacity-0"
-                                                                                        )}
-                                                                                    />
-                                                                                    <div className="flex flex-col">
-                                                                                        <span className="font-medium">{am.display_name}</span>
-                                                                                        <span className="text-xs text-muted-foreground">{am.city_count} cities</span>
-                                                                                    </div>
-                                                                                </CommandItem>
-                                                                            ))
-                                                                        )}
-                                                                    </CommandGroup>
-                                                                </Command>
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                    </div>
-
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                                                            <Label>City <span className="text-destructive">*</span></Label>
-                                                        </div>
-                                                        <Select
-                                                            value={editFormData.cityId}
-                                                            onValueChange={(value) => setEditFormData({ ...editFormData, cityId: value })}
-                                                            disabled={!editFormData.selectedAM}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder={editFormData.selectedAM ? "Select city..." : "Select AM first..."} />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {citiesLoading ? (
-                                                                    <div className="p-2 space-y-2">
-                                                                        <Skeleton className="h-8 w-full" />
-                                                                        <Skeleton className="h-8 w-full" />
-                                                                        <Skeleton className="h-8 w-3/4" />
-                                                                    </div>
-                                                                ) : cities.length === 0 ? (
-                                                                    <div className="p-2 text-sm text-muted-foreground">
-                                                                        {editFormData.selectedAM ? "No cities assigned to this AM" : "Select an Account Manager first"}
-                                                                    </div>
-                                                                ) : (
-                                                                    cities.map((city) => (
-                                                                        <SelectItem key={city.id} value={city.id}>
-                                                                            {city.name}, {city.state_code}
-                                                                        </SelectItem>
-                                                                    ))
-                                                                )}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            // Regular users only see City (defaults to their assigned cities)
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                                                    <Label>City <span className="text-destructive">*</span></Label>
-                                                </div>
-                                                <Select value={editFormData.cityId} onValueChange={(value) => setEditFormData({ ...editFormData, cityId: value })}>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select city..." />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {citiesLoading ? (
-                                                            <div className="p-2 space-y-2">
-                                                                <Skeleton className="h-8 w-full" />
-                                                                <Skeleton className="h-8 w-full" />
-                                                                <Skeleton className="h-8 w-3/4" />
-                                                            </div>
-                                                        ) : cities.length === 0 ? (
-                                                            <div className="p-2 text-sm text-muted-foreground">
-                                                                No cities available
-                                                            </div>
-                                                        ) : (
-                                                            cities.map((city) => (
-                                                                <SelectItem key={city.id} value={city.id}>
-                                                                    {city.name}, {city.state_code}
-                                                                </SelectItem>
-                                                            ))
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )}
-
-                                        <Separator />
-
-                                        {/* Title */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                                <Label htmlFor="edit-title">Title <span className="text-destructive">*</span></Label>
-                                            </div>
-                                            <Input
-                                                id="edit-title"
-                                                value={editFormData.title}
-                                                onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                                                placeholder="Enter request title..."
-                                            />
-                                        </div>
-
-                                        {/* Description */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <AlignLeft className="h-4 w-4 text-muted-foreground" />
-                                                <Label htmlFor="edit-description">Description <span className="text-muted-foreground">(optional)</span></Label>
-                                            </div>
-                                            <Textarea
-                                                id="edit-description"
-                                                value={editFormData.description}
-                                                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
-                                                placeholder="Provide additional details..."
-                                                rows={3}
-                                            />
-                                        </div>
-
-                                        <Separator />
-
-                                        {/* Company */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                <Label>Company <span className="text-muted-foreground">- Optional</span></Label>
-                                            </div>
-                                            <Input
-                                                value={editFormData.company || ""}
-                                                onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
-                                                placeholder="Enter company name"
-                                            />
-                                        </div>
-
-                                        {/* Volume */}
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <Package className="h-4 w-4 text-muted-foreground" />
-                                                <Label htmlFor="edit-volume">Volume <span className="text-muted-foreground">- Optional</span></Label>
-                                            </div>
-                                            <Input
-                                                id="edit-volume"
-                                                type="number"
-                                                min="0"
-                                                step="1"
-                                                value={editFormData.volume ?? ""}
-                                                onChange={(e) => setEditFormData({
-                                                    ...editFormData,
-                                                    volume: e.target.value ? Number(e.target.value) : undefined
-                                                })}
-                                                placeholder="0"
-                                            />
-                                        </div>
-
-                                        {/* Dates in one row */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            {/* Need Answer By */}
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="h-4 w-4 text-muted-foreground" />
-                                                    <Label>Need Answer By <span className="text-muted-foreground">- Optional</span></Label>
-                                                </div>
-                                                <Popover open={needAnswerByOpen} onOpenChange={setNeedAnswerByOpen}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "w-full justify-start text-left font-normal",
-                                                                !editFormData.need_answer_by && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            <Clock className="mr-2 h-4 w-4" />
-                                                            {editFormData.need_answer_by ? format(editFormData.need_answer_by, "MMM d") : "Pick date"}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <CalendarComponent
-                                                            mode="single"
-                                                            selected={editFormData.need_answer_by}
-                                                            onSelect={(date) => {
-                                                                setEditFormData({ ...editFormData, need_answer_by: date });
-                                                                setNeedAnswerByOpen(false);
-                                                            }}
-                                                            initialFocus
-                                                            disabled={(date) => date < new Date()}
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </div>
-
-                                            {/* Delivery Date */}
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-2">
-                                                    <Truck className="h-4 w-4 text-muted-foreground" />
-                                                    <Label>Delivery Date <span className="text-muted-foreground">- Optional</span></Label>
-                                                </div>
-                                                <Popover open={deliveryDateOpen} onOpenChange={setDeliveryDateOpen}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "w-full justify-start text-left font-normal",
-                                                                !editFormData.delivery_date && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            <Truck className="mr-2 h-4 w-4" />
-                                                            {editFormData.delivery_date ? format(editFormData.delivery_date, "MMM d") : "Pick date"}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <CalendarComponent
-                                                            mode="single"
-                                                            selected={editFormData.delivery_date}
-                                                            onSelect={(date) => {
-                                                                setEditFormData({ ...editFormData, delivery_date: date });
-                                                                setDeliveryDateOpen(false);
-                                                            }}
-                                                            initialFocus
-                                                            disabled={(date) => date < new Date()}
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </div>
-                                        </div>
-
-                                        <Separator />
-
-                                        {/* Action Buttons */}
-                                        <div className="flex gap-2 pt-4">
-                                            <Button
-                                                onClick={() => setIsEditing(false)}
-                                                variant="outline"
-                                                className="flex-1"
-                                                disabled={saving}
-                                            >
-                                                <X className="h-4 w-4 mr-2" />
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                onClick={handleSave}
-                                                className="flex-1"
-                                                disabled={saving}
-                                            >
-                                                <Save className="h-4 w-4 mr-2" />
-                                                {saving ? "Saving..." : "Save Changes"}
-                                            </Button>
-                                        </div>
-                                    </div>
+                                    <RequestEditForm
+                                        formData={editFormData}
+                                        onChange={setEditFormData}
+                                        onSave={handleSave}
+                                        onCancel={() => setIsEditing(false)}
+                                        saving={saving}
+                                        canEditForOthers={canEditForOthers}
+                                        accountManagers={accountManagers}
+                                        cities={cities}
+                                        amLoading={amLoading}
+                                        citiesLoading={citiesLoading}
+                                    />
                                 )}
                             </div>
                         </SheetContent>
@@ -1270,72 +301,17 @@ export default function RequestPage() {
                 </Sheet>
 
                 {/* BDR Assignment Dialog */}
-                <Dialog open={bdrSearchOpen} onOpenChange={setBdrSearchOpen}>
-                    <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                            <DialogTitle>Assign BDR</DialogTitle>
-                            <DialogDescription>
-                                Search and select a BDR to assign to this request
-                            </DialogDescription>
-                        </DialogHeader>
-                        <Command className="rounded-lg border">
-                            <CommandInput placeholder="Search BDRs..." />
-                            <CommandEmpty>No BDR found.</CommandEmpty>
-                            <CommandGroup className="max-h-64 overflow-auto">
-                                {bdrLoading ? (
-                                    <div className="p-4 space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <Skeleton className="h-10 w-10 rounded-full" />
-                                            <Skeleton className="h-4 w-32" />
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Skeleton className="h-10 w-10 rounded-full" />
-                                            <Skeleton className="h-4 w-40" />
-                                        </div>
-                                    </div>
-                                ) : bdrs.length === 0 ? (
-                                    <div className="p-4 text-sm text-muted-foreground text-center">
-                                        No BDRs available
-                                    </div>
-                                ) : (
-                                    bdrs.map((bdr) => {
-                                        const isAssigned = selectedRequest?.assigned_bdrs?.some(
-                                            (assignedBdr) => assignedBdr.id === bdr.id
-                                        );
-                                        return (
-                                            <CommandItem
-                                                key={bdr.id}
-                                                value={bdr.label}
-                                                onSelect={() => {
-                                                    if (isAssigned) {
-                                                        unassignBdr(bdr.id);
-                                                    } else {
-                                                        assignBdr(bdr.id);
-                                                    }
-                                                }}
-                                                disabled={assigningBdr}
-                                            >
-                                                <Check
-                                                    className={`mr-2 h-4 w-4 ${isAssigned ? "opacity-100 text-green-600" : "opacity-0"
-                                                        }`}
-                                                />
-                                                <UserCog className="mr-2 h-4 w-4" />
-                                                <span className={isAssigned ? "font-semibold" : ""}>
-                                                    {bdr.label}
-                                                </span>
-                                                {isAssigned && (
-                                                    <span className="ml-auto text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
-                                                        Assigned
-                                                    </span>
-                                                )}
-                                            </CommandItem>
-                                        );
-                                    })
-                                )}
-                            </CommandGroup>
-                        </Command>
-                    </DialogContent>
-                </Dialog>
+                <BDRAssignmentDialog
+                    open={bdrSearchOpen}
+                    onOpenChange={setBdrSearchOpen}
+                    selectedRequest={selectedRequest}
+                    bdrs={bdrs}
+                    bdrLoading={bdrLoading}
+                    assigningBdr={assigningBdr}
+                    onLoadBdrs={loadBdrs}
+                    onAssign={assignBdr}
+                    onUnassign={unassignBdr}
+                />
             </DashboardLayout>
         </>
     );

@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Theme Preview - AlmostTheBest Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Montserrat', system-ui, sans-serif;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+        }
+
+        .swatch {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .gradient {
+            background: linear-gradient(to right, var(--from), var(--to));
+            color: white;
+        }
+
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: white;
+            border-bottom: 2px solid #e5e7eb;
+            padding: 16px 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            border-color: #570DF8;
+            background: #f5f3ff;
+        }
+
+        .btn.active {
+            border-color: #570DF8;
+            background: #570DF8;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="header">
+        <div class="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-4">
+            <h1 class="text-2xl font-bold">🎨 Complete Theme Preview</h1>
+            <div class="flex gap-3">
+                <button class="btn active" onclick="setTheme('default')">Default</button>
+                <button class="btn" onclick="setTheme('ocean')">Ocean</button>
+                <button class="btn" onclick="setTheme('forest')">Forest</button>
+                <button class="btn" onclick="setTheme('sunset')">Sunset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <div class="card">
+            <h2 class="text-xl font-bold mb-2">Current Theme: <span id="theme-name">Default</span></h2>
+            <p class="text-gray-600">All UI components adapt to the selected theme</p>
+        </div>
+
+        <!-- Backgrounds -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">🖼️ Backgrounds</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold mb-3">Login</h3>
+                    <div class="relative h-64 rounded-lg overflow-hidden bg-gray-200">
+                        <img id="login-bg" src="" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                            <div class="bg-white p-6 rounded-lg shadow-xl max-w-xs w-full">
+                                <h4 class="text-xl font-bold mb-2">ALMOST<span id="login-accent"
+                                        class="text-purple-500">*</span></h4>
+                                <p class="text-sm text-gray-600 mb-4">THE BEST DASHBOARD</p>
+                                <div class="space-y-2">
+                                    <div class="h-8 bg-gray-100 rounded"></div>
+                                    <div class="h-8 bg-gray-100 rounded"></div>
+                                    <div id="login-btn"
+                                        class="h-8 rounded text-white text-sm flex items-center justify-center font-semibold">
+                                        Sign In</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-3">Dashboard</h3>
+                    <div class="relative h-64 rounded-lg overflow-hidden bg-gray-200">
+                        <img id="dash-bg" src="" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                            <div class="bg-white p-6 rounded-lg shadow-xl max-w-xs w-full">
+                                <div class="flex gap-2 mb-4">
+                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                </div>
+                                <h4 class="text-lg font-bold mb-3">Dashboard</h4>
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <span id="db1"
+                                            class="text-xs px-2 py-1 rounded-full text-white">RESTAURANT</span>
+                                        <span class="text-xs text-gray-600">New</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span id="db2" class="text-xs px-2 py-1 rounded-full text-white">EVENT</span>
+                                        <span class="text-xs text-gray-600">Ongoing</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">🔘 Buttons</h2>
+            <div class="flex flex-wrap gap-3">
+                <button id="btn-primary" class="px-4 py-2 rounded-lg font-semibold text-white">Primary</button>
+                <button id="btn-secondary" class="px-4 py-2 rounded-lg font-semibold border-2">Secondary</button>
+                <button id="btn-outline" class="px-4 py-2 rounded-lg font-semibold border-2">Outline</button>
+                <button
+                    class="px-4 py-2 rounded-lg font-semibold bg-gray-200 text-gray-500 cursor-not-allowed">Disabled</button>
+            </div>
+        </div>
+
+        <!-- Forms -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">📝 Form Inputs</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Text Input</label>
+                    <input id="input-text" type="text" placeholder="Enter text..."
+                        class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Search Bar</label>
+                    <div class="relative">
+                        <input id="input-search" type="search" placeholder="Search..."
+                            class="w-full px-4 py-2 pl-10 border-2 rounded-lg focus:outline-none">
+                        <svg class="absolute left-3 top-3 w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Dropdown</label>
+                    <select id="input-select" class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none">
+                        <option>Select option...</option>
+                        <option>Option 1</option>
+                        <option>Option 2</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Textarea</label>
+                    <textarea id="input-textarea" rows="3" placeholder="Description..."
+                        class="w-full px-4 py-2 border-2 rounded-lg focus:outline-none"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toasts -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">🔔 Toast Notifications</h2>
+            <div class="space-y-3">
+                <div id="toast-success" class="flex items-center gap-3 p-4 rounded-lg border-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    <div class="flex-1">
+                        <div class="font-semibold">Success</div>
+                        <div class="text-sm opacity-90">Changes saved successfully</div>
+                    </div>
+                </div>
+                <div id="toast-info" class="flex items-center gap-3 p-4 rounded-lg border-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    <div class="flex-1">
+                        <div class="font-semibold">Info</div>
+                        <div class="text-sm opacity-90">New update available</div>
+                    </div>
+                </div>
+                <div id="toast-warning" class="flex items-center gap-3 p-4 rounded-lg border-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    <div class="flex-1">
+                        <div class="font-semibold">Warning</div>
+                        <div class="text-sm opacity-90">Please review before proceeding</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wizard -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">🧙 Wizard / Stepper</h2>
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <div id="step-1"
+                        class="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-white">1</div>
+                    <span class="text-sm font-medium">Basic Info</span>
+                </div>
+                <div class="flex-1 h-1 mx-4" id="line-1"></div>
+                <div class="flex items-center gap-2">
+                    <div id="step-2" class="w-8 h-8 rounded-full flex items-center justify-center font-semibold">2</div>
+                    <span class="text-sm font-medium text-gray-400">Details</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-300 mx-4"></div>
+                <div class="flex items-center gap-2">
+                    <div id="step-3"
+                        class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center font-semibold text-gray-500">
+                        3</div>
+                    <span class="text-sm font-medium text-gray-400">Review</span>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button id="wiz-back" class="px-4 py-2 rounded-lg border-2 font-semibold">Back</button>
+                <button id="wiz-next" class="px-4 py-2 rounded-lg font-semibold text-white">Next</button>
+            </div>
+        </div>
+
+        <!-- Request Types -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">📋 Request Types</h2>
+            <div class="flex gap-4 mb-4">
+                <span id="b-rest" class="badge">RESTAURANT</span>
+                <span id="b-event" class="badge">EVENT</span>
+                <span id="b-cuisine" class="badge">CUISINE</span>
+            </div>
+            <div class="flex gap-2">
+                <div class="swatch" id="s-rest"></div>
+                <div class="swatch" id="s-event"></div>
+                <div class="swatch" id="s-cuisine"></div>
+            </div>
+        </div>
+
+        <!-- Request Statuses -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">📊 Request Statuses</h2>
+            <div class="flex flex-wrap gap-4">
+                <span id="st-new" class="badge gradient">New</span>
+                <span id="st-ongoing" class="badge gradient">Ongoing</span>
+                <span id="st-hold" class="badge gradient">On Hold</span>
+                <span id="st-done" class="badge gradient">Done</span>
+            </div>
+        </div>
+
+        <!-- Restaurant Statuses -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">🍽️ Restaurant Statuses</h2>
+            <div class="flex flex-wrap gap-4">
+                <span id="r-new" class="badge">New</span>
+                <span id="r-prog" class="badge">On Progress</span>
+                <span id="r-hold" class="badge">On Hold</span>
+                <span id="r-done" class="badge">Done</span>
+            </div>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="card">
+            <h2 class="text-2xl font-bold mb-4">🎨 Color Palette</h2>
+            <div class="grid grid-cols-8 gap-3" id="palette"></div>
+        </div>
+    </div>
+
+    <script>
+        const themes = {
+            default: {
+                name: 'Default',
+                bg: { login: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1080&q=80', dash: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCD4OxIGLcu8oDyPDHGLxIz1CfmoCJGDX2LWxGYyphZmIPM9HPT4A9BbMp1WPEU4lDtu0AoNkjN2KYS8IJVo5a4XibCGhe42DSb6UNXm6T6FCIYWt_pf9SOP_YpyvBoE6MCakhAMkJv3SfXVMRStn_K9fqzia1japPj3EkkoCx8o2WekGd8_XOcHoN3JuWvQQH-7AgZ_PWYwXtiK5l7wiGDSgl3iOSJbnSPhepox100J65GcACk0yQyLENNSEQwj1hmVkhspmcwEtE' },
+                types: { restaurant: '#10b981', event: '#3b82f6', cuisine: '#a855f7' },
+                status: { new: ['#a855f7', '#ec4899'], ongoing: ['#3b82f6', '#06b6d4'], hold: ['#f97316', '#f59e0b'], done: ['#22c55e', '#10b981'] },
+                rest: { new: '#3b82f6', prog: '#eab308', hold: '#6b7280', done: '#22c55e' },
+                accent: '#a855f7',
+                toast: { success: { border: '#10b981', bg: '#ecfdf5', text: '#064e3b' }, info: { border: '#0ea5e9', bg: '#f0f9ff', text: '#0c4a6e' }, warning: { border: '#f59e0b', bg: '#fffbeb', text: '#78350f' } },
+                palette: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e']
+            },
+            ocean: {
+                name: 'Ocean',
+                bg: { login: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=1080&q=80', dash: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1080&q=80' },
+                types: { restaurant: '#14b8a6', event: '#0284c7', cuisine: '#06b6d4' },
+                status: { new: ['#0284c7', '#06b6d4'], ongoing: ['#0ea5e9', '#22d3ee'], hold: ['#0891b2', '#14b8a6'], done: ['#10b981', '#14b8a6'] },
+                rest: { new: '#0284c7', prog: '#06b6d4', hold: '#64748b', done: '#14b8a6' },
+                accent: '#0284c7',
+                toast: { success: { border: '#14b8a6', bg: '#f0fdfa', text: '#134e4a' }, info: { border: '#0284c7', bg: '#f0f9ff', text: '#0c4a6e' }, warning: { border: '#0891b2', bg: '#ecfeff', text: '#164e63' } },
+                palette: ['#0c4a6e', '#075985', '#0369a1', '#0284c7', '#0ea5e9', '#38bdf8', '#7dd3fc', '#bae6fd', '#164e63', '#155e75', '#0e7490', '#0891b2', '#06b6d4', '#22d3ee', '#67e8f9', '#a5f3fc', '#cffafe']
+            },
+            forest: {
+                name: 'Forest',
+                bg: { login: 'https://images.unsplash.com/photo-1511497584788-876760111969?w=1080&q=80', dash: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=1080&q=80' },
+                types: { restaurant: '#16a34a', event: '#65a30d', cuisine: '#84cc16' },
+                status: { new: ['#65a30d', '#84cc16'], ongoing: ['#16a34a', '#22c55e'], hold: ['#ca8a04', '#eab308'], done: ['#059669', '#10b981'] },
+                rest: { new: '#65a30d', prog: '#84cc16', hold: '#78716c', done: '#16a34a' },
+                accent: '#16a34a',
+                toast: { success: { border: '#16a34a', bg: '#f0fdf4', text: '#14532d' }, info: { border: '#65a30d', bg: '#f7fee7', text: '#365314' }, warning: { border: '#ca8a04', bg: '#fefce8', text: '#713f12' } },
+                palette: ['#14532d', '#166534', '#15803d', '#16a34a', '#22c55e', '#4ade80', '#86efac', '#bbf7d0', '#365314', '#3f6212', '#4d7c0f', '#65a30d', '#84cc16', '#a3e635', '#bef264', '#d9f99d', '#ecfccb']
+            },
+            sunset: {
+                name: 'Sunset',
+                bg: { login: 'https://images.unsplash.com/photo-1495567720989-cebdbdd97913?w=1080&q=80', dash: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1080&q=80' },
+                types: { restaurant: '#f97316', event: '#f59e0b', cuisine: '#dc2626' },
+                status: { new: ['#dc2626', '#f97316'], ongoing: ['#f97316', '#f59e0b'], hold: ['#f59e0b', '#eab308'], done: ['#16a34a', '#22c55e'] },
+                rest: { new: '#dc2626', prog: '#f97316', hold: '#78716c', done: '#16a34a' },
+                accent: '#f97316',
+                toast: { success: { border: '#f97316', bg: '#fff7ed', text: '#7c2d12' }, info: { border: '#f59e0b', bg: '#fffbeb', text: '#78350f' }, warning: { border: '#dc2626', bg: '#fef2f2', text: '#7f1d1d' } },
+                palette: ['#7f1d1d', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#fca5a5', '#fecaca', '#7c2d12', '#9a3412', '#c2410c', '#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5']
+            }
+        };
+
+        function setTheme(name) {
+            const t = themes[name];
+            document.getElementById('theme-name').textContent = t.name;
+
+            // Backgrounds
+            document.getElementById('login-bg').src = t.bg.login;
+            document.getElementById('dash-bg').src = t.bg.dash;
+            document.getElementById('login-accent').style.color = t.accent;
+            document.getElementById('login-btn').style.backgroundColor = t.accent;
+
+            // Buttons
+            document.getElementById('btn-primary').style.backgroundColor = t.accent;
+            document.getElementById('btn-secondary').style.color = t.accent;
+            document.getElementById('btn-secondary').style.borderColor = t.accent;
+            document.getElementById('btn-outline').style.color = t.accent;
+            document.getElementById('btn-outline').style.borderColor = t.accent;
+
+            // Form inputs
+            document.getElementById('input-text').style.borderColor = t.accent;
+            document.getElementById('input-search').style.borderColor = t.accent;
+            document.getElementById('input-select').style.borderColor = t.accent;
+            document.getElementById('input-textarea').style.borderColor = t.accent;
+
+            // Toasts
+            setToast('toast-success', t.toast.success);
+            setToast('toast-info', t.toast.info);
+            setToast('toast-warning', t.toast.warning);
+
+            // Wizard
+            document.getElementById('step-1').style.backgroundColor = t.accent;
+            document.getElementById('step-2').style.backgroundColor = lighten(t.accent, 0.3);
+            document.getElementById('step-2').style.color = t.accent;
+            document.getElementById('line-1').style.backgroundColor = t.accent;
+            document.getElementById('wiz-back').style.color = t.accent;
+            document.getElementById('wiz-back').style.borderColor = t.accent;
+            document.getElementById('wiz-next').style.backgroundColor = t.accent;
+
+            // Request types
+            setBadge('b-rest', t.types.restaurant); setBadge('db1', t.types.restaurant);
+            setBadge('b-event', t.types.event); setBadge('db2', t.types.event);
+            setBadge('b-cuisine', t.types.cuisine);
+            setSwatch('s-rest', t.types.restaurant);
+            setSwatch('s-event', t.types.event);
+            setSwatch('s-cuisine', t.types.cuisine);
+
+            // Statuses
+            setGrad('st-new', t.status.new);
+            setGrad('st-ongoing', t.status.ongoing);
+            setGrad('st-hold', t.status.hold);
+            setGrad('st-done', t.status.done);
+
+            // Restaurant
+            setBadge('r-new', t.rest.new, '#dbeafe', '#1e40af');
+            setBadge('r-prog', t.rest.prog, '#fef3c7', '#92400e');
+            setBadge('r-hold', t.rest.hold, '#f3f4f6', '#374151');
+            setBadge('r-done', t.rest.done, '#dcfce7', '#166534');
+
+            // Palette
+            const p = document.getElementById('palette');
+            p.innerHTML = '';
+            t.palette.forEach(c => {
+                const s = document.createElement('div');
+                s.className = 'swatch';
+                s.style.backgroundColor = c;
+                s.title = c;
+                p.appendChild(s);
+            });
+
+            // Buttons
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function setToast(id, colors) {
+            const el = document.getElementById(id);
+            el.style.borderColor = colors.border;
+            el.style.backgroundColor = colors.bg;
+            el.style.color = colors.text;
+        }
+
+        function setBadge(id, bg, light, dark) {
+            const el = document.getElementById(id);
+            if (light && dark) {
+                el.style.backgroundColor = light;
+                el.style.color = dark;
+            } else {
+                el.style.backgroundColor = bg;
+                el.style.color = 'white';
+            }
+        }
+
+        function setSwatch(id, c) {
+            const el = document.getElementById(id);
+            el.style.backgroundColor = c;
+            el.title = c;
+        }
+
+        function setGrad(id, colors) {
+            const el = document.getElementById(id);
+            el.style.setProperty('--from', colors[0]);
+            el.style.setProperty('--to', colors[1]);
+        }
+
+        function lighten(color, amount) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const r = Math.min(255, (num >> 16) + Math.round(255 * amount));
+            const g = Math.min(255, ((num >> 8) & 0x00FF) + Math.round(255 * amount));
+            const b = Math.min(255, (num & 0x0000FF) + Math.round(255 * amount));
+            return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => setTheme('default'));
+    </script>
+</body>
+
+</html>

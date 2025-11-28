@@ -15,6 +15,55 @@ export const formatDate = (value: string | null | undefined): string => {
 };
 
 /**
+ * Format a time string to AM/PM format
+ */
+export const formatTime = (time: string | null | undefined): string => {
+    if (!time) return "";
+
+    try {
+        const [hours, minutes] = time.split(':');
+        const date = new Date();
+        date.setHours(parseInt(hours, 10));
+        date.setMinutes(parseInt(minutes, 10));
+
+        return date.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    } catch (e) {
+        return time;
+    }
+};
+
+/**
+ * Format a date to a relative time string (e.g., "2 days ago")
+ */
+export const formatRelativeDate = (value: string | null | undefined): string => {
+    if (!value) return "—";
+
+    const date = new Date(value);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInSeconds = Math.floor(diffInMs / 1000);
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInSeconds < 60) {
+        return "just now";
+    } else if (diffInMinutes < 60) {
+        return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffInHours < 24) {
+        return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
+    } else if (diffInDays < 7) {
+        return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
+    } else {
+        return formatDate(value);
+    }
+};
+
+/**
  * Normalize status value to ensure it's valid
  */
 export const normalizeStatus = (value: string | null | undefined): RestaurantStatus => {

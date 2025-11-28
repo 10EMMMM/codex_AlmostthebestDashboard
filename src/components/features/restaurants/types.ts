@@ -3,38 +3,57 @@
 export interface Restaurant {
     id: string;
     name: string;
-    status: RestaurantStatus;
+    slug?: string; // URL-friendly name
+    status?: string; // 'new', 'on progress', 'done', 'on hold'
+    description?: string; // Restaurant description
     city_id: string;
     city_name?: string;
     city_state?: string;
-    primary_cuisine_id?: string;
-    cuisine_name?: string;
-    onboarding_stage?: string;
-    description?: string;
-    bdr_target_per_week?: number;
-    created_at: string;
-    updated_at?: string;
-    deleted_at?: string;
-    // Yelp-style fields
-    price_range?: 1 | 2 | 3 | 4;
-    yelp_url?: string;
+    pickup_street?: string;
+    pickup_suite?: string;
+    pickup_city?: string;
+    pickup_state?: string;
+    pickup_postal_code?: string;
+    // Photo and ratings
+    primary_photo_url?: string;
     average_rating?: number;
     total_reviews?: number;
-    primary_photo_url?: string;
-    // Operational details
-    discount_percentage?: number;
+    yelp_url?: string;
+    // Cuisine fields
+    cuisine_name?: string;
+    secondary_cuisine_name?: string;
+    // Operational fields
+    earliest_pickup_time?: string;
     offers_box_meals?: boolean;
     offers_trays?: boolean;
-    earliest_pickup_time?: string;
+    discount_percentage?: string;
+    bdr_target_per_week?: number;
+    // User tracking
+    onboarded_by?: string;
+    onboarded_by_name?: string;
+    created_by?: string;
+    created_by_name?: string;
+    created_at?: string;
     // Enriched fields
     assigned_bdrs?: BDR[];
     primary_contact?: RestaurantContact;
+    secondary_contacts?: RestaurantContact[]; // For viewing all contacts
     comments_count?: number;
-    photos?: RestaurantPhoto[];
-    reviews?: RestaurantReview[];
+    cuisines?: RestaurantCuisine[]; // Multiple cuisines support
 }
 
-export type RestaurantStatus = "new" | "on progress" | "on hold" | "done";
+// DEPRECATED: Status removed from schema
+// export type RestaurantStatus = "new" | "on progress" | "on hold" | "done";
+
+export interface RestaurantCuisine {
+    id: string;
+    restaurant_id: string;
+    cuisine_id: string;
+    cuisine_name?: string;
+    is_primary: boolean;
+    display_order: number;
+    created_at: string;
+}
 
 export interface RestaurantContact {
     id: string;
@@ -44,6 +63,7 @@ export interface RestaurantContact {
     phone?: string;
     is_primary: boolean;
     created_at: string;
+    // Note: Address fields removed - pickup address is now on restaurants table
 }
 
 export interface RestaurantAssignment {
@@ -61,30 +81,31 @@ export interface BDR {
     avatar?: string;
 }
 
-export interface RestaurantPhoto {
-    id: string;
-    restaurant_id: string;
-    url: string;
-    caption?: string;
-    category?: 'food' | 'interior' | 'exterior' | 'menu' | 'drink' | 'other';
-    uploaded_by?: string;
-    is_primary: boolean;
-    display_order: number;
-    created_at: string;
-}
+// DEPRECATED: Photos and reviews removed from schema
+// export interface RestaurantPhoto {
+//     id: string;
+//     restaurant_id: string;
+//     url: string;
+//     caption?: string;
+//     category?: 'food' | 'interior' | 'exterior' | 'menu' | 'drink' | 'other';
+//     uploaded_by?: string;
+//     is_primary: boolean;
+//     display_order: number;
+//     created_at: string;
+// }
 
-export interface RestaurantReview {
-    id: string;
-    restaurant_id: string;
-    user_id?: string;
-    rating: 1 | 2 | 3 | 4 | 5;
-    review_text?: string;
-    source: 'internal' | 'yelp' | 'google';
-    external_review_id?: string;
-    reviewer_name?: string;
-    created_at: string;
-    updated_at: string;
-}
+// export interface RestaurantReview {
+//     id: string;
+//     restaurant_id: string;
+//     user_id?: string;
+//     rating: 1 | 2 | 3 | 4 | 5;
+//     review_text?: string;
+//     source: 'internal' | 'yelp' | 'google';
+//     external_review_id?: string;
+//     reviewer_name?: string;
+//     created_at: string;
+//     updated_at: string;
+// }
 
 export interface Cuisine {
     id: string;
@@ -127,9 +148,17 @@ export interface RestaurantCommentReaction {
 export interface CreateRestaurantData {
     name: string;
     city_id: string;
-    primary_cuisine_id?: string;
+    primary_cuisine_id: string; // Required
     description?: string;
-    bdr_target_per_week?: number;
+    discount_percentage?: string;
+    offers_box_meals?: boolean;
+    offers_trays?: boolean;
+    earliest_pickup_time?: string;
+    pickup_street?: string;
+    pickup_suite?: string;
+    pickup_city?: string;
+    pickup_state?: string;
+    pickup_postal_code?: string;
     contact?: {
         full_name: string;
         email?: string;
@@ -147,12 +176,11 @@ export interface CreateRestaurantCommentData {
 
 export interface RestaurantFilters {
     search: string;
-    statuses: RestaurantStatus[];
-    onboardingStages: string[];
     cityIds: string[];
     cuisineIds: string[];
-    sortBy: 'created_at' | 'updated_at' | 'name' | 'bdr_target_per_week' | 'status' | 'city_name';
+    sortBy: 'created_at' | 'updated_at' | 'name' | 'city_name';
     sortDirection: 'asc' | 'desc';
+    // REMOVED: statuses, onboardingStages (deprecated fields)
 }
 
 export interface TeamMember {

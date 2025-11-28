@@ -8,10 +8,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Search, X, CheckSquare, Plus } from "lucide-react";
-import { RESTAURANT_STATUS_CONFIG, RESTAURANT_STATUSES } from "@/components/features/restaurants/constants";
-import type { RestaurantFilters, RestaurantStatus } from "@/components/features/restaurants/types";
+import type { RestaurantFilters } from "@/components/features/restaurants/types";
 
 interface RestaurantFilterBarProps {
     onFilterChange: (filters: RestaurantFilters) => void;
@@ -43,19 +41,12 @@ export function RestaurantFilterBar({
         return () => clearTimeout(timeoutId);
     };
 
-    const toggleStatus = (status: RestaurantStatus) => {
-        const newStatuses = activeFilters.statuses.includes(status)
-            ? activeFilters.statuses.filter((s) => s !== status)
-            : [...activeFilters.statuses, status];
-        onFilterChange({ ...activeFilters, statuses: newStatuses });
-    };
+
 
     const clearAllFilters = () => {
         setSearchInput("");
         onFilterChange({
             search: "",
-            statuses: [],
-            onboardingStages: [],
             cityIds: [],
             cuisineIds: [],
             sortBy: "created_at",
@@ -65,8 +56,6 @@ export function RestaurantFilterBar({
 
     const hasActiveFilters =
         activeFilters.search ||
-        activeFilters.statuses.length > 0 ||
-        activeFilters.onboardingStages.length > 0 ||
         activeFilters.cityIds.length > 0 ||
         activeFilters.cuisineIds.length > 0;
 
@@ -118,29 +107,8 @@ export function RestaurantFilterBar({
                 </div>
             </div>
 
-            {/* Filter Row: Status, Sort */}
+            {/* Filter Row: Sort only (status removed) */}
             <div className="flex flex-wrap items-center gap-3">
-                {/* Status Filter */}
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">Status:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                        {RESTAURANT_STATUSES.map((status) => {
-                            const config = RESTAURANT_STATUS_CONFIG[status];
-                            const isActive = activeFilters.statuses.includes(status);
-                            return (
-                                <Badge
-                                    key={status}
-                                    variant={isActive ? "default" : "outline"}
-                                    className={`cursor-pointer transition-all ${isActive ? config.badgeClass : ""
-                                        }`}
-                                    onClick={() => toggleStatus(status)}
-                                >
-                                    {config.label}
-                                </Badge>
-                            );
-                        })}
-                    </div>
-                </div>
 
                 {/* Sort */}
                 <div className="flex items-center gap-2 ml-auto">
@@ -156,8 +124,8 @@ export function RestaurantFilterBar({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="created_at">Created Date</SelectItem>
+                            <SelectItem value="updated_at">Updated Date</SelectItem>
                             <SelectItem value="name">Name</SelectItem>
-                            <SelectItem value="status">Status</SelectItem>
                             <SelectItem value="city_name">City</SelectItem>
                         </SelectContent>
                     </Select>

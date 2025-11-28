@@ -1,0 +1,456 @@
+{
+    "menu": [
+        {
+            "name": "Holiday Feast",
+            "price": "$169.99",
+            "description": "Delivery Only - Servings start at 10. Includes Oven Roasted Turkey or Applewood Smoked Ham, Mushroom Sauce, Cranberry-Apple Relish, Cranberry-Apple Stuffing, Fresh Baked Bread and your choice of 2 sides: Red Skinned Mashed Potatoes, Potato Gratin, Green Beans Almondine, Sweet Potato Soufflé, or Broccoli & Rice.\r\n*Disposable chafing dish and sterno not included.  If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Applewood Smoked Ham For 10",
+            "price": "$60",
+            "description": "Delivery Only - Servings start 10 If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Oven-Roasted Turkey Breast For 10",
+            "price": "$60",
+            "description": "Delivery Only - Servings start 10 If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Mini Pumpkin Tarte & Pecan Tarte Tray for 10",
+            "price": "$35",
+            "description": "A tray of 5 mini-pumpkin and 5 mini-pecan tartes. Servings start at 10. If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Cranberry Apple Stuffing For 10",
+            "price": "$25",
+            "description": "Delivery Only - Servings start at 10 - A traditional bread stuffing made with sautéed onions, carrots and celery featuring dried cranberries and golden apples. If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Sweet Potato Pecan Soufflé For 10",
+            "price": "$25",
+            "description": "Pre-order for events after 11/05 only. Delivery Only - Servings start at 10. If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Broccoli & Rice 10",
+            "price": "$20",
+            "description": "Servings start at 10. A hearty blend of seasoned wild rice and tender broccoli, layered with a savory mushroom sauce and finished with a golden topping of Parmesan breadcrumbs. If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Red Skinned Mashed Potatoes For 10",
+            "price": "$20",
+            "description": "Delivery Only - Servings start at 10. Creamy, buttery mashed potatoes made with real potatoes and a touch of French-inspired finesse. A comforting classic, perfect as a side for any meal. If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Fresh Green Beans Almondine For 10",
+            "price": "$20",
+            "description": "Delivery Only - Servings start at 10. French green beans sautéed in butter with toasted almonds and seasonings. If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Potatoes Au Gratin For 10",
+            "price": "$25",
+            "description": "Delivery Only - Servings start at 10. Shredded potatoes in a creamy garlic sauce mixed with Swiss cheese baked until golden. If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "Creamy Wild Mushroom Sauce (24 Oz)",
+            "price": "$20",
+            "description": "Delivery Only - Servings start at 10. La Madeleine's signature wild mushroom and Parmesan cream sauce. A classic-French compliment to your holiday meal.\" If you need hot setup, which includes a chafing dish and sternos, please see the miscellaneous category.",
+            "category": "Holiday Feast – Delivered To the Office"
+        },
+        {
+            "name": "American Breakfast for 10",
+            "price": "$85",
+            "description": "Scrambled eggs, bacon, sliced tomatoes, cheddar cheese & freshly baked butter croissants. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Fresh Berries & Yogurt Bar",
+            "price": "$75",
+            "description": "Yogurt, fresh strawberries, blueberries & granola served as a DIY parfait bar. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Fresh Bakery Collection",
+            "price": "$45",
+            "description": "An assortment of freshly baked muffins, croissants, and seasonal favorites. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Breakfast Croissant Sandwich Tray",
+            "price": "$85",
+            "description": "Scrambled eggs, bacon & cheddar on freshly baked butter croissants. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Breakfast Sides",
+            "price": "$25",
+            "description": "Complete your meal with additional sides.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Country French Brunch for 10",
+            "price": "$120",
+            "description": "Our Frittata Bake (sausage & bacon or spinach & tomato) with cheesy potato gratin, fresh fruit salade & freshly baked butter croissants. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Quiche Bites",
+            "price": "$30",
+            "description": "An assortment of 32 bite-sized quiches in flaky puff pastry, 22 with bacon and cheddar, and 10 vegetarian with spinach, tomato and cheddar. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Specialty Croissant Collection",
+            "price": "$45",
+            "description": "An assortment of freshly baked butter and specialty croissants. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Breakfast Crêpe Wrap Tray",
+            "price": "$43",
+            "description": "A hearty assortment of 10 individually wrapped breakfast crêpes, filled with eggs, cheddar and your choice of bacon, sausage or a meatless option. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Classic Butter Croissant Collection",
+            "price": "$40",
+            "description": "Freshly baked, all-butter croissants—flaky, golden, and perfect for sharing. Servings start at 10.",
+            "category": "Breakfast"
+        },
+        {
+            "name": "Turkey & Provolone Sandwich Bistro Box",
+            "price": "$12.99",
+            "description": "A Turkey & Provolone Sandwich signature sandwich served with chips and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Chicken Salade Croissant Sandwich Bistro Box",
+            "price": "$12.99",
+            "description": "A Chicken Salade Croissant Sandwich served with chips and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Chicken, Swiss & Pesto Sandwich Bistro Box",
+            "price": "$13.99",
+            "description": "A Chicken, Swiss & Pesto Sandwich served with chips and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Pesto Caprese Sandwich Bistro Box",
+            "price": "$12.99",
+            "description": "A Pesto Caprese Sandwich served with chips and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Cranberry Pecan Wild Field Bistro Salade Box",
+            "price": "$11.99",
+            "description": "A Cranberry Pecan Wild Field salad, a freshly baked cookie, and a mini sea salt baguette.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Caesar Salade Bistro Box Caesar",
+            "price": "$11.99",
+            "description": "A Caesar Salade, freshly baked cookie, and a mini sea salt baguette.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Ham & Swiss Bistro Box",
+            "price": "$13.99",
+            "description": "A Ham & Swiss Sandwich, chips, and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Chicken Parisien Bistro Box",
+            "price": "$13.99",
+            "description": "A Chicken Parisien Sandwich, chips, and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Jambon-Beurre Baguette Sandwich Bistro Box",
+            "price": "$12.99",
+            "description": "A Jambon-Beurre Baguette Sandwich served with chips and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Chicken Caesar Bistro Box",
+            "price": "$13.99",
+            "description": "A Chicken Caesar Sandwich, chips, and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Seasonal Spinach Bistro Salade Box",
+            "price": "$11.99",
+            "description": "A Seasonal Spinach salad, a freshly baked cookie, and a mini sea salt baguette.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Turkey Bistro Box",
+            "price": "$13.99",
+            "description": "A Turkey Bistro Sandwich, chips, and a freshly-baked cookie.",
+            "category": "Boxed Lunches"
+        },
+        {
+            "name": "Chicken la Madeleine",
+            "price": "$135",
+            "description": "Balsamic-marinated chicken topped with creamy wild mushroom sauce, served with bread. Choose two sides: rice Provençal, red-skinned mashed potatoes, green beans almondine, cranberry pecan field salad, Caesar salad, or seasonal spinach salad. Servings start at 10.",
+            "category": "Entrées"
+        },
+        {
+            "name": "Chicken Pesto Pasta",
+            "price": "$105",
+            "description": "Penne pasta tossed in a creamy pesto sauce with balsamic-marinated chicken, topped with diced tomatoes and Parmesan. Served with freshly baked bread. Servings start at 10.",
+            "category": "Entrées"
+        },
+        {
+            "name": "Sandwich Duet: Baked Sandwich Tray",
+            "price": "$125",
+            "description": "A selection of assorted baked sandwiches, served with chips. Servings start at 10.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Classic Caesar Salade",
+            "price": "$50",
+            "description": "Romaine, house-made croutons, Parmesan and our Original Caesar Dressing. Served with freshly baked bread. Servings start at 10.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Cranberry Pecan Wild Field Salade",
+            "price": "$50",
+            "description": "Cranberries, pecans and wild field mix tossed in our house balsamic dressing. Served with freshly baked bread. Servings start at 10.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Tomato Basil Soupe Cup",
+            "price": "$5.79",
+            "description": "Our signature soupe – a hearty cream based vegetarian (not vegan) soupe made with juicy, vine ripened tomatoes, fresh cream, and fresh basil. Serves 1.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Sandwich Duet: Sandwich Tray",
+            "price": "$125",
+            "description": "A selection of assorted sandwiches, served with chips. Servings start at 10.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Pick 3 for le Groupe - Sandwich Tray",
+            "price": "$125",
+            "description": "A perfect group combo featuring a Sandwich tray, side and your choice of a gallon beverage. Servings start at 10. Individual beverages not included.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Country Potato Soupe Cup",
+            "price": "$5.79",
+            "description": "Our creamy potato soupe accented with leeks and onions. Garnished with cheddar cheese and chopped bacon. Serves 1.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Pick 3 for le Groupe - Baked Sandwich Tray",
+            "price": "$125",
+            "description": "A perfect group combo featuring a Baked Sandwich tray, side and your choice of a gallon beverage. Servings start at 10. Individual beverages not included.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Seasonal Spinach Salade",
+            "price": "$50",
+            "description": "Spinach salade topped with strawberries, bacon, feta, and pecans. Served with a French vinaigrette and freshly baked bread. Servings start at 10.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Salade Sampler for le Groupe",
+            "price": "$125",
+            "description": "Choice of any 3 salades or soupes (10 individual cups). Servings start at 10.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Cream of Mushroom Soupe Cup",
+            "price": "$5.79",
+            "description": "Our creamy vegetarian soupe bursting with flavorful pieces of wild mushrooms and special seasonings. Serves 1.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "French Onion Soupe Cup",
+            "price": "$5.79",
+            "description": "Our beef broth based soupe filled with tender onions and flavorful spices. Garnished with Swiss cheese and croutons. Serves 1.",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Broccoli Cheddar Soupe Cup",
+            "price": "$5.79",
+            "description": "",
+            "category": "Sandwiches, Salades & Soupes"
+        },
+        {
+            "name": "Side Balsamic Marinated Chicken",
+            "price": "$30",
+            "description": "",
+            "category": "A La Carte Protein"
+        },
+        {
+            "name": "Fresh Fruit Salad",
+            "price": "$45",
+            "description": "A freshly made mix of seasonal fruit. Servings start at 10.",
+            "category": "Sides"
+        },
+        {
+            "name": "Tomato Basil Pesto Pasta Salad",
+            "price": "$45",
+            "description": "Penne pasta chilled with sun-dried tomato pesto, basil, green onions, tomatoes & Parmesan. Servings start at 10.",
+            "category": "Sides"
+        },
+        {
+            "name": "Green Beans Almandine",
+            "price": "$20",
+            "description": "French green beans sautéed in butter with toasted almonds and seasonings. Servings start at 10.",
+            "category": "Sides"
+        },
+        {
+            "name": "Potato Chips",
+            "price": "$1.99",
+            "description": "",
+            "category": "Sides"
+        },
+        {
+            "name": "Red Skinned Mashed Potatoes",
+            "price": "$20",
+            "description": "Creamy, buttery mashed potatoes made with real potatoes and a touch of French-inspired finesse. A comforting classic, perfect as a side for any meal. Servings start at 10.",
+            "category": "Sides"
+        },
+        {
+            "name": "Seasoned Wild Rice",
+            "price": "$20",
+            "description": "Long grain and wild rice with onions. Servings start at 10.",
+            "category": "Sides"
+        },
+        {
+            "name": "Mini Tart & Parfait Tray",
+            "price": "$35",
+            "description": "An assortment of 10 mini tarts and parfaits, including a variety of fruit, chocolate, and vanilla flavors. Servings start at 10.",
+            "category": "Desserts"
+        },
+        {
+            "name": "Cookie Tray",
+            "price": "$35",
+            "description": "An assortment of 10 oatmeal raisin pecan, chocolate chunk and seasonal cookies. Servings start at 10.",
+            "category": "Desserts"
+        },
+        {
+            "name": "Seasonal! Mini Pumpkin Tarte & Pecan Tarte Tray",
+            "price": "$35",
+            "description": "A tray of 5 mini-pumpkin and 5 mini-pecan tartes.\r\nServings start at 10.",
+            "category": "Desserts"
+        },
+        {
+            "name": "Sacher Torte",
+            "price": "$45",
+            "description": "A whole cake - 10 slices. Rich, moist chocolate cake filled with homemade raspberry preserves, iced in chocolate mousse then topped with chocolate ganache.",
+            "category": "Desserts"
+        },
+        {
+            "name": "Coconut Cream Cake",
+            "price": "$45",
+            "description": "A whole cake - 10 slices. Layers of moist white cake soaked in coconut syrup, filled with creamy coconut custard & sweet coconut. Topped with shredded coconut.",
+            "category": "Desserts"
+        },
+        {
+            "name": "NEW! Traditional Cheesecake",
+            "price": "$41.99",
+            "description": "A rich, creamy cheesecake baked in a buttery graham cracker crust and served with whipped topping. Served sliced.",
+            "category": "Desserts"
+        },
+        {
+            "name": "Fresh Brewed Coffee",
+            "price": "$21",
+            "description": "Freshly brewed American, French or Decaf roast coffee with cups. If you would like for us to include creamers and sweeteners please add on the beverage service.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Orange Juice",
+            "price": "$22.99",
+            "description": "",
+            "category": "Beverages"
+        },
+        {
+            "name": "Fresh Brewed Tea",
+            "price": "$10",
+            "description": "Traditional unsweetened or Mango Breeze unsweetened tea with cups. If you would like for us to include lemons and sweeteners please add on the beverage service.",
+            "category": "Beverages"
+        },
+        {
+            "name": "House Made Lemonade",
+            "price": "$11",
+            "description": "House made lemonade with cups. If you would like for us to include lemons and sweeteners please add on the beverage service.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Aquafina® Water 20 oz",
+            "price": "$2.99",
+            "description": "20 oz.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Tropicana Original Orange Juice",
+            "price": "$3.39",
+            "description": "11 oz.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Pepsi Cola® 20 oz",
+            "price": "$3.99",
+            "description": "20 oz.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Diet Pepsi Cola® 20 oz",
+            "price": "$3.99",
+            "description": "20 oz.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Bubly™ Blackberry Sparkling Water 16 oz can",
+            "price": "$2.99",
+            "description": "16 oz. can",
+            "category": "Beverages"
+        },
+        {
+            "name": "Bubly™ Grapefruit Sparkling Water 16 oz can",
+            "price": "$2.99",
+            "description": "16 oz. can",
+            "category": "Beverages"
+        },
+        {
+            "name": "Starry™ 20 oz",
+            "price": "$3.99",
+            "description": "20 oz.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Tropicana Lemonade",
+            "price": "$3.39",
+            "description": "11 oz.",
+            "category": "Beverages"
+        },
+        {
+            "name": "Hot Setup",
+            "price": "$11",
+            "description": "Keep your food warm and ready to serve with our complete hot setup, including a chafing dish and Sternos. Perfect for events and gatherings, it ensures a seamless and enjoyable dining experience. Servings start at 10.",
+            "category": "Miscellaneous"
+        }
+    ],
+    "name": "La Madeleine Bakery & Cafe",
+    "address": "2100 Ross Ave",
+    "city": "Dallas",
+    "state": "TX",
+    "zipCode": "75201",
+    "rating": 4.808080808080808,
+    "reviewCount": 198,
+    "cuisine": "Breakfast, Sandwiches, Bakery"
+}

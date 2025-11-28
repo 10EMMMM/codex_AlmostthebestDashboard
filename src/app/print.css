@@ -1,0 +1,26 @@
+@media print {
+
+    /* Hide non-printable elements */
+    .print\\:hidden {
+        display: none !important;
+    }
+
+    /* Remove shadows and borders */
+    .print\\:shadow-none {
+        box-shadow: none !important;
+    }
+
+    .print\\:border-0 {
+        border: none !important;
+    }
+
+    /* Ensure proper page breaks */
+    @page {
+        margin: 1cm;
+    }
+
+    /* Prevent page breaks inside elements */
+    .print\\:break-inside-avoid {
+        break-inside: avoid;
+    }
+}

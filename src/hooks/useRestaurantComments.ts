@@ -40,22 +40,22 @@ export function useRestaurantComments(restaurantId: string) {
             );
 
             if (!response.ok) {
-                throw new Error("Failed to fetch comments");
+                // Silently fail if API doesn't exist yet
+                console.warn("Comments API not available yet");
+                setComments([]);
+                return;
             }
 
             const data = await response.json();
             setComments(data.comments || []);
         } catch (error: any) {
-            console.error("Error loading comments:", error);
-            toast({
-                title: "Error",
-                description: error.message || "Failed to load comments",
-                variant: "destructive",
-            });
+            console.warn("Comments feature not available:", error.message);
+            // Don't show error toast - comments are optional
+            setComments([]);
         } finally {
             setLoading(false);
         }
-    }, [restaurantId, toast]);
+    }, [restaurantId]);
 
     /**
      * Create a new comment

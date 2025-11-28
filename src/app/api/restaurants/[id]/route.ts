@@ -43,14 +43,85 @@ export async function GET(
                 cuisines:primary_cuisine_id(id, name)
             `)
             .eq("id", id)
-            .is("deleted_at", null)
             .single();
 
         if (error || !restaurant) {
             return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ restaurant });
+        // Fetch onboarder profile if exists
+        let onboarderName = null;
+        if (restaurant.onboarded_by) {
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("display_name")
+                .eq("user_id", restaurant.onboarded_by)
+                .single();
+
+            if (profile) {
+                onboarderName = profile.display_name;
+            }
+        }
+
+        // Fetch creator profile if exists
+        let creatorName = null;
+        if (restaurant.created_by) {
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("display_name")
+                .eq("user_id", restaurant.created_by)
+                .single();
+
+            if (profile) {
+                creatorName = profile.display_name;
+            }
+        }
+
+        // Fetch cuisines for this restaurant
+        const { data: restaurantCuisines } = await supabase
+            .from("restaurant_cuisines")
+            .select(`
+                cuisine_id,
+                is_primary,
+                display_order,
+                cuisines (
+                    id,
+                    name
+                )
+            `)
+            .eq("restaurant_id", id)
+            .order("display_order", { ascending: true });
+
+        const cuisines = restaurantCuisines || [];
+        const primaryCuisine = cuisines.find((c: any) => c.is_primary);
+        const secondaryCuisines = cuisines.filter((c: any) => !c.is_primary);
+
+        // Format response to include all fields
+        const formattedRestaurant = {
+            ...restaurant,
+            slug: restaurant.slug,
+            status: restaurant.status,
+            description: restaurant.description,
+            onboarded_by: restaurant.onboarded_by,
+            onboarded_by_name: onboarderName || restaurant.onboarded_by,
+            created_by: restaurant.created_by,
+            created_by_name: creatorName || restaurant.created_by,
+            onboarded_at: restaurant.onboarded_at,
+            city_name: restaurant.cities?.name,
+            city_state: restaurant.cities?.state_code,
+            cuisine_name: primaryCuisine?.cuisines?.name,
+            secondary_cuisine_name: secondaryCuisines.length > 0 ? secondaryCuisines[0].cuisines?.name : null,
+        };
+
+        // Debug logging
+        console.log('🔍 API Response Debug:');
+        console.log('  Restaurant ID:', formattedRestaurant.id);
+        console.log('  Restaurant Name:', formattedRestaurant.name);
+        console.log('  Description:', formattedRestaurant.description);
+        console.log('  Description type:', typeof formattedRestaurant.description);
+        console.log('  Description length:', formattedRestaurant.description?.length);
+
+        return NextResponse.json({ restaurant: formattedRestaurant });
     } catch (error: any) {
         console.error("Unexpected error:", error);
         return NextResponse.json(
@@ -161,11 +232,45 @@ export async function DELETE(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Soft delete restaurant
-        const { error } = await supabase
-            .from("restaurants")
-            .update({ deleted_at: new Date().toISOString() })
-            .eq("id", id);
+        // Check if permanent delete is requested
+        const { searchParams } = new URL(request.url);
+        const permanent = searchParams.get("permanent") === "true";
+
+        // Check if user is Super Admin
+        let isSuperAdmin = user.app_metadata?.is_super_admin === true;
+
+        if (!isSuperAdmin) {
+            // Check user_roles table
+            const { data: roles } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', user.id);
+
+            if (roles && roles.some(r => r.role === 'SUPER_ADMIN')) {
+                isSuperAdmin = true;
+            }
+        }
+
+        if (!isSuperAdmin) {
+            return NextResponse.json({ error: "Forbidden: Super Admin only" }, { status: 403 });
+        }
+
+        let error;
+        if (permanent) {
+            // Hard delete
+            const { error: deleteError } = await supabase
+                .from("restaurants")
+                .delete()
+                .eq("id", id);
+            error = deleteError;
+        } else {
+            // Soft delete
+            const { error: updateError } = await supabase
+                .from("restaurants")
+                .update({ deleted_at: new Date().toISOString() })
+                .eq("id", id);
+            error = updateError;
+        }
 
         if (error) {
             console.error("Error deleting restaurant:", error);

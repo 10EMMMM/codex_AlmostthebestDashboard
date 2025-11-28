@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { LoginForm } from '@/components/features/auth/login-form';
@@ -14,10 +13,8 @@ import { getSupabaseClient } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Page() {
-  const pageBackground = PlaceHolderImages.find(
-    (img) => img.id === 'login-background'
-  );
   const [animationClass, setAnimationClass] = useState('animate-tada');
+  const [loginBg, setLoginBg] = useState<string>('');
   const supabase = getSupabaseClient();
   const { toast } = useToast();
   const router = useRouter();
@@ -45,6 +42,12 @@ export default function Page() {
       setAnimationClass('animate-pulse-no-fade');
     }, 1000); // Switch to pulse after 1s (tada animation duration)
 
+    // Get theme background from data attribute set by ThemeProvider
+    const bgUrl = document.documentElement.getAttribute('data-theme-bg-login');
+    if (bgUrl) {
+      setLoginBg(bgUrl);
+    }
+
     return () => clearTimeout(timer);
   }, [user, loading, router]);
 
@@ -54,19 +57,8 @@ export default function Page() {
 
   return (
     <>
-      <main className="relative flex min-h-screen flex-col items-center justify-center p-4">
-        {pageBackground && (
-          <Image
-            src={pageBackground.imageUrl}
-            alt={pageBackground.description}
-            fill
-            className={cn(
-              'object-cover -z-10 brightness-50 transition-all duration-300'
-            )}
-            data-ai-hint={pageBackground.imageHint}
-            priority
-          />
-        )}
+      <main className="relative flex min-h-screen flex-col items-center justify-center p-4" style={{ backgroundColor: 'hsl(var(--background))' }}>
+        {/* Removed background image - using solid color instead */}
         <Card
           className={cn(
             'w-[65vw] h-[60vh] overflow-hidden shadow-2xl bg-card border-0 transition-all duration-300 relative'

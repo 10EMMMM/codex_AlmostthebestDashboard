@@ -58,18 +58,6 @@ export function useRestaurants(filters?: RestaurantFilters) {
                 if (!matchesSearch) return false;
             }
 
-            // Status filter
-            if (filters.statuses.length > 0 && !filters.statuses.includes(restaurant.status)) {
-                return false;
-            }
-
-            // Onboarding stage filter
-            if (filters.onboardingStages.length > 0 && restaurant.onboarding_stage) {
-                if (!filters.onboardingStages.includes(restaurant.onboarding_stage)) {
-                    return false;
-                }
-            }
-
             // City filter
             if (filters.cityIds.length > 0 && !filters.cityIds.includes(restaurant.city_id)) {
                 return false;

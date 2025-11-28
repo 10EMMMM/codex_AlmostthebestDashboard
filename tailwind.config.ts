@@ -1,4 +1,4 @@
-import type {Config} from 'tailwindcss';
+import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
@@ -49,7 +49,7 @@ export default {
         'text-primary-dark': '#E5E5E5',
         'text-secondary-light': '#6B7280',
         'text-secondary-dark': '#A1A1AA',
-        
+
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -152,9 +152,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate'), require('daisyui')],
-  daisyui: {
-    logs: false,
-    themes: ['forest', 'light', 'dark'],
-  },
+  plugins: [require('tailwindcss-animate')],
 } satisfies Config;

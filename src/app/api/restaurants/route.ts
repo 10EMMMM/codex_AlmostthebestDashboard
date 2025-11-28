@@ -65,11 +65,31 @@ export async function GET(request: Request) {
             .in("restaurant_id", restaurantIds)
             .eq("role", "BDR");
 
-        // Get unique BDR user IDs
-        const bdrUserIds = [...new Set(assignments?.map((a: any) => a.user_id) || [])];
+        // Fetch cuisines for all restaurants
+        const { data: restaurantCuisines } = await supabase
+            .from("restaurant_cuisines")
+            .select(`
+                restaurant_id,
+                cuisine_id,
+                is_primary,
+                display_order,
+                cuisines (
+                    id,
+                    name
+                )
+            `)
+            .in("restaurant_id", restaurantIds)
+            .order("display_order", { ascending: true });
 
-        // Fetch profiles for all BDRs
-        const { data: bdrProfiles } = await supabase
+        // Get unique BDR user IDs and onboarded_by IDs
+        const bdrUserIds = [...new Set([
+            ...(assignments?.map((a: any) => a.user_id) || []),
+            ...(restaurants.map((r: any) => r.onboarded_by).filter(Boolean) || []),
+            ...(restaurants.map((r: any) => r.created_by).filter(Boolean) || [])
+        ])];
+
+        // Fetch profiles for all BDRs and onboarders
+        const { data: profiles } = await supabase
             .from("profiles")
             .select("user_id, display_name")
             .in("user_id", bdrUserIds);
@@ -80,9 +100,9 @@ export async function GET(request: Request) {
             contactMap.set(contact.restaurant_id, contact);
         });
 
-        const bdrProfileMap = new Map();
-        bdrProfiles?.forEach((profile: any) => {
-            bdrProfileMap.set(profile.user_id, profile);
+        const profileMap = new Map();
+        profiles?.forEach((profile: any) => {
+            profileMap.set(profile.user_id, profile);
         });
 
         const assignmentsMap = new Map<string, any[]>();
@@ -90,10 +110,24 @@ export async function GET(request: Request) {
             if (!assignmentsMap.has(assignment.restaurant_id)) {
                 assignmentsMap.set(assignment.restaurant_id, []);
             }
-            const profile = bdrProfileMap.get(assignment.user_id);
+            const profile = profileMap.get(assignment.user_id);
             assignmentsMap.get(assignment.restaurant_id)!.push({
                 id: assignment.user_id,
-                name: profile?.display_name || "Unknown BDR",
+                name: profile?.display_name || "Unknown User",
+            });
+        });
+
+        // Map cuisines to restaurants
+        const cuisinesMap = new Map<string, any[]>();
+        restaurantCuisines?.forEach((rc: any) => {
+            if (!cuisinesMap.has(rc.restaurant_id)) {
+                cuisinesMap.set(rc.restaurant_id, []);
+            }
+            cuisinesMap.get(rc.restaurant_id)!.push({
+                id: rc.cuisine_id,
+                name: rc.cuisines?.name || "Unknown",
+                is_primary: rc.is_primary,
+                display_order: rc.display_order
             });
         });
 
@@ -102,26 +136,24 @@ export async function GET(request: Request) {
             const contact = contactMap.get(restaurant.id);
             const assignedBdrs = assignmentsMap.get(restaurant.id) || [];
             const commentsCount = restaurant.restaurant_comments?.filter((c: any) => !c.deleted_at).length || 0;
+            const onboarderProfile = restaurant.onboarded_by ? profileMap.get(restaurant.onboarded_by) : null;
+            const creatorProfile = restaurant.created_by ? profileMap.get(restaurant.created_by) : null;
+            const cuisines = cuisinesMap.get(restaurant.id) || [];
+            const primaryCuisine = cuisines.find((c: any) => c.is_primary);
+            const secondaryCuisines = cuisines.filter((c: any) => !c.is_primary);
 
             return {
                 id: restaurant.id,
                 name: restaurant.name,
+                slug: restaurant.slug,
                 status: restaurant.status,
+                description: restaurant.description,
                 city_id: restaurant.city_id,
                 city_name: restaurant.cities?.name,
                 city_state: restaurant.cities?.state_code,
                 primary_cuisine_id: restaurant.primary_cuisine_id,
-                cuisine_name: restaurant.cuisines?.name,
-                onboarding_stage: restaurant.onboarding_stage,
-                description: restaurant.description,
-                bdr_target_per_week: restaurant.bdr_target_per_week,
-                created_at: restaurant.created_at,
-                updated_at: restaurant.updated_at,
-                // Yelp-style fields
-                price_range: restaurant.price_range,
-                yelp_url: restaurant.yelp_url,
-                average_rating: restaurant.average_rating,
-                total_reviews: restaurant.total_reviews,
+                cuisine_name: primaryCuisine?.name,
+                secondary_cuisine_name: secondaryCuisines.length > 0 ? secondaryCuisines[0].name : null,
                 primary_photo_url: restaurant.primary_photo_url,
                 // Operational details
                 discount_percentage: restaurant.discount_percentage,
@@ -136,6 +168,12 @@ export async function GET(request: Request) {
                 } : null,
                 assigned_bdrs: assignedBdrs,
                 comments_count: commentsCount,
+                // User tracking
+                onboarded_by: restaurant.onboarded_by,
+                onboarded_by_name: onboarderProfile?.display_name,
+                created_by: restaurant.created_by,
+                created_by_name: creatorProfile?.display_name,
+                created_at: restaurant.created_at,
             };
         });
 
@@ -204,6 +242,7 @@ export async function POST(request: Request) {
                 description: description || null,
                 bdr_target_per_week: bdr_target_per_week || 4,
                 status: "new",
+                created_by: user.id,
             })
             .select()
             .single();

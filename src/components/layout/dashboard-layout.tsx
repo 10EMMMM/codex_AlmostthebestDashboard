@@ -1,8 +1,6 @@
-
 "use client";
 
 import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -22,6 +20,7 @@ import {
 import type { ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useEffect, useState } from 'react';
 
 type NavItem = {
   href: string;
@@ -31,12 +30,18 @@ type NavItem = {
 };
 
 export function DashboardLayout({ children, title, actionButton }: { children: ReactNode, title: string, actionButton?: ReactNode }) {
-  const pageBackground = PlaceHolderImages.find(
-    (img) => img.id === 'login-background'
-  );
+  const [dashboardBg, setDashboardBg] = useState<string>('');
   const router = useRouter();
   const pathname = usePathname();
   const { supabase, isSuperAdmin } = useAuth();
+
+  useEffect(() => {
+    // Get theme background from data attribute set by ThemeProvider
+    const bgUrl = document.documentElement.getAttribute('data-theme-bg-dashboard');
+    if (bgUrl) {
+      setDashboardBg(bgUrl);
+    }
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -44,29 +49,27 @@ export function DashboardLayout({ children, title, actionButton }: { children: R
   };
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
-      {pageBackground && (
-        <Image
-          src={pageBackground.imageUrl}
-          alt={pageBackground.description}
-          fill
-          className="object-cover"
-          data-ai-hint={pageBackground.imageHint}
-          priority
-        />
-      )}
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden" style={{ backgroundColor: 'hsl(var(--background))' }}>
+      {/* Removed background image - using solid color instead */}
       <div className="absolute inset-0 bg-black opacity-60"></div>
       <div className="absolute inset-0 bg-black opacity-60"></div>
 
-      <header className="fixed top-0 left-0 right-0 z-30 flex items-center px-3 py-1 border-b border-white/10 bg-white/10 backdrop-blur-2xl gap-3 text-[11px]">
+      <header
+        className="fixed top-0 left-0 right-0 z-30 flex items-center px-3 py-1 backdrop-blur-2xl gap-3 text-[11px]"
+        style={{
+          backgroundColor: 'hsl(var(--sidebar-background) / 0.8)',
+          borderBottom: '1px solid hsl(var(--sidebar-border))'
+        }}
+      >
         <div className="flex items-center gap-1">
           <button
             aria-label="Close (Sign out)"
             onClick={handleSignOut}
-            className="h-3.5 w-3.5 rounded-full bg-[#ff5f56] shadow-[inset_0_-1px_2px_rgba(0,0,0,0.4)] hover:opacity-75 transition"
+            className="h-3.5 w-3.5 rounded-full shadow-[inset_0_-1px_2px_rgba(0,0,0,0.4)] hover:opacity-75 transition"
+            style={{ backgroundColor: 'var(--theme-window-close)' }}
           />
-          <span className="h-3.5 w-3.5 rounded-full bg-[#ffbd2e] shadow-[inset_0_-1px_2px_rgba(0,0,0,0.3)]" />
-          <span className="h-3.5 w-3.5 rounded-full bg-[#27c93f] shadow-[inset_0_-1px_2px_rgba(0,0,0,0.3)]" />
+          <span className="h-3.5 w-3.5 rounded-full shadow-[inset_0_-1px_2px_rgba(0,0,0,0.3)]" style={{ backgroundColor: 'var(--theme-window-minimize)' }} />
+          <span className="h-3.5 w-3.5 rounded-full shadow-[inset_0_-1px_2px_rgba(0,0,0,0.3)]" style={{ backgroundColor: 'var(--theme-window-maximize)' }} />
         </div>
         <div className="flex-1 flex justify-center">
           <TooltipProvider>
@@ -87,9 +90,13 @@ export function DashboardLayout({ children, title, actionButton }: { children: R
                           variant="ghost"
                           size="icon"
                           className={cn(
-                            "rounded-full hover:bg-white/15 transition h-7 w-7",
-                            isActive ? "bg-white/25 text-primary" : "bg-transparent"
+                            "rounded-full transition h-7 w-7",
+                            isActive ? "" : "bg-transparent hover:bg-white/15"
                           )}
+                          style={isActive ? {
+                            backgroundColor: 'hsl(var(--primary) / 0.15)',
+                            color: 'hsl(var(--primary))'
+                          } : undefined}
                           asChild
                         >
                           <Link href={item.href}>

@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { themeStyles, themeVar } from "@/lib/theme-utils";
 import {
     Building2,
     User,
@@ -15,11 +16,11 @@ import {
 import { format } from "date-fns";
 import type { Request } from "@/components/features/requests/types";
 
-// Color constants
-const REQUEST_TYPE_COLORS: Record<string, string> = {
-    RESTAURANT: "bg-emerald-500 text-white",
-    EVENT: "bg-blue-500 text-white",
-    CUISINE: "bg-purple-500 text-white",
+// Request type to theme color mapping
+const REQUEST_TYPE_THEME: Record<string, 'restaurant' | 'event' | 'cuisine'> = {
+    RESTAURANT: 'restaurant',
+    EVENT: 'event',
+    CUISINE: 'cuisine',
 };
 
 
@@ -56,7 +57,7 @@ export function RequestCard({
     return (
         <Card
             className={cn(
-                "relative bg-card rounded-xl p-6 flex flex-col shadow-lg hover:shadow-xl transition-all cursor-pointer border-0",
+                "relative bg-card rounded-xl p-6 flex flex-col shadow-lg hover:shadow-xl transition-all cursor-pointer border",
                 isSelected && "ring-2 ring-primary shadow-2xl"
             )}
             onClick={onClick}
@@ -83,7 +84,11 @@ export function RequestCard({
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-3">
                             <span
-                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${REQUEST_TYPE_COLORS[request.request_type] || "bg-gray-500 text-white"}`}
+                                className="text-xs px-2.5 py-1 rounded-full font-medium"
+                                style={REQUEST_TYPE_THEME[request.request_type]
+                                    ? themeStyles.requestType(REQUEST_TYPE_THEME[request.request_type])
+                                    : { backgroundColor: '#6b7280', color: '#ffffff' }
+                                }
                             >
                                 {request.request_type}
                             </span>
@@ -142,7 +147,14 @@ export function RequestCard({
                             <UserCog className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                             <div className="flex flex-wrap gap-1.5">
                                 {request.assigned_bdrs.map((bdr) => (
-                                    <span key={bdr.id} className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
+                                    <span
+                                        key={bdr.id}
+                                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                                        style={{
+                                            backgroundColor: `${themeVar('accent-bdr')}20`,
+                                            color: themeVar('accent-bdr'),
+                                        }}
+                                    >
                                         {bdr.name}
                                     </span>
                                 ))}
@@ -165,12 +177,18 @@ export function RequestCard({
                             const now = new Date();
                             const needAnswerByDate = request.need_answer_by ? new Date(request.need_answer_by) : null;
                             const isOverdueForReply = needAnswerByDate && now > needAnswerByDate;
-                            const badgeColor = isOverdueForReply
-                                ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                : "bg-primary/10 text-primary";
+                            const badgeStyle = isOverdueForReply
+                                ? {
+                                    backgroundColor: `${themeVar('accent-overdue')}20`,
+                                    color: themeVar('accent-overdue'),
+                                }
+                                : {
+                                    backgroundColor: `${themeVar('wizard-primary')}20`,
+                                    color: themeVar('wizard-primary'),
+                                };
 
                             return (
-                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs" style={badgeStyle}>
                                     <Calendar className="h-3.5 w-3.5" />
                                     <span className="font-medium">
                                         {isNew ? (
@@ -183,7 +201,13 @@ export function RequestCard({
                             );
                         })()}
                         {request.need_answer_by && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-700 dark:text-orange-400 text-xs">
+                            <div
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+                                style={{
+                                    backgroundColor: `${themeVar('accent-deadline')}20`,
+                                    color: themeVar('accent-deadline'),
+                                }}
+                            >
                                 <Clock className="h-3.5 w-3.5" />
                                 <span className="font-medium">Reply: {format(new Date(request.need_answer_by), "MMM d")}</span>
                             </div>
@@ -192,12 +216,18 @@ export function RequestCard({
                             const now = new Date();
                             const deliveryDate = new Date(request.delivery_date);
                             const isOverdue = now > deliveryDate;
-                            const badgeColor = isOverdue
-                                ? "bg-red-500/10 text-red-700 dark:text-red-400"
-                                : "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+                            const badgeStyle = isOverdue
+                                ? {
+                                    backgroundColor: `${themeVar('accent-overdue')}20`,
+                                    color: themeVar('accent-overdue'),
+                                }
+                                : {
+                                    backgroundColor: `${themeVar('request-event')}20`,
+                                    color: themeVar('request-event'),
+                                };
 
                             return (
-                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs ${badgeColor}`}>
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs" style={badgeStyle}>
                                     <Truck className="h-3.5 w-3.5" />
                                     <span className="font-medium">Due {format(deliveryDate, "MMM d")}</span>
                                 </div>

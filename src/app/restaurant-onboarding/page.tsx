@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useRestaurants } from "@/hooks/useRestaurants";
-import { Edit2, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Edit2, MoreHorizontal, RefreshCw, Archive, Trash2 } from "lucide-react";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { ErrorSplashScreen } from "@/components/ui/error-splash-screen";
 import type { Restaurant, RestaurantFilters } from "@/components/features/restaurants/types";
@@ -45,8 +45,6 @@ export default function RestaurantOnboardingPage() {
   // Filters
   const [filters, setFilters] = useState<RestaurantFilters>({
     search: "",
-    statuses: [],
-    onboardingStages: [],
     cityIds: [],
     cuisineIds: [],
     sortBy: "created_at",
@@ -207,6 +205,32 @@ export default function RestaurantOnboardingPage() {
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Refresh
                       </DropdownMenuItem>
+                      {user?.app_metadata?.is_super_admin && (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              // Archive logic will be handled in RestaurantDetailView
+                              const event = new CustomEvent('archive-restaurant', { detail: selectedRestaurant });
+                              window.dispatchEvent(event);
+                            }}
+                            className="text-orange-600 dark:text-orange-400"
+                          >
+                            <Archive className="h-4 w-4 mr-2" />
+                            Archive Restaurant
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              // Delete logic will be handled in RestaurantDetailView
+                              const event = new CustomEvent('delete-restaurant', { detail: selectedRestaurant });
+                              window.dispatchEvent(event);
+                            }}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Permanently
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}

@@ -6,11 +6,13 @@ import {
     UserCog,
     MessageSquare,
     UtensilsCrossed,
-    TrendingUp,
+    Tag,
+    Package,
+    Utensils,
+    Clock,
 } from "lucide-react";
 import type { Restaurant } from "@/components/features/restaurants/types";
-import { RESTAURANT_STATUS_CONFIG } from "@/components/features/restaurants/constants";
-import { formatRelativeDate } from "@/components/features/restaurants/utils";
+import { formatRelativeDate, formatTime } from "@/components/features/restaurants/utils";
 
 // Component props
 interface RestaurantCardProps {
@@ -29,8 +31,6 @@ export function RestaurantCard({
     onSelect,
     selectionMode = false,
 }: RestaurantCardProps) {
-    const statusConfig = RESTAURANT_STATUS_CONFIG[restaurant.status] || RESTAURANT_STATUS_CONFIG.new;
-
     return (
         <Card
             className={cn(
@@ -59,18 +59,6 @@ export function RestaurantCard({
                 {/* Header with badges */}
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-3">
-                            <span
-                                className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusConfig.badgeClass}`}
-                            >
-                                {statusConfig.label}
-                            </span>
-                            {restaurant.onboarding_stage && (
-                                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-purple-500/10 text-purple-700 dark:text-purple-400">
-                                    {restaurant.onboarding_stage}
-                                </span>
-                            )}
-                        </div>
                         <h3 className="font-semibold text-xl line-clamp-2 mb-2">
                             {restaurant.name}
                         </h3>
@@ -105,15 +93,21 @@ export function RestaurantCard({
                     )}
                 </div>
 
-                {/* Description */}
-                {restaurant.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
-                        {restaurant.description}
-                    </p>
-                )}
-
                 {/* Details Grid */}
                 <div className="text-sm space-y-1">
+                    {/* Cuisines */}
+                    {(restaurant.cuisine_name || restaurant.secondary_cuisine_name) && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <UtensilsCrossed className="h-4 w-4 flex-shrink-0" />
+                            <span>
+                                {restaurant.cuisine_name}
+                                {restaurant.secondary_cuisine_name && (
+                                    <span className="text-muted-foreground/70"> • {restaurant.secondary_cuisine_name}</span>
+                                )}
+                            </span>
+                        </div>
+                    )}
+
                     {/* City */}
                     {restaurant.city_name && (
                         <div className="flex items-center gap-2 text-muted-foreground">
@@ -125,46 +119,52 @@ export function RestaurantCard({
                         </div>
                     )}
 
-                    {/* Cuisine */}
-                    {restaurant.cuisine_name && (
+                    {/* Earliest Pickup Time */}
+                    {restaurant.earliest_pickup_time && (
                         <div className="flex items-center gap-2 text-muted-foreground">
-                            <UtensilsCrossed className="h-4 w-4 flex-shrink-0" />
-                            <span>{restaurant.cuisine_name}</span>
+                            <Clock className="h-4 w-4 flex-shrink-0" />
+                            <span>
+                                <span className="font-medium">Pickup:</span> {formatTime(restaurant.earliest_pickup_time)}
+                            </span>
                         </div>
                     )}
 
-                    {/* BDR Target */}
-                    {restaurant.bdr_target_per_week && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <TrendingUp className="h-4 w-4 flex-shrink-0" />
-                            <span>{restaurant.bdr_target_per_week} BDRs/week</span>
-                        </div>
-                    )}
-
-                    {/* Assigned BDRs */}
-                    {restaurant.assigned_bdrs && restaurant.assigned_bdrs.length > 0 && (
-                        <div className="flex items-center gap-2">
-                            <UserCog className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                            <div className="flex flex-wrap gap-1.5">
-                                {restaurant.assigned_bdrs.map((bdr) => (
-                                    <span
-                                        key={bdr.id}
-                                        className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium"
-                                    >
-                                        {bdr.name}
-                                    </span>
-                                ))}
-                            </div>
+                    {/* Operational Details Badges */}
+                    {(restaurant.offers_box_meals || restaurant.offers_trays || restaurant.discount_percentage) && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {restaurant.offers_box_meals && (
+                                <div className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 font-medium">
+                                    <Package className="h-3 w-3" />
+                                    <span>Box Meals</span>
+                                </div>
+                            )}
+                            {restaurant.offers_trays && (
+                                <div className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-400 font-medium">
+                                    <Utensils className="h-3 w-3" />
+                                    <span>Trays</span>
+                                </div>
+                            )}
+                            {restaurant.discount_percentage && (
+                                <div className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-700 dark:text-green-400 font-medium">
+                                    <Tag className="h-3 w-3" />
+                                    <span>{restaurant.discount_percentage}% Off</span>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
-                {/* Footer - Created date */}
-                <div className="pt-2 border-t border-border/50">
-                    <p className="text-xs text-muted-foreground">
-                        Created {formatRelativeDate(restaurant.created_at)}
-                    </p>
-                </div>
+                {/* Footer - Onboarded by */}
+                {restaurant.onboarded_by && (
+                    <div className="pt-2 border-t border-border/50">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <UserCog className="h-3 w-3" />
+                            <span>
+                                <span className="font-medium">Onboarded by:</span> {restaurant.onboarded_by_name || restaurant.onboarded_by}
+                            </span>
+                        </div>
+                    </div>
+                )}
             </div>
         </Card>
     );

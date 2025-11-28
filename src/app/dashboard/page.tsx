@@ -50,6 +50,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { SplashScreen } from '@/components/ui/splash-screen';
+import { GlassCalendar } from '@/components/ui/glass-calendar';
 
 const GreetingWidget = dynamic(() => import('@/components/features/dashboard/greeting-widget').then(mod => mod.GreetingWidget), { ssr: false });
 const Widget = dynamic(() => Promise.resolve(({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -89,7 +90,7 @@ const FocusWidget = dynamic(
         return (
           <Widget className="items-center justify-center text-center">
             <div className="flex justify-between items-center w-full mb-4">
-              <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+              <h2 className="text-xl font-bold font-sans mb-2 flex items-center space-x-2">
                 <Target className="w-5 h-5" />
                 <span>Total Onboards</span>
               </h2>
@@ -129,7 +130,7 @@ const TimeWidget = dynamic(() => Promise.resolve(() => {
     return (
       <Widget className="items-center justify-center text-center">
         <div className="flex justify-between items-center w-full mb-4">
-          <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+          <h3 className="text-xl font-bold font-sans flex items-center space-x-2">
             <Clock className="w-5 h-5" />
             <span>Current Time</span>
           </h3>
@@ -146,7 +147,7 @@ const TimeWidget = dynamic(() => Promise.resolve(() => {
   return (
     <Widget className="items-center justify-center text-center">
       <div className="flex justify-between items-center w-full mb-4">
-        <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
+        <h3 className="text-xl font-bold font-sans flex items-center space-x-2">
           <Clock className="w-5 h-5" />
           <span>Current Time</span>
         </h3>
@@ -182,19 +183,11 @@ const chartConfig = {
 
 const LineChartWidget = dynamic(() => Promise.resolve(() => (
   <Widget>
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="font-semibold text-base text-primary uppercase tracking-wider flex items-center space-x-2">
-        <LucideLineChart className="w-5 h-5" /> {/* Changed from LineChart */}
+    <div className="mb-4">
+      <h3 className="text-xl font-bold font-sans flex items-center space-x-2">
+        <LucideLineChart className="w-5 h-5" />
         <span>Tasks Completed</span>
       </h3>
-      <div className="flex items-center space-x-2">
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground">
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground">
-          <ChevronRight className="w-5 h-5" />
-        </Button>
-      </div>
     </div>
     <div className="flex-grow">
       <ChartContainer config={chartConfig} className="w-full h-full">
@@ -235,10 +228,6 @@ const LineChartWidget = dynamic(() => Promise.resolve(() => (
         </RechartsLineChart>
       </ChartContainer>
     </div>
-    <Button variant="secondary" className="mt-4 w-full">
-      <CalendarDays className="w-5 h-5 mr-2" />
-      <span>View Full Report</span>
-    </Button>
   </Widget>
 )), { ssr: false });
 
@@ -264,30 +253,27 @@ const SalesReportWidget = dynamic(
             const month = date.getMonth();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            const colorClasses = [
-              { color: 'bg-muted/20', textColor: 'text-muted-foreground' }, // 0-9
-              { color: 'bg-sky-900/40', textColor: 'text-sky-300' }, // 10-19
-              { color: 'bg-sky-900/60', textColor: 'text-sky-200' }, // 20-29
-              { color: 'bg-sky-800/70', textColor: 'text-sky-100' }, // 30-39
-              { color: 'bg-sky-700/80', textColor: 'text-white' }, // 40-49
-              { color: 'bg-lime-400/30', textColor: 'text-lime-200' }, // 50-59
-              { color: 'bg-lime-400/50', textColor: 'text-lime-100' }, // 60-69
-              { color: 'bg-yellow-400/40', textColor: 'text-yellow-200' },// 70-79
-              { color: 'bg-yellow-400/60', textColor: 'text-yellow-100' },// 80-89
-              { color: 'bg-orange-500/70', textColor: 'text-orange-100' }, // >= 90
-            ];
-
-            const getColor = (value: number) => {
-              if (value === 0) return colorClasses[0];
-              const index = Math.floor(value / 10);
-              return colorClasses[Math.min(index, colorClasses.length - 1)];
+            // Use theme heatmap colors
+            const getColorStyle = (value: number): { backgroundColor: string; color: string } => {
+              if (value === 0) {
+                return {
+                  backgroundColor: 'var(--theme-heatmap-0)',
+                  color: 'hsl(var(--muted-foreground))'
+                };
+              }
+              // Map value ranges to heatmap indices (0-6)
+              const index = Math.min(Math.floor(value / 15), 6);
+              return {
+                backgroundColor: `var(--theme-heatmap-${index})`,
+                color: index >= 4 ? '#ffffff' : 'hsl(var(--foreground))'
+              };
             }
 
             const data = Array.from({ length: daysInMonth }, (_, i) => {
               const day = i + 1;
               const randomValue = Math.floor(Math.random() * 100);
-              const { color, textColor } = getColor(randomValue);
-              return { value: day, color, textColor, randomValue };
+              const colorStyle = getColorStyle(randomValue);
+              return { value: day, colorStyle, randomValue };
             });
 
             setSalesData(data);
@@ -323,11 +309,11 @@ const SalesReportWidget = dynamic(
                     {salesData.map((item, index) => (
                       <div
                         key={index}
-                        className={cn(
-                          'aspect-square flex items-center justify-center rounded-md text-xs',
-                          item.color,
-                          item.textColor
-                        )}
+                        className="aspect-square flex items-center justify-center rounded-md text-xs"
+                        style={{
+                          backgroundColor: item.colorStyle.backgroundColor,
+                          color: item.colorStyle.color
+                        }}
                         title={`Value: ${item.randomValue}`}
                       >
                         {item.value}
@@ -338,14 +324,14 @@ const SalesReportWidget = dynamic(
                 <section className="flex space-x-4">
                   <div className="w-1/2">
                     <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-                      <TrendingUp className="text-green-500 w-4 h-4" />
+                      <TrendingUp className="w-4 h-4" style={{ color: 'var(--theme-viz-success)' }} />
                       <span className="text-xs font-medium">Yearly</span>
                     </div>
                     <p className="text-xl font-bold">$301,002</p>
                   </div>
                   <div className="w-1/2">
                     <div className="flex items-center space-x-2 text-muted-foreground mb-1">
-                      <TrendingUp className="text-green-500 w-4 h-4" />
+                      <TrendingUp className="w-4 h-4" style={{ color: 'var(--theme-viz-success)' }} />
                       <span className="text-xs font-medium">Monthly</span>
                     </div>
                     <p className="text-xl font-bold">$8,097</p>
@@ -368,8 +354,8 @@ const SalesReportWidget = dynamic(
             </Widget>
             <Widget className="text-center space-y-3">
               <div className="flex justify-between items-center w-full">
-                <h2 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-                  <Target className="w-4 h-4" />
+                <h2 className="text-xl font-bold font-sans flex items-center space-x-2">
+                  <Target className="w-5 h-5" />
                   <span>Total Requests</span>
                 </h2>
               </div>
@@ -503,6 +489,7 @@ export default function DashboardPage() {
         error={onboardStats.error}
       />,
       <TimeWidget key="time" />,
+      <GlassCalendar key="calendar" />,
       <NotificationWidget key="notifications" userId={user?.id ?? null} supabase={supabase} />,
       <LineChartWidget key="line" />,
       <SalesReportWidget
@@ -523,7 +510,8 @@ export default function DashboardPage() {
   return (
     <>
       <div
-        className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] text-white/35 drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]"
+        className="pointer-events-none fixed left-4 bottom-1 translate-y-1 text-[clamp(1rem,4vw,3rem)] font-black tracking-[0.12em] drop-shadow-[0_4px_12px_rgba(0,0,0,0.3)] opacity-50 z-[1]"
+        style={{ color: 'var(--theme-viz-watermark)' }}
       >
         Dashboard
       </div>
@@ -575,13 +563,21 @@ const NotificationWidget = ({
           .order("created_at", { ascending: false })
           .limit(5);
         if (!active) return;
-        if (error) throw error;
+        if (error) {
+          // Silently fail if notifications table doesn't exist or RLS blocks access
+          console.log("Notifications not available:", error.message);
+          setNotifications([]);
+          setError(null); // Don't show error to user
+          return;
+        }
         setNotifications(data ?? []);
         setError(null);
       } catch (err: any) {
         if (!active) return;
-        setError(err?.message || "Unable to load notifications.");
+        // Silently fail - notifications are not critical
+        console.log("Notifications error:", err?.message);
         setNotifications([]);
+        setError(null); // Don't show error to user
       } finally {
         if (active) setLoading(false);
       }
@@ -595,8 +591,8 @@ const NotificationWidget = ({
   return (
     <Widget className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-primary uppercase tracking-wider flex items-center space-x-2">
-          <Bell className="w-4 h-4" />
+        <h3 className="text-xl font-bold font-sans flex items-center space-x-2">
+          <Bell className="w-5 h-5" />
           <span>Notifications</span>
         </h3>
       </div>

@@ -163,87 +163,157 @@ export function RestaurantEditForm({
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                    <Label htmlFor="restaurant-name">Restaurant Name</Label>
-                    <Input
-                        id="restaurant-name"
-                        value={formValues.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
-                        placeholder="e.g. The Golden Spoon"
-                    />
-                </div>
+            {/* Description - Full Width */}
+            <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                    id="description"
+                    value={formValues.description}
+                    onChange={(e) => handleChange("description", e.target.value)}
+                    placeholder="Additional notes about this restaurant..."
+                    rows={3}
+                />
+            </div>
 
-                <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select
-                        value={formValues.status}
-                        onValueChange={(value) => handleChange("status", value)}
-                    >
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {RESTAURANT_STATUSES.map((status) => (
-                                <SelectItem key={status} value={status}>
-                                    {RESTAURANT_STATUS_CONFIG[status].label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
+            {/* Basic Information */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold border-b pb-2">Basic Information</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="restaurant-name">Restaurant Name</Label>
+                        <Input
+                            id="restaurant-name"
+                            value={formValues.name}
+                            onChange={(e) => handleChange("name", e.target.value)}
+                            placeholder="e.g. The Golden Spoon"
+                        />
+                    </div>
 
-                <div className="space-y-2">
-                    <Label>City</Label>
-                    <Select
-                        value={formValues.cityId}
-                        onValueChange={(value) => handleChange("cityId", value)}
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select city" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {cityOptions.map((city) => (
-                                <SelectItem key={city.id} value={city.id}>
-                                    {city.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                        <Label>Status</Label>
+                        <Select
+                            value={formValues.status}
+                            onValueChange={(value) => handleChange("status", value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {RESTAURANT_STATUSES.map((status) => (
+                                    <SelectItem key={status} value={status}>
+                                        {RESTAURANT_STATUS_CONFIG[status].label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
+            </div>
 
-                <div className="space-y-2">
-                    <Label>Cuisine</Label>
-                    <Select
-                        value={formValues.cuisineId || OPTIONAL_VALUE}
-                        onValueChange={(value) =>
-                            handleChange("cuisineId", value === OPTIONAL_VALUE ? "" : value)
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select cuisine" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={OPTIONAL_VALUE}>Not set</SelectItem>
-                            {cuisineOptions.map((cuisine) => (
-                                <SelectItem key={cuisine.id} value={cuisine.id}>
-                                    {cuisine.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+            {/* Location & Cuisine */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold border-b pb-2">Location & Cuisine</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label>City</Label>
+                        <Select
+                            value={formValues.cityId}
+                            onValueChange={(value) => handleChange("cityId", value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select city" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {cityOptions.map((city) => (
+                                    <SelectItem key={city.id} value={city.id}>
+                                        {city.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Cuisine</Label>
+                        <Select
+                            value={formValues.cuisineId || OPTIONAL_VALUE}
+                            onValueChange={(value) =>
+                                handleChange("cuisineId", value === OPTIONAL_VALUE ? "" : value)
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select cuisine" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={OPTIONAL_VALUE}>Not set</SelectItem>
+                                {cuisineOptions.map((cuisine) => (
+                                    <SelectItem key={cuisine.id} value={cuisine.id}>
+                                        {cuisine.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
+            </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="onboarding-stage">Onboarding Stage</Label>
-                    <Input
-                        id="onboarding-stage"
-                        value={formValues.onboardingStage}
-                        onChange={(e) => handleChange("onboardingStage", e.target.value)}
-                        placeholder="e.g. Menu Review"
-                    />
+            {/* Operational Details */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold border-b pb-2">Operational Details</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="earliest-pickup">Earliest Pickup Time</Label>
+                        <Input
+                            id="earliest-pickup"
+                            type="time"
+                            value={formValues.earliestPickupTime}
+                            onChange={(e) => handleChange("earliestPickupTime", e.target.value)}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="discount">Discount Percentage</Label>
+                        <Input
+                            id="discount"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={formValues.discountPercentage}
+                            onChange={(e) => handleChange("discountPercentage", e.target.value)}
+                            placeholder="e.g., 10.5"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={formValues.offersBoxMeals}
+                                onChange={(e) => setFormValues(prev => ({ ...prev, offersBoxMeals: e.target.checked }))}
+                                className="h-4 w-4 rounded border-gray-300"
+                            />
+                            Offers Box Meals
+                        </Label>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={formValues.offersTrays}
+                                onChange={(e) => setFormValues(prev => ({ ...prev, offersTrays: e.target.checked }))}
+                                className="h-4 w-4 rounded border-gray-300"
+                            />
+                            Offers Trays/Catering
+                        </Label>
+                    </div>
                 </div>
+            </div>
 
+            {/* BDR Target */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold border-b pb-2">BDR Target</h3>
                 <div className="space-y-2">
                     <Label htmlFor="bdr-target">BDR Target per Week</Label>
                     <Input
@@ -254,108 +324,65 @@ export function RestaurantEditForm({
                         onChange={(e) => handleChange("bdrTargetPerWeek", e.target.value)}
                     />
                 </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="price-range">Price Range</Label>
-                    <Select
-                        value={formValues.priceRange || OPTIONAL_VALUE}
-                        onValueChange={(value) =>
-                            handleChange("priceRange", value === OPTIONAL_VALUE ? "" : value)
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select price range" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value={OPTIONAL_VALUE}>Not set</SelectItem>
-                            <SelectItem value="1">$ (Inexpensive)</SelectItem>
-                            <SelectItem value="2">$$ (Moderate)</SelectItem>
-                            <SelectItem value="3">$$$ (Pricey)</SelectItem>
-                            <SelectItem value="4">$$$$ (Ultra High-End)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="yelp-url">Yelp URL</Label>
-                    <Input
-                        id="yelp-url"
-                        type="url"
-                        value={formValues.yelpUrl}
-                        onChange={(e) => handleChange("yelpUrl", e.target.value)}
-                        placeholder="https://www.yelp.com/biz/..."
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="primary-photo">Primary Photo URL</Label>
-                    <Input
-                        id="primary-photo"
-                        type="url"
-                        value={formValues.primaryPhotoUrl}
-                        onChange={(e) => handleChange("primaryPhotoUrl", e.target.value)}
-                        placeholder="https://example.com/photo.jpg"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="discount">Discount Percentage</Label>
-                    <Input
-                        id="discount"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={formValues.discountPercentage}
-                        onChange={(e) => handleChange("discountPercentage", e.target.value)}
-                        placeholder="e.g., 10.5"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="earliest-pickup">Earliest Pickup Time</Label>
-                    <Input
-                        id="earliest-pickup"
-                        type="time"
-                        value={formValues.earliestPickupTime}
-                        onChange={(e) => handleChange("earliestPickupTime", e.target.value)}
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={formValues.offersBoxMeals}
-                            onChange={(e) => setFormValues(prev => ({ ...prev, offersBoxMeals: e.target.checked }))}
-                            className="h-4 w-4 rounded border-gray-300"
-                        />
-                        Offers Box Meals
-                    </Label>
-                </div>
-
-                <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={formValues.offersTrays}
-                            onChange={(e) => setFormValues(prev => ({ ...prev, offersTrays: e.target.checked }))}
-                            className="h-4 w-4 rounded border-gray-300"
-                        />
-                        Offers Trays/Catering
-                    </Label>
-                </div>
             </div>
 
-            <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                    id="description"
-                    value={formValues.description}
-                    onChange={(e) => handleChange("description", e.target.value)}
-                    placeholder="Additional notes about this restaurant..."
-                    rows={3}
-                />
+            {/* Additional Information */}
+            <div className="space-y-4">
+                <h3 className="text-sm font-semibold border-b pb-2">Additional Information</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="price-range">Price Range</Label>
+                        <Select
+                            value={formValues.priceRange || OPTIONAL_VALUE}
+                            onValueChange={(value) =>
+                                handleChange("priceRange", value === OPTIONAL_VALUE ? "" : value)
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select price range" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={OPTIONAL_VALUE}>Not set</SelectItem>
+                                <SelectItem value="1">$ (Inexpensive)</SelectItem>
+                                <SelectItem value="2">$$ (Moderate)</SelectItem>
+                                <SelectItem value="3">$$$ (Pricey)</SelectItem>
+                                <SelectItem value="4">$$$$ (Ultra High-End)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="onboarding-stage">Onboarding Stage</Label>
+                        <Input
+                            id="onboarding-stage"
+                            value={formValues.onboardingStage}
+                            onChange={(e) => handleChange("onboardingStage", e.target.value)}
+                            placeholder="e.g. Menu Review"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="yelp-url">Yelp URL</Label>
+                        <Input
+                            id="yelp-url"
+                            type="url"
+                            value={formValues.yelpUrl}
+                            onChange={(e) => handleChange("yelpUrl", e.target.value)}
+                            placeholder="https://www.yelp.com/biz/..."
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="primary-photo">Primary Photo URL</Label>
+                        <Input
+                            id="primary-photo"
+                            type="url"
+                            value={formValues.primaryPhotoUrl}
+                            onChange={(e) => handleChange("primaryPhotoUrl", e.target.value)}
+                            placeholder="https://example.com/photo.jpg"
+                        />
+                    </div>
+                </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
